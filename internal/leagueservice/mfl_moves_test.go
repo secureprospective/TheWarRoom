@@ -12,12 +12,25 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror/mflread"
 	"github.com/secureprospective/TheWarRoom/internal/model"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // mflMovesMFL is a fake MFL source with recorded-shape data that counts calls; no live MFL is ever called.
-type mflMovesMFL struct{ calls atomic.Int32 }
+type mflMovesMFL struct {
+	mflread.Fetcher // the checks and plans engine; the fetches below are the fake's own
+	calls           atomic.Int32
+	data            *mflmirror.LeagueData // nil holds the default league data
+}
+
+func (f *mflMovesMFL) FetchLeagueData(context.Context, string, int) (mflmirror.LeagueData, error) {
+	f.calls.Add(1)
+	if f.data != nil {
+		return *f.data, nil
+	}
+	return mflDefaultLeagueData(40), nil
+}
 
 func (f *mflMovesMFL) FetchFreeAgents(context.Context, string, int) ([]string, error) {
 	f.calls.Add(1)
@@ -51,6 +64,14 @@ func (f *mflMovesMFL) Directory([]byte) (mflmirror.Directory, error) {
 	return mflMovesDirectory{
 		"0531":  {Name: "Doe, John", Position: domain.PosWR, Team: "BUF", DraftYear: 2020, HasDraftYear: true, Birthdate: 820000000, HasBirthdate: true},
 		"13593": {Name: "Roe, Rich", Position: domain.PosRB, Team: "FA", DraftYear: 2025, HasDraftYear: true, Birthdate: 1000000000, HasBirthdate: true},
+		"1001":  {Name: "Quinn QB", Position: domain.PosQB, Team: "BUF"},
+		"1002":  {Name: "Rex RB", Position: domain.PosRB, Team: "DAL"},
+		"1003":  {Name: "Wes WR", Position: domain.PosWR, Team: "NYJ"},
+		"1004":  {Name: "Byron Bye", Position: domain.PosWR, Team: "MIA"},
+		"1005":  {Name: "Ira Injured", Position: domain.PosWR, Team: "PHI"},
+		"1006":  {Name: "Tex Taxi", Position: domain.PosRB, Team: "PHI"},
+		"1007":  {Name: "Other Team", Position: domain.PosWR, Team: "SEA"},
+		"1008":  {Name: "Wanda WR", Position: domain.PosWR, Team: "KC"},
 	}, nil
 }
 

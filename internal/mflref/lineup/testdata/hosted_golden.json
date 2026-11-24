@@ -1,0 +1,10 @@
+{
+  "note": "Shared by the desktop path (contracts.TargetCheckLineup) and the hosted path (mflmoves.lineup.check): same starters, same rules, same slot verdict.",
+  "starters": {"count": "3", "positions": [{"Name": "QB", "Limit": "1"}, {"Name": "RB", "Limit": "1"}, {"Name": "WR", "Limit": "1"}]},
+  "positions": {"1001": "QB", "1002": "RB", "1003": "WR", "1008": "WR"},
+  "cases": [
+    {"name": "full and legal", "ids": ["1001", "1002", "1003"], "full": true, "legal": true, "problems": []},
+    {"name": "two WR where one is allowed", "ids": ["1001", "1002", "1003", "1008"], "full": false, "legal": false, "kinds": ["over", "over"]},
+    {"name": "no WR is a partial lineup", "ids": ["1001", "1002"], "full": false, "legal": true, "kinds": ["short", "short"]}
+  ]
+}

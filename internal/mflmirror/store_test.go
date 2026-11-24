@@ -30,6 +30,11 @@ func (f *fakeMFL) FetchPlayers(context.Context, string, int) ([]byte, error) {
 	return []byte(`[{"ID":"0531","Name":"Doe, John","Position":"WR","Team":"BUF"},{"ID":"13593","Name":"Roe, Rich","Position":"RB","Team":"FA"}]`), nil
 }
 
+func (f *fakeMFL) FetchLeagueData(context.Context, string, int) (LeagueData, error) {
+	f.calls["leagueData"]++
+	return LeagueData{}, nil
+}
+
 func (f *fakeMFL) Directory([]byte) (Directory, error) { return nil, nil }
 
 func newTestStore(t *testing.T, clock *time.Time) *Store {

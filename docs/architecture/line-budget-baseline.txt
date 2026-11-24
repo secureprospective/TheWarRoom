@@ -1,19 +1,19 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	53699
-frontend-generated	5124
-frontend-src	76685
+docs	53707
+frontend-generated	5254
+frontend-src	76891
 frontend-tests	46789
-go-prod	172660
+go-prod	172857
 go-prod/cmd/twr	1053
 go-prod/cmd/twr-check	508
 go-prod/cmd/twr-server	9956
 go-prod/frontend	572
 go-prod/internal/accounts	2190
-go-prod/internal/app	26684
+go-prod/internal/app	26665
 go-prod/internal/appvalue	1064
 go-prod/internal/archive	310
-go-prod/internal/commandcatalog	3060
+go-prod/internal/commandcatalog	3097
 go-prod/internal/commissioner	31667
 go-prod/internal/composition	4989
 go-prod/internal/db	3622
@@ -39,11 +39,11 @@ go-prod/internal/m2service	575
 go-prod/internal/measures	718
 go-prod/internal/mfl	574
 go-prod/internal/mflkey	138
-go-prod/internal/mflmirror	462
-go-prod/internal/mflref	2161
+go-prod/internal/mflmirror	589
+go-prod/internal/mflref	2184
 go-prod/internal/model	2437
 go-prod/internal/modelrun	685
-go-prod/internal/nativecheck	2932
+go-prod/internal/nativecheck	2961
 go-prod/internal/normalize	321
 go-prod/internal/numeric	23
 go-prod/internal/offline	139
@@ -65,6 +65,6 @@ go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	115980
+go-test	116006
 go-testdata	41025
 other	38346

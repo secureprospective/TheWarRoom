@@ -1,2 +1,3 @@
 MFL helper lane A (mflmoves.refresh and mflmoves.pool.read): a new thin internal/mflmirror package, two owner-private commands and their generated client rows. Growth is the feature itself; it adds no per-league-type code.
 MFL helper lane B1 (owner picks the MFL league via the mfl.league rule and their team via mflmoves.team.set; pool values from the held model run): one more rule, two owner-private commands, a franchise-list hold and a model-score read. Growth is the feature itself; no per-league-type code.
+Lane B2 (bid/lineup checks, plans): new hosted check and plan engine, tests and goldens, generated command tables; budget raised to carry them.

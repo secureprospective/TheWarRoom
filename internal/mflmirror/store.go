@@ -22,6 +22,8 @@ type Source interface {
 	FetchPlayers(ctx context.Context, mflLeague string, season int) ([]byte, error)
 	// FetchFranchises reads the league's public franchise list (id and name).
 	FetchFranchises(ctx context.Context, mflLeague string, season int) ([]Franchise, error)
+	// FetchLeagueData reads the league's public rosters, salary adjustments, rules and NFL bye weeks.
+	FetchLeagueData(ctx context.Context, mflLeague string, season int) (LeagueData, error)
 	// Directory reads a held player directory (the bytes FetchPlayers returned) into player facts.
 	Directory(playersJSON []byte) (Directory, error)
 }
@@ -30,6 +32,31 @@ type Source interface {
 type Franchise struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// RosterRow is one player on one MFL franchise's roster: salary in cents, the final contract year
+// and MFL's status (ROSTER, TAXI_SQUAD or INJURED_RESERVE).
+type RosterRow struct {
+	Franchise    string `json:"franchise"`
+	Player       string `json:"player"`
+	Salary       int64  `json:"salary"`
+	ContractYear int    `json:"contractYear"`
+	Status       string `json:"status"`
+}
+
+// Adjustment is one literal MFL cap adjustment (dead cap, credit) on a franchise, in cents.
+type Adjustment struct {
+	Franchise string `json:"franchise"`
+	Cents     int64  `json:"cents"`
+}
+
+// LeagueData is the public league data the bid and lineup checks read: every roster, the cap
+// adjustments, MFL's league and lineup rules, and each NFL team's bye week.
+type LeagueData struct {
+	Rosters     []RosterRow     `json:"rosters"`
+	Adjustments []Adjustment    `json:"adjustments"`
+	Byes        map[string]int  `json:"byes"`
+	Config      json.RawMessage `json:"config"` // MFL's league rules; the MFL reader decodes them
 }
 
 // Directory resolves an MFL player id to name, position, team, age and draft year.
@@ -58,6 +85,8 @@ type Held struct {
 	FetchedAt   time.Time
 	FreeAgents  []string
 	Franchises  []Franchise
+	League      LeagueData
+	HasLeague   bool
 	PlayersJSON []byte // the player directory as JSON; normalize.NewLookupJSON reads it
 }
 
@@ -78,6 +107,7 @@ func NewStore(pools *db.Pools, now func() time.Time) *Store {
 
 const schema = `
 CREATE TABLE IF NOT EXISTS mfl_mirror_franchises (mfl_league TEXT PRIMARY KEY, body TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS mfl_mirror_league (mfl_league TEXT PRIMARY KEY, body TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS mfl_mirror_team (
   franchise TEXT PRIMARY KEY, mfl_league TEXT NOT NULL, team TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS mfl_mirror_hold (
@@ -163,15 +193,14 @@ func (s *Store) Refresh(ctx context.Context, f Source, mflLeague string) (Result
 		return Result{Held: held, Age: now.Sub(held.FetchedAt)}, nil
 	}
 	season := Season(now)
-	ids, err := f.FetchFreeAgents(ctx, mflLeague, season)
+	ids, franchises, data, err := s.fetchAll(ctx, f, mflLeague, season)
 	if err != nil {
-		return Result{}, fmt.Errorf("mflmirror: free agents: %w", err)
-	}
-	franchises, err := f.FetchFranchises(ctx, mflLeague, season)
-	if err != nil {
-		return Result{}, fmt.Errorf("mflmirror: franchises: %w", err)
+		return Result{}, err
 	}
 	if err := s.refreshPlayers(ctx, f, mflLeague, season, now); err != nil {
+		return Result{}, err
+	}
+	if err := s.holdLeague(ctx, mflLeague, data); err != nil {
 		return Result{}, err
 	}
 	fbody, err := json.Marshal(franchises)
@@ -197,6 +226,35 @@ last_fetched_at=excluded.last_fetched_at, free_agents=excluded.free_agents`,
 		return Result{}, err
 	}
 	return Result{Held: held, Age: now.Sub(held.FetchedAt), Fetched: true}, nil
+}
+
+// fetchAll reads everything one refresh holds from MFL: free agents, the franchise list and the league data.
+func (*Store) fetchAll(ctx context.Context, f Source, mflLeague string, season int) ([]string, []Franchise, LeagueData, error) {
+	ids, err := f.FetchFreeAgents(ctx, mflLeague, season)
+	if err != nil {
+		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: free agents: %w", err)
+	}
+	franchises, err := f.FetchFranchises(ctx, mflLeague, season)
+	if err != nil {
+		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: franchises: %w", err)
+	}
+	data, err := f.FetchLeagueData(ctx, mflLeague, season)
+	if err != nil {
+		return nil, nil, LeagueData{}, fmt.Errorf("mflmirror: league data: %w", err)
+	}
+	return ids, franchises, data, nil
+}
+
+func (s *Store) holdLeague(ctx context.Context, mflLeague string, data LeagueData) error {
+	body, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("mflmirror: encode league data: %w", err)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_league(mfl_league,body) VALUES(?,?)
+ON CONFLICT(mfl_league) DO UPDATE SET body=excluded.body`, mflLeague, string(body)); err != nil {
+		return fmt.Errorf("mflmirror: hold league data: %w", err)
+	}
+	return nil
 }
 
 func (s *Store) refreshPlayers(ctx context.Context, f Source, mflLeague string, season int, now time.Time) error {
@@ -260,6 +318,15 @@ func (s *Store) read(ctx context.Context, mflLeague string) (Held, bool, error) 
 			return Held{}, false, fmt.Errorf("mflmirror: held franchises: %w", err)
 		}
 	}
+	var lbody string
+	if h.HasLeague, err = s.queryOne(ctx, `SELECT body FROM mfl_mirror_league WHERE mfl_league=?`, []any{mflLeague}, &lbody); err != nil {
+		return Held{}, false, fmt.Errorf("mflmirror: read league data: %w", err)
+	}
+	if h.HasLeague {
+		if err := json.Unmarshal([]byte(lbody), &h.League); err != nil {
+			return Held{}, false, fmt.Errorf("mflmirror: held league data: %w", err)
+		}
+	}
 	var body string
 	hasPlayers, err := s.queryOne(ctx, `SELECT body FROM mfl_mirror_players WHERE season=?`, []any{h.Season}, &body)
 	if err != nil {
@@ -289,3 +356,6 @@ func (s *Store) queryOne(ctx context.Context, query string, args []any, dest ...
 	}
 	return true, nil
 }
+
+// Pools is the league database the mirror lives in; plans keep their rows in the same file.
+func (s *Store) Pools() *db.Pools { return s.pools }

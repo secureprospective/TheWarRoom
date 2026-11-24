@@ -258,3 +258,26 @@ func checkedCapMoney(value *big.Int) (domain.Money, error) {
 	}
 	return domain.Money(value.Int64()), nil
 }
+
+// The in-season active roster bounds the acquisition preview and the hosted bid check hold an add to.
+const (
+	MaxActiveRoster = 48
+	MinActiveRoster = 35
+)
+
+// AcquisitionReasons says what is wrong with a roster after one add: the cap used after it against the
+// salary cap (nil when MFL names none) and the active player count after it. The desktop acquisition
+// preview and the hosted bid check both read it, so the same inputs give the same words.
+func AcquisitionReasons(salaryCap *domain.Money, capAfter domain.Money, active int) []string {
+	out := []string{}
+	if salaryCap != nil && capAfter > *salaryCap {
+		out = append(out, "The add does not fit the salary cap; choose a cut and inspect its dead cap.")
+	}
+	if active > MaxActiveRoster {
+		out = append(out, "The add needs a cut to fit 48 active roster spots.")
+	}
+	if active < MinActiveRoster {
+		out = append(out, "The roster is below the 35-player in-season minimum.")
+	}
+	return out
+}

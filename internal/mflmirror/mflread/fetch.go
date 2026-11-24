@@ -8,9 +8,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/league"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/nflschedule"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/rosters"
+	"github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/normalize"
@@ -108,4 +113,56 @@ func (Fetcher) Directory(playersJSON []byte) (mflmirror.Directory, error) {
 		return nil, fmt.Errorf("read held MFL player directory: %w", err)
 	}
 	return lookup, nil
+}
+
+// FetchLeagueData reads the league's public rosters, salary adjustments, league rules and the NFL
+// bye weeks through the same GET-only client.
+func (f Fetcher) FetchLeagueData(ctx context.Context, mflLeague string, season int) (mflmirror.LeagueData, error) {
+	c, err := f.client()
+	if err != nil {
+		return mflmirror.LeagueData{}, err
+	}
+	year := strconv.Itoa(season)
+	out := mflmirror.LeagueData{Byes: map[string]int{}}
+	config, err := league.Fetch(ctx, c, year, mflLeague)
+	if err != nil {
+		return mflmirror.LeagueData{}, fmt.Errorf("fetch MFL league rules: %w", err)
+	}
+	if out.Config, err = json.Marshal(config); err != nil {
+		return mflmirror.LeagueData{}, fmt.Errorf("hold MFL league rules: %w", err)
+	}
+	raw, err := rosters.Fetch(ctx, c, year, mflLeague)
+	if err != nil {
+		return mflmirror.LeagueData{}, fmt.Errorf("fetch MFL rosters: %w", err)
+	}
+	for _, r := range raw {
+		salary, perr := domain.ParseMoneyMillions(r.Salary)
+		if perr != nil {
+			return mflmirror.LeagueData{}, fmt.Errorf("MFL roster salary %q: %w", r.Salary, perr)
+		}
+		contractYear, _ := strconv.Atoi(r.ContractYear)
+		out.Rosters = append(out.Rosters, mflmirror.RosterRow{Franchise: r.FranchiseID, Player: r.PlayerID,
+			Salary: salary.Cents(), ContractYear: contractYear, Status: r.Status})
+	}
+	adjustments, err := salaryadjustments.Fetch(ctx, c, year, mflLeague)
+	if err != nil {
+		return mflmirror.LeagueData{}, fmt.Errorf("fetch MFL salary adjustments: %w", err)
+	}
+	for _, a := range adjustments {
+		amount, perr := domain.ParseSignedMoneyMillions(a.Amount)
+		if perr != nil {
+			return mflmirror.LeagueData{}, fmt.Errorf("MFL salary adjustment %q: %w", a.Amount, perr)
+		}
+		out.Adjustments = append(out.Adjustments, mflmirror.Adjustment{Franchise: a.FranchiseID, Cents: amount.Cents()})
+	}
+	byes, err := nflschedule.FetchByes(ctx, c, year)
+	if err != nil {
+		return mflmirror.LeagueData{}, fmt.Errorf("fetch NFL bye weeks: %w", err)
+	}
+	for _, b := range byes {
+		if week, perr := strconv.Atoi(b.Week); perr == nil {
+			out.Byes[b.Team] = week
+		}
+	}
+	return out, nil
 }

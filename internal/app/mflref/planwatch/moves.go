@@ -4,23 +4,11 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"strings"
 
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
 )
 
-func ValidateMoveURL(target string) error {
-	u, err := url.Parse(target)
-	if err != nil {
-		return fmt.Errorf("move URL: %w", err)
-	}
-	host := strings.ToLower(u.Hostname())
-	if u.Scheme != "https" || u.User != nil ||
-		(host != "myfantasyleague.com" && !strings.HasSuffix(host, ".myfantasyleague.com")) {
-		return fmt.Errorf("move URL: HTTPS MFL host without user info required")
-	}
-	return nil
-}
+func ValidateMoveURL(target string) error { return envelope.ValidateMoveURL(target) } //nolint:wrapcheck // the envelope names the refusal
 
 func MovePredicate(intent string) envelope.Predicate {
 	registry := map[string]envelope.Predicate{

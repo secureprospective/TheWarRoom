@@ -38,6 +38,9 @@ func WorkflowCommands() map[string]WorkflowCommand {
 	for id, command := range privatePersonalWorkflows() {
 		out[id] = command
 	}
+	for id, command := range mflMovesWorkflows() {
+		out[id] = command
+	}
 	for _, row := range nativeMutations() {
 		if accounts.DelegableCommand(row.id) && row.id != commissioner.NativeSeed {
 			out[row.id] = WorkflowCommand{Validate: validateWorkflowChange, Run: runWorkflowChange}
@@ -175,6 +178,45 @@ func backupNowWorkflow() WorkflowCommand {
 	}
 }
 
+// mflMovesWorkflows are the owner-private commands of the hosted MFL helper.
+func mflMovesWorkflows() map[string]WorkflowCommand {
+	return map[string]WorkflowCommand{
+		leagueservice.MflMovesTeamSet: workflowInputCommand[leagueservice.RawMflTeamSet, *leagueservice.RawMflTeamSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflTeamSet) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesTeamSetContext(ctx, input))
+		}),
+		leagueservice.MflMovesTeamsRead: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesTeamsReadContext(ctx, input))
+		}),
+		leagueservice.MflMovesBidCheck: workflowInputCommand[leagueservice.RawMflBidCheck, *leagueservice.RawMflBidCheck]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflBidCheck) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesBidCheckContext(ctx, input))
+		}),
+		leagueservice.MflMovesLineupCheck: workflowInputCommand[leagueservice.RawMflLineupCheck, *leagueservice.RawMflLineupCheck]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflLineupCheck) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesLineupCheckContext(ctx, input))
+		}),
+		leagueservice.MflMovesPlansRead: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPlansReadContext(ctx, input))
+		}),
+		leagueservice.MflMovesPlanLink: workflowInputCommand[leagueservice.RawMflPlanScope, *leagueservice.RawMflPlanScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPlanScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPlanLinkContext(ctx, input))
+		}),
+		leagueservice.MflMovesPlanSave: workflowInputCommand[leagueservice.RawMflPlanSave, *leagueservice.RawMflPlanSave]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPlanSave) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPlanSaveContext(ctx, input))
+		}),
+		leagueservice.MflMovesPlanDone: workflowInputCommand[leagueservice.RawMflPlanScope, *leagueservice.RawMflPlanScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPlanScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPlanDoneContext(ctx, input))
+		}),
+		leagueservice.MflMovesPlanWithdraw: workflowInputCommand[leagueservice.RawMflPlanScope, *leagueservice.RawMflPlanScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPlanScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPlanWithdrawContext(ctx, input))
+		}),
+		leagueservice.MflMovesRefresh: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesRefreshContext(ctx, input))
+		}),
+		leagueservice.MflMovesPoolRead: workflowInputCommand[leagueservice.RawMflPoolScope, *leagueservice.RawMflPoolScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPoolScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesPoolReadContext(ctx, input))
+		}),
+	}
+}
+
 func privatePersonalWorkflows() map[string]WorkflowCommand {
 	return map[string]WorkflowCommand{
 		leagueservice.WhatIfStackRead: workflowInputCommand[market.RawWhatIfStack, *market.RawWhatIfStack]("read", "this is a private owner reading only", func(ctx context.Context, s *leagueservice.Service, r market.RawWhatIfStack) (json.RawMessage, error) {
@@ -182,18 +224,6 @@ func privatePersonalWorkflows() map[string]WorkflowCommand {
 		}),
 		leagueservice.ContractDecisionsRead: workflowInputCommand[market.RawContractDecisionsScope, *market.RawContractDecisionsScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input market.RawContractDecisionsScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeContractDecisionsContext(ctx, input))
-		}),
-		leagueservice.MflMovesTeamSet: workflowInputCommand[leagueservice.RawMflTeamSet, *leagueservice.RawMflTeamSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflTeamSet) (json.RawMessage, error) {
-			return workflowJSON(s.MflMovesTeamSetContext(ctx, input))
-		}),
-		leagueservice.MflMovesTeamsRead: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
-			return workflowJSON(s.MflMovesTeamsReadContext(ctx, input))
-		}),
-		leagueservice.MflMovesRefresh: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
-			return workflowJSON(s.MflMovesRefreshContext(ctx, input))
-		}),
-		leagueservice.MflMovesPoolRead: workflowInputCommand[leagueservice.RawMflPoolScope, *leagueservice.RawMflPoolScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflPoolScope) (json.RawMessage, error) {
-			return workflowJSON(s.MflMovesPoolReadContext(ctx, input))
 		}),
 		leagueservice.PlayerNoteRead: workflowInputCommand[leagueservice.RawPlayerNotesScope, *leagueservice.RawPlayerNotesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawPlayerNotesScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetPlayerNotesContext(ctx, input))
