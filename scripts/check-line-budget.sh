@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
-# check-line-budget.sh — the line-budget guard (draft: not wired into CI or the Makefile yet).
+# check-line-budget.sh — the line-budget guard (T709). Runs in `make lint` (placement target), so
+# in CI's checks job and in pre-push whenever lint runs.
 # Counts lines of TRACKED files (git ls-files + wc -l) by area and compares each area with
 # docs/architecture/line-budget-baseline.txt (rows: area<TAB>lines; # lines are comments).
 #   - An area ABOVE its baseline fails (exit 1) unless the change carries a written reason:
 #       LINE_BUDGET_REASON="why"                     (env var, any non-blank text), or
 #       docs/architecture/line-budget-reasons/<branch>.md   (non-blank file; <branch> is the
 #                                                     current branch with "/" -> "-", so
-#                                                     session/x -> session-x.md)
+#                                                     session/x -> session-x.md). Works offline
+#                                                     and in CI; CI's detached checkout uses
+#                                                     GITHUB_HEAD_REF for the branch name.
 #   - An area BELOW its baseline passes and prints a hint to lock it in: the ratchet only goes down.
 #   - "--write" rewrites the baseline from today's counts (put it in the same commit as the change).
 # Areas (the same as the docs/architecture/line-budget-baseline.txt rows):
@@ -25,6 +28,7 @@ cd "$(dirname "$0")/.."
 
 baseline_file=docs/architecture/line-budget-baseline.txt
 branch=$(git branch --show-current 2>/dev/null || true)
+[[ -n $branch ]] || branch=${GITHUB_HEAD_REF:-}
 reason_file="docs/architecture/line-budget-reasons/${branch//\//-}.md"
 
 tmp=$(mktemp -d)
