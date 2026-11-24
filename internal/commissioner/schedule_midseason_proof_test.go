@@ -112,17 +112,17 @@ func midseasonPublished(t *testing.T, b *ledgerBuilder) []ScheduleWeek {
 	return reading.Weeks
 }
 
-// TestMidseasonLeadingEmptyWeeks is the rehearsal shape: Weeks=18, weeks 1..13 empty, 14..18 full
-// (drafts Tue Dec 8; week 14 is the first week after the drafts).
+// TestMidseasonLeadingEmptyWeeks is the rehearsal shape: Weeks=18, weeks 1..12 empty, 13..18 full
+// (Christopher 11-23: drafts Tue Dec 1; NFL week 13, first kickoff Thu Dec 3, is the first week after them).
 // The schedule accepts empty weeks (validateFixtures), so this is the shape that matches the need.
 func TestMidseasonLeadingEmptyWeeks(t *testing.T) {
 	b := twin32Start(t, midseasonLeague, "")
 	teams := midseasonTeams(t, b)
 	var weeks []ScheduleWeek
-	for w := 1; w <= 13; w++ {
+	for w := 1; w <= 12; w++ {
 		weeks = append(weeks, ScheduleWeek{Week: w, Games: []ScheduleGame{}})
 	}
-	weeks = append(weeks, midseasonRange(teams, 14, 18)...)
+	weeks = append(weeks, midseasonRange(teams, 13, 18)...)
 	gen := midseasonRaw(RawScheduleArgs{Weeks: 18, Fixtures: weeks}, ScheduleGenerate)
 	midseasonAppend(t, b, gen, seasonMoment(5))
 	midseasonAppend(t, b, midseasonRaw(RawScheduleArgs{}, SchedulePublish), seasonMoment(6))
@@ -133,7 +133,7 @@ func TestMidseasonLeadingEmptyWeeks(t *testing.T) {
 	}
 	for _, w := range published {
 		want := 0
-		if w.Week >= 14 {
+		if w.Week >= 13 {
 			want = 16
 		}
 		if len(w.Games) != want {
