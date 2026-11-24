@@ -172,3 +172,4 @@ A source is lost when its latest load failed and it has had no successful load w
 | `cfbd` | CollegeFootballData API | active | 30 days | `api.collegefootballdata.com` |
 | `madden` | EA Madden ratings | retired | 30 days | `ratings-api.ea.com` |
 | `league_archive` | MFL league archive, 2013–2026 | active | 365 days | imported |
+| `sleeper_projection` | Sleeper projections (RotoWire forecast) | active | 1 days | `api.sleeper.app/projections/nfl/` |

@@ -40,7 +40,7 @@ func (p *PinnedFootball) Kickoffs() []time.Time {
 		}
 		slices.SortFunc(p.kickoffs, time.Time.Compare)
 	})
-	return p.kickoffs
+	return append([]time.Time(nil), p.kickoffs...)
 }
 
 // LoadFootball refuses missing or changed bodies, never substitutes the latest fetch.
