@@ -259,7 +259,7 @@ func (s *Store) scoreRevisionFor(ctx context.Context, n *nativeSources, records 
 	if _, ledger := s.lineups.(revisionLineups); !ledger {
 		return "", false
 	}
-	ledger, ok := s.durableLedgerDigest(ctx, n.league, records)
+	ledger, ok := s.durableLedgerDigest(ctx, n.league, records, n.canon)
 	if !ok {
 		return "", false
 	}
@@ -376,10 +376,13 @@ func factsDigest(env LineupEnvironment, facts nativecheck.Facts) string {
 
 // durableLedgerDigest names the exact entries of a ledger whose every entry is durable in the league's own
 // ledger. Any other ledger is a trial (a proposed or waiting change) and has no shared revision.
-func (s *Store) durableLedgerDigest(ctx context.Context, league string, records []commissioner.Record) (string, bool) {
-	canon, err := s.nativeRecords(ctx, league)
-	if err != nil {
-		return "", false
+func (s *Store) durableLedgerDigest(ctx context.Context, league string, records, read []commissioner.Record) (string, bool) {
+	canon := read
+	if canon == nil {
+		var err error
+		if canon, err = s.nativeRecords(ctx, league); err != nil {
+			return "", false
+		}
 	}
 	mark := recordsMark(canon)
 	c := &s.scores
