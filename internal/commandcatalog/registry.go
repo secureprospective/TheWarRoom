@@ -375,6 +375,117 @@ func NewOperatorRegistry() (*Registry, error) {
 	return registry, nil
 }
 
+// PublishedEntry describes one catalog-owned command without desktop bindings or live handlers.
+type PublishedEntry struct {
+	ID, Label  string
+	Definition Command
+	Native     bool
+	CLI        bool
+	Browser    *BrowserCommand
+	Workflow   bool
+}
+
+// PublishedEntries returns the catalog's native, server-workflow, CLI and browser entries without desktop ports.
+func PublishedEntries() ([]PublishedEntry, error) {
+	entries, err := publishedNativeAndServer()
+	if err != nil {
+		return nil, err
+	}
+	if err := attachPublishedWorkflows(entries); err != nil {
+		return nil, err
+	}
+	entries, err = attachPublishedBrowsers(entries)
+	if err != nil {
+		return nil, err
+	}
+	if err := validatePublishedEntries(entries); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+func publishedNativeAndServer() ([]PublishedEntry, error) {
+	native := NativeCommands(NativeSeedShape())
+	server := serverWorkflowEntries()
+	entries := make([]PublishedEntry, 0, len(native)+len(server))
+	for _, command := range native {
+		if err := command.ValidatePublication(); err != nil {
+			return nil, err
+		}
+		isNative := command.Availability != "server"
+		entries = append(entries, PublishedEntry{
+			ID:         command.ID,
+			Label:      commandLabel(command.ID),
+			Definition: command,
+			Native:     isNative,
+			CLI:        isNative && strings.HasPrefix(command.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"),
+		})
+	}
+	for _, entry := range server {
+		if err := entry.Definition.ValidatePublication(); err != nil {
+			return nil, err
+		}
+		entries = append(entries, PublishedEntry{
+			ID:         entry.ID,
+			Label:      entry.Label,
+			Definition: entry.Definition,
+		})
+	}
+	return entries, nil
+}
+
+func attachPublishedWorkflows(entries []PublishedEntry) error {
+	byID := make(map[string]int, len(entries))
+	for i, entry := range entries {
+		byID[entry.ID] = i
+	}
+	for id := range WorkflowCommands() {
+		idx, ok := byID[id]
+		if !ok || (!entries[idx].Native && entries[idx].Definition.Availability != "server") {
+			return fmt.Errorf("workflow %s has no catalog entry", id)
+		}
+		entries[idx].Workflow = true
+	}
+	return nil
+}
+
+func attachPublishedBrowsers(entries []PublishedEntry) ([]PublishedEntry, error) {
+	byID := make(map[string]int, len(entries))
+	for i, entry := range entries {
+		byID[entry.ID] = i
+	}
+	for _, command := range BrowserCommands() {
+		cmd := command
+		if idx, ok := byID[cmd.ID]; ok {
+			if cmd.ID != leagueservice.BackupNowCommand || !entries[idx].Workflow {
+				return nil, fmt.Errorf("browser command %s duplicates a registered operation", cmd.ID)
+			}
+			entries[idx].Browser = &cmd
+			continue
+		}
+		byID[cmd.ID] = len(entries)
+		entries = append(entries, PublishedEntry{ID: cmd.ID, Label: cmd.Label, Browser: &cmd})
+	}
+	return entries, nil
+}
+
+func validatePublishedEntries(entries []PublishedEntry) error {
+	seen := make(map[string]bool, len(entries))
+	for _, entry := range entries {
+		if entry.ID == "" || entry.Label == "" || seen[entry.ID] {
+			return fmt.Errorf("missing or duplicate catalog entry %s", entry.ID)
+		}
+		seen[entry.ID] = true
+		if entry.Browser != nil && entry.Browser.Arguments.ClientType == "" {
+			return fmt.Errorf("catalog %s: missing browser argument type", entry.ID)
+		}
+		if !entry.Native && !entry.Workflow && entry.Browser == nil {
+			return fmt.Errorf("catalog %s: no published surface", entry.ID)
+		}
+	}
+	return nil
+}
+
 func mflFeature(c Command) string {
 	switch c.Method {
 	case "TargetDraftLineup":

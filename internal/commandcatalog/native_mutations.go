@@ -9,6 +9,11 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
+// NativeSeedShape is the wire schema for the held-data seed command.
+func NativeSeedShape() Schema {
+	return Shape(reflect.TypeFor[commissioner.RawNativeSeedRequest](), "RawNativeSeedRequest.Validate/ValidatePreview")
+}
+
 // NativeCommands lists logical reads and individual mutations, not generic desktop dispatch doors.
 // A completed declaration is not a live route; hosted registration and credential admission belong
 // to the service. Schemas describe canonical requests, which existing desktop adapters may compose.

@@ -4,19 +4,19 @@ import (
 	"fmt"
 
 	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
-	"github.com/secureprospective/TheWarRoom/internal/composition"
 )
 
 func registryCommands(door catalog.Door) ([]catalog.Command, error) {
-	registry, err := composition.CommandRegistry()
+	if door == catalog.MFLDoor {
+		return nil, fmt.Errorf("MFL commands exist only in the desktop registry (internal/app/offers)")
+	}
+	entries, err := catalog.PublishedEntries()
 	if err != nil {
-		return nil, fmt.Errorf("bind generation registry: %w", err)
+		return nil, fmt.Errorf("load catalog entries: %w", err)
 	}
 	var commands []catalog.Command
-	for _, entry := range registry.Entries() {
-		native := door == catalog.NativeDoor && entry.Native != nil
-		mfl := door == catalog.MFLDoor && entry.MFL != nil
-		if native || mfl {
+	for _, entry := range entries {
+		if door == catalog.NativeDoor && entry.Native {
 			commands = append(commands, entry.Definition)
 		}
 	}
@@ -24,13 +24,13 @@ func registryCommands(door catalog.Door) ([]catalog.Command, error) {
 }
 
 func registryServerWorkflowCommands() ([]catalog.Command, error) {
-	registry, err := composition.CommandRegistry()
+	entries, err := catalog.PublishedEntries()
 	if err != nil {
-		return nil, fmt.Errorf("bind server workflow registry: %w", err)
+		return nil, fmt.Errorf("load server workflow catalog: %w", err)
 	}
 	var commands []catalog.Command
-	for _, entry := range registry.Entries() {
-		if entry.Workflow != nil && entry.Definition.Availability == "server" {
+	for _, entry := range entries {
+		if entry.Workflow && entry.Definition.Availability == "server" {
 			commands = append(commands, entry.Definition)
 		}
 	}
@@ -38,15 +38,34 @@ func registryServerWorkflowCommands() ([]catalog.Command, error) {
 }
 
 func registryBrowserCommands() ([]catalog.BrowserCommand, error) {
-	registry, err := composition.CommandRegistry()
+	entries, err := catalog.PublishedEntries()
 	if err != nil {
-		return nil, fmt.Errorf("bind browser registry: %w", err)
+		return nil, fmt.Errorf("load browser catalog: %w", err)
 	}
 	var commands []catalog.BrowserCommand
-	for _, entry := range registry.Entries() {
+	for _, entry := range entries {
 		if entry.Browser != nil {
 			commands = append(commands, *entry.Browser)
 		}
 	}
 	return commands, nil
+}
+
+func catalogEntries(published []catalog.PublishedEntry) []catalog.Entry {
+	entries := make([]catalog.Entry, 0, len(published))
+	for _, p := range published {
+		var workflow *catalog.WorkflowCommand
+		if p.Workflow {
+			workflow = &catalog.WorkflowCommand{}
+		}
+		entries = append(entries, catalog.Entry{
+			ID:         p.ID,
+			Label:      p.Label,
+			Definition: p.Definition,
+			CLI:        p.CLI,
+			Browser:    p.Browser,
+			Workflow:   workflow,
+		})
+	}
+	return entries
 }

@@ -3,7 +3,6 @@ package commissioner
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -11,34 +10,12 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-type RawNativeSeedRequest struct {
-	League   string `json:"league"`
-	Expected int64  `json:"expected"`
-	Request  string `json:"request"`
-	Reason   string `json:"reason"`
-}
-
-func (r RawNativeSeedRequest) Validate() error { return r.validate(true) }
-
-// ValidatePreview is Validate without the typed reason, so the tray can show the starting assets before
-// the reason is written; the preview then owes the reason as its blocker.
-func (r RawNativeSeedRequest) ValidatePreview() error { return r.validate(false) }
-
-func (r RawNativeSeedRequest) validate(requireReason bool) error {
-	if !strings.HasPrefix(r.League,
-		"native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League ||
-		r.Expected < 1 || strings.TrimSpace(r.Request) == "" ||
-		(requireReason && strings.TrimSpace(r.Reason) == "") {
-		return fmt.Errorf("choose an app league, its version, a request and a reason " +
-			"for recording its starting snapshot")
-	}
-	return nil
-}
+type RawNativeSeedRequest = commissioner.RawNativeSeedRequest
 
 // TargetNativeSeed records the league's own start or held data, never client-provided rosters or live inputs.
 func (a *API) TargetNativeSeed(input RawNativeSeedRequest) (commissioner.Receipt, error) {
 	if err := input.Validate(); err != nil {
-		return commissioner.Receipt{}, err
+		return commissioner.Receipt{}, err //nolint:wrapcheck // Preserve the existing refusal text and error identity.
 	}
 	if err := a.host.Ready(); err != nil {
 		return commissioner.Receipt{}, fmt.Errorf("starting snapshot startup: %w", err)

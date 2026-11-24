@@ -14,6 +14,30 @@ import (
 
 const NativeSeed = "commish.league.seed_held"
 
+// RawNativeSeedRequest requests recording a league's starting snapshot from held inputs.
+type RawNativeSeedRequest struct {
+	League   string `json:"league"`
+	Expected int64  `json:"expected"`
+	Request  string `json:"request"`
+	Reason   string `json:"reason"`
+}
+
+func (r RawNativeSeedRequest) Validate() error { return r.validate(true) }
+
+// ValidatePreview checks the seed request without the typed reason so previews can name the missing reason.
+func (r RawNativeSeedRequest) ValidatePreview() error { return r.validate(false) }
+
+func (r RawNativeSeedRequest) validate(requireReason bool) error {
+	if !strings.HasPrefix(r.League,
+		"native.") || r.League == "native." || strings.TrimSpace(r.League) != r.League ||
+		r.Expected < 1 || strings.TrimSpace(r.Request) == "" ||
+		(requireReason && strings.TrimSpace(r.Reason) == "") {
+		return fmt.Errorf("choose an app league, its version, a request and a reason " +
+			"for recording its starting snapshot")
+	}
+	return nil
+}
+
 // NativeChampion is the franchise that won a finished season.
 type NativeChampion struct {
 	Season    int    `json:"season"`

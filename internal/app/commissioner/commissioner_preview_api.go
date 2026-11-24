@@ -44,7 +44,7 @@ func (a *API) decodeCommissionerPreview(body string) (commissioner.RawCommand, e
 		return raw, fmt.Errorf("decode preview: %w", err)
 	}
 	if validateErr := input.ValidatePreview(); validateErr != nil {
-		return raw, validateErr
+		return raw, validateErr //nolint:wrapcheck // Preserve the existing refusal text and error identity.
 	}
 	if readyErr := a.host.Ready(); readyErr != nil {
 		return raw, readyErr //nolint:wrapcheck // Preserve the existing refusal text and error identity.

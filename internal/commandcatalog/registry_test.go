@@ -242,3 +242,43 @@ func TestOLineCloseRegistryMetadata(t *testing.T) {
 	}
 	t.Fatal("close command missing")
 }
+
+func TestPublishedEntriesCoversNativeServerCLIAndBrowserWithoutDesktop(t *testing.T) {
+	entries, err := PublishedEntries()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var nativeCount, serverCount, cliCount, browserCount int
+	var sawSeed, sawBackup, sawQueue bool
+	for _, entry := range entries {
+		if strings.HasPrefix(entry.ID, "mfl.") || strings.HasPrefix(entry.ID, "desktop.") {
+			t.Fatalf("desktop-only command %s leaked into catalog entries", entry.ID)
+		}
+		if entry.Native {
+			nativeCount++
+		}
+		if entry.Workflow && entry.Definition.Availability == "server" {
+			serverCount++
+		}
+		if entry.CLI {
+			cliCount++
+		}
+		if entry.Browser != nil {
+			browserCount++
+		}
+		switch entry.ID {
+		case commissioner.NativeSeed:
+			sawSeed = entry.Native && entry.Definition.Arguments.Validator == "RawNativeSeedRequest.Validate/ValidatePreview"
+		case "backup.now":
+			sawBackup = entry.Workflow && entry.Browser != nil && entry.Definition.Availability == "server"
+		case "draft.queue.read":
+			sawQueue = entry.Workflow && !entry.Native && entry.Definition.Availability == "server"
+		}
+	}
+	if nativeCount == 0 || serverCount == 0 || cliCount == 0 || browserCount == 0 {
+		t.Fatalf("empty catalog surface: native=%d server=%d cli=%d browser=%d", nativeCount, serverCount, cliCount, browserCount)
+	}
+	if !sawSeed || !sawBackup || !sawQueue {
+		t.Fatalf("missing key entries: seed=%t backup=%t queue=%t", sawSeed, sawBackup, sawQueue)
+	}
+}
