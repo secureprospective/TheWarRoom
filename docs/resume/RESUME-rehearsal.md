@@ -36,14 +36,16 @@ Repo `~/work/TheWarRoom`; working branch **`session/rehearsal-auto`** (worktree 
   Memory: `base-briefs-on-live-stack.md`.
 
 ## 4. In flight (11-23 ~6:20 PM CT) — Christopher: "merge 479 480 481 482 when green"; after compaction: brief him on ETAs for everything on the plan
-- **Merge chain (background shell, survives compaction):** #480 MERGED, #481 MERGED, #482 waiting on CI then auto-merge
-  (`gh pr view 482 -R secureprospective/TheWarRoom --json state`). If not merged, `gh pr checks 482` and merge when green.
-- **#479 line limit (his OK given) — do LAST, by hand:** its baseline predates #480/#481/#482, so main would fail the
-  budget. In `.worktrees/line-budget-ci`: `git merge origin/main` (no rebase: force-push is blocked), run
-  `scripts/check-line-budget.sh --write`, commit, push, wait CI green, `gh pr merge 479 --squash`. Check main CI after.
+- **Merges (11-23 ~6:30 PM):** #480, #481, #482 MERGED. #479 refreshed (merged origin/main, `--write`, reason file
+  `docs/architecture/line-budget-reasons/session-line-budget-ci.md`, 2b22a01e0) and a background shell merges it when CI is
+  green. Check: `gh pr view 479 -R secureprospective/TheWarRoom --json state`. If CI failed: `gh pr checks 479`.
+  After: main CI green? Remove worktrees line-budget-ci, loadtest-warm; `golangci-lint cache clean`.
 - **Gemini lanes (agy-run.sh, started ~6:05 PM; done = `<run>/exit`):**
   - `~/fleet/runs/twr-nativegen-off-desktop-1123/` (Neon High, worktree `.worktrees/nativegen-off-desktop`): command-table
-    generator off `internal/composition` (first step of desktop removal). Review diff + `go run ./frontend/scripts/nativegen -check`.
+    generator off `internal/composition`. DONE as DRAFT (3cbd4256b pushed, no PR): deps clean, `-check` byte-identical,
+    3 tests fail because 11 MFL helper commands (`mfl.pool.*`, `mfl.bid.*`, `mfl.lineup.set`, `mfl.trade.accept`, wire
+    structs in internal/app/offers) and ~150 desktop window bindings exist only in the desktop. Order for T710: plain-word
+    spec for the small MFL helper rebuild -> rebuild -> delete desktop (Argon review). Branch is older than #481; merge main.
   - `~/fleet/runs/twr-season-box-live-1123/` (Neon Medium, worktree `.worktrees/season-box-live`, based on old
     session/season-box-binary = #480): live-frame replay seam in the binary season box. Its branch must merge origin/main.
   - Alive: `pgrep -af agy`; output `out.log`, `report.md`/`REPORT.md`. Lanes push branches; Tom opens PRs (merge = his OK).
