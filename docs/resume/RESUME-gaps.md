@@ -1,4 +1,6 @@
 # Resume — closing the 11-22 grill gaps (Tom, Beelink head brain) — OPEN
+> **11-24 ~4:15 PM: read `docs/from-tom/2026-11-24-gaps-handoff.md` first.** It replaces §5, §10 and §11 below
+> (state, next actions, needs-Christopher) and adds the Luna lessons. Sections 3, 6, 7, 8 and 12 still stand.
 Updated 2026-11-24 ~7:45 AM CT. Gap list: `docs/reset/GAPS-1124.md` (same branch). Run folder (create on first dispatch): `~/fleet/runs/gaps-1124/`.
 
 ## 1. What we are doing
