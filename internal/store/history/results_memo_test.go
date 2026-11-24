@@ -113,7 +113,8 @@ func TestReadingBurstAfterAWriteComputesOnce(t *testing.T) {
 	if got := fmt.Sprint(resultsAfter-resultsBefore, standingsAfter-standingsBefore); got != "1 1" {
 		t.Fatalf("burst of %d readers computed results, standings %s times, want 1 1", readers, got)
 	}
-	if &outs[0].Scores[0] == &outs[1].Scores[0] || reflect.DeepEqual(outs[0].Scores, first.Scores) {
-		t.Fatal("burst readers share one copy or read the old scores")
+	// A kept results reading is frozen and shared read-only; it must still carry the new scores.
+	if !outs[0].Frozen() || !outs[1].Frozen() || reflect.DeepEqual(outs[0].Scores, first.Scores) {
+		t.Fatal("burst readers were not given the frozen reading or read the old scores")
 	}
 }

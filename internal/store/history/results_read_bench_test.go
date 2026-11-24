@@ -1,6 +1,7 @@
 package history
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -48,4 +49,47 @@ func TestResultsReadCost(t *testing.T) {
 		}
 	})
 	t.Logf("results.read burst of 20 after a write: %s per burst", burst.String())
+}
+
+// TestResultsStandingsReadCost serves results.read and standings.read the way hosted phones poll between
+// score changes: 16 readers per CPU, the memo warm, each answer encoded to JSON as workflowJSON does. Opt-in: TWR_BENCH=1; run
+// with GOMAXPROCS=2 to match the Lab.
+func TestResultsStandingsReadCost(t *testing.T) {
+	if os.Getenv("TWR_BENCH") == "" {
+		t.Skip("set TWR_BENCH=1 to measure")
+	}
+	f := scoreCacheLeague(t, true)
+	hosted := commissioner.WithCredentialAdmission(t.Context(), nil)
+	reads := map[string]func() (any, error){
+		"results.read":   func() (any, error) { return f.s.NativeResults(hosted, bracketLeague, 2026, 1) },
+		"standings.read": func() (any, error) { return f.s.NativeStandings(hosted, bracketLeague, 2026) },
+	}
+	for name, read := range reads {
+		r := testing.Benchmark(func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetParallelism(16)
+			b.RunParallel(func(pb *testing.PB) {
+				for pb.Next() {
+					out, err := read()
+					if err != nil {
+						b.Error(err)
+						return
+					}
+					if _, err := encodeLikeWorkflow(out); err != nil {
+						b.Error(err)
+						return
+					}
+				}
+			})
+		})
+		t.Logf("%s parallel: %s %s", name, r.String(), r.MemString())
+	}
+}
+
+// encodeLikeWorkflow encodes an answer the way commandcatalog's workflowJSON does.
+func encodeLikeWorkflow(v any) ([]byte, error) {
+	if encoded, ok := v.(interface{ EncodedJSON() ([]byte, error) }); ok {
+		return encoded.EncodedJSON()
+	}
+	return json.Marshal(v)
 }
