@@ -60,6 +60,8 @@ type NativeResults struct {
 	// Missed lists the franchises with no lineup this week, flagged to the commissioner when the league
 	// flags them. Nothing is taken from them.
 	Missed []MissedLineup `json:"missed"`
+	// frozen holds the week's games, scores and missed lineups already encoded (Freeze); nil encodes afresh.
+	frozen *frozenResults
 }
 
 // MissedLineup is a franchise that set no lineup for a week.

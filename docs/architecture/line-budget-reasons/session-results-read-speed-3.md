@@ -1,0 +1,1 @@
+results.read on a game-day burst: a kept week is encoded once (Freeze) and shared read-only instead of deep-copied and re-encoded per phone; 14.5x faster at GOMAXPROCS=2. Growth is the frozen encoder, its same-answer tests and the read-cost benchmark.
