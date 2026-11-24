@@ -16,7 +16,7 @@ type MflRosterPlayer struct {
 	Name            string       `json:"name"`
 	Position        string       `json:"position"`
 	Team            string       `json:"team"`
-	Salary          domain.Money `json:"salary"`
+	Salary          domain.Money `json:"salaryCents"`
 	ContractThrough int          `json:"contractThrough"`
 	Status          string       `json:"status"` // active, IR or taxi
 }

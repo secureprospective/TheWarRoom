@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
@@ -28,11 +29,11 @@ import (
 var planMu sync.Mutex //nolint:gochecknoglobals // one lock orders plan changes across every copy of the fetcher
 
 type bidBody struct {
-	Add    string   `json:"add"`
-	Amount float64  `json:"amount"`
-	Years  int      `json:"years"`
-	Drop   []string `json:"drop"`
-	Snipe  bool     `json:"snipe"`
+	Add         string       `json:"add"`
+	AmountCents domain.Money `json:"amountCents"`
+	Years       int          `json:"years"`
+	Drop        []string     `json:"drop"`
+	Snipe       bool         `json:"snipe"`
 }
 
 type lineupBody struct {
@@ -115,10 +116,10 @@ func (v view) saveBid(ctx context.Context, store *moves.Store, body json.RawMess
 		return mflmirror.Plan{}, mflRefused("a bid plan holds one conditional drop")
 	}
 	player, err := playerid.New(b.Add)
-	if err != nil || b.Amount <= 0 || b.Years < 0 || b.Years > bid.MaxYears {
+	if err != nil || b.AmountCents <= 0 || b.Years < 0 || b.Years > bid.MaxYears {
 		return mflmirror.Plan{}, mflRefused(fmt.Sprintf("choose the player, one annual salary above $0 and 1 to %d years", bid.MaxYears))
 	}
-	check := v.bidCheck(mflmirror.BidInput{Add: b.Add, Amount: b.Amount, Years: b.Years, Drop: b.Drop})
+	check := v.bidCheck(mflmirror.BidInput{Add: b.Add, AmountCents: b.AmountCents, Years: b.Years, Drop: b.Drop})
 	if !check.OK {
 		return mflmirror.Plan{}, mflRefused(fmt.Sprintf("this bid has problems, so it was not saved: %s", strings.Join(check.Problems, " ")))
 	}

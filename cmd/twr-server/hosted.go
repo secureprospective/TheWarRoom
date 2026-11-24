@@ -40,6 +40,7 @@ type hostedFlags struct {
 	publicHost         *string
 	status             *string
 	official           *bool
+	scheduleRefresh    *bool
 	sleeperProjections *bool
 }
 
@@ -60,6 +61,7 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 	publicHost := flags.String("public-host", "", "configured public DNS hostname for the browser app; empty disables it")
 	status := flags.String("status-socket", "", "owner-only Unix socket for the console status dashboard; empty serves none")
 	official := flags.Bool("official-stats", false, "re-pin each league to nflverse's official statistics as its weeks finish")
+	scheduleRefresh := flags.Bool("nfl-schedule-refresh", false, "refresh published NFL schedules every 6 hours")
 	sleeperProjections := flags.Bool("sleeper-projections", false, "archive internal rehearsal Sleeper stat-line projections")
 	if err := flags.Parse(args); err != nil {
 		return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
@@ -69,7 +71,7 @@ func parseHostedFlags(args []string) (hostedFlags, error) {
 			return hostedFlags{}, fmt.Errorf("parse hosted flags: %w", err)
 		}
 	}
-	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, publicHost: publicHost, status: status, official: official, sleeperProjections: sleeperProjections}, nil
+	return hostedFlags{flags: flags, path: path, address: address, cert: cert, key: key, totpKey: totpKey, registry: registry, football: football, backup: backup, trusted: trusted, publicHost: publicHost, status: status, official: official, scheduleRefresh: scheduleRefresh, sleeperProjections: sleeperProjections}, nil
 }
 
 func runHosted(ctx context.Context, args []string, output io.Writer) error {
@@ -126,7 +128,7 @@ func startHosted(ctx context.Context, args []string, output io.Writer) error {
 	if pins, ok := handler.Leagues.(*leaguePins); ok {
 		defer startHostedScores(ctx, pins, files, config, handler)()
 	}
-	defer startHostedBackground(ctx, files, handler.Worker, handler.News)()
+	defer startHostedBackground(ctx, files, handler.Worker, handler.News, scheduleRefreshPins(handler.Leagues, *config.scheduleRefresh), *config.scheduleRefresh)()
 
 	return serveHosted(ctx, *config.address, certificate, handler, output)
 }
@@ -495,10 +497,35 @@ func recoverPlayers(ctx context.Context, files stateFiles, output io.Writer) err
 // archive purge) and returns one stop that ends them in reverse start order.
 func startHostedBackground(
 	ctx context.Context, files stateFiles, worker *leagueservice.DueWorker, news *leagueservice.NewsService,
+	pins *leaguePins, refreshSchedule bool,
 ) func() {
 	stopInjuries := startHostedInjuryRefresh(ctx, files.leagues.family.Over(files.reference))
+	stopSchedule := func() {}
+	if refreshSchedule && pins != nil {
+		stopSchedule = startHostedNFLScheduleRefresh(ctx, pins, signInStore(files), files.leagues.family.Over(files.reference))
+	}
 	stopNews := news.StartLeagueRefresh(ctx)
 	stopDue := startHostedDueWorker(ctx, worker)
 	stopPurge := startArchivePurge(ctx, files.leagues.root, time.Now, func(line string) { log.Print(line) })
-	return func() { stopPurge(); stopDue(); stopNews(); news.Close(); stopInjuries() }
+	return func() {
+		stopPurge()
+		stopDue()
+		stopNews()
+		news.Close()
+		stopSchedule()
+		stopInjuries()
+	}
+}
+
+// scheduleRefreshPins is the pins the NFL schedule timer re-pins, or nil (timer off) when the flag is off or
+// the server's leagues are not served by leaguePins.
+func scheduleRefreshPins(leagues any, enabled bool) *leaguePins {
+	pins, ok := leagues.(*leaguePins)
+	if !enabled || !ok {
+		if enabled {
+			log.Print("hosted NFL schedule: leagues are not pinned by this server; timer off")
+		}
+		return nil
+	}
+	return pins
 }

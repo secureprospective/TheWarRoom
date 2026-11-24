@@ -74,6 +74,8 @@ type mflMovesFixture struct {
 	clock    *time.Time
 	admitted *commissioner.Access
 	league   string
+	store    *history.Store
+	mirror   *mflmirror.Store
 }
 
 type mflMovesDirectory map[string]domain.PlayerFacts
@@ -121,7 +123,7 @@ func newMflMovesFixtureFor(t *testing.T, principal, mflLeague string) mflMovesFi
 		admitted = access
 		return nil
 	}))
-	return mflMovesFixture{service: service, mfl: fake, clock: &now, admitted: &admitted, league: fixture.league}
+	return mflMovesFixture{service: service, mfl: fake, clock: &now, admitted: &admitted, league: fixture.league, store: fixture.store, mirror: mirror}
 }
 
 func TestMflMovesSeatedOwnerRefreshesAndReadsPool(t *testing.T) {
@@ -286,7 +288,7 @@ func TestMflChecksAuthorizeBeforeCheckingHostCapability(t *testing.T) {
 		!strings.Contains(err.Error(), "seated franchise owner") {
 		t.Fatalf("plans.read without fetcher leaked capability before auth: %v", err)
 	}
-	if _, err := svc.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000}); err == nil ||
+	if _, err := svc.MflMovesBidCheckContext(t.Context(), RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 100_000_000}); err == nil ||
 		!strings.Contains(err.Error(), "seated franchise owner") {
 		t.Fatalf("bid.check without fetcher leaked capability before auth: %v", err)
 	}
