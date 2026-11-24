@@ -11,6 +11,7 @@ import (
 	"net/netip"
 	"os"
 	"path/filepath"
+	"syscall"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -77,13 +78,11 @@ func runHosted(ctx context.Context, args []string, output io.Writer) error {
 }
 
 func startHosted(ctx context.Context, args []string, output io.Writer) error {
-	config, err := parseHostedFlags(args)
+	config, lock, err := parseAndLockHosted(args)
 	if err != nil {
 		return err
 	}
-	if err := checkHostedDatabase(*config.path, config.flags.NArg()); err != nil {
-		return err
-	}
+	defer func() { _ = lock.Close() }()
 	encryptionKey, catalogue, certificate, err := hostedFiles(*config.totpKey, *config.registry, *config.cert, *config.key)
 	if err != nil {
 		return err
@@ -144,6 +143,35 @@ func startHostedScores(ctx context.Context, pins *leaguePins, files stateFiles, 
 	}
 	stopOfficial := startOfficialStats(ctx, pins, signInStore(files))
 	return func() { stopOfficial(); stopSleeper(); stopWarm(); stopLive() }
+}
+
+// parseAndLockHosted reads the hosted flags and takes the database lock before anything else is opened.
+func parseAndLockHosted(args []string) (hostedFlags, *os.File, error) {
+	config, err := parseHostedFlags(args)
+	if err != nil {
+		return hostedFlags{}, nil, err
+	}
+	lock, err := lockHostedDatabase(*config.path, config.flags.NArg())
+	return config, lock, err
+}
+
+// lockHostedDatabase holds <db>.lock for as long as this hosted server runs, so a second server copy on the
+// same database refuses to start instead of keeping its own drifting picture of every league. The lock is
+// taken before the database is checked or opened, and the operating system drops it when the process exits.
+func lockHostedDatabase(path string, extraArgs int) (*os.File, error) {
+	lock, err := os.OpenFile(path+".lock", os.O_CREATE|os.O_RDWR, 0o600)
+	if err != nil {
+		return nil, fmt.Errorf("open the server lock next to %s: %w", path, err)
+	}
+	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
+		_ = lock.Close()
+		return nil, fmt.Errorf("another twr-server is already using %s; stop it first", path)
+	}
+	if err := checkHostedDatabase(path, extraArgs); err != nil {
+		_ = lock.Close()
+		return nil, err
+	}
+	return lock, nil
 }
 
 func checkHostedDatabase(path string, extraArgs int) error {
