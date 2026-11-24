@@ -10,6 +10,49 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
+// benchDirectoryPlayers is how many synthetic players each carry a gsis and a pfr link in the
+// benchmark fixture: 110,000 outside ids, matching the ~125k directory DynastyProcess loads on the Lab.
+const benchDirectoryPlayers = 55000
+
+// benchScoreCacheLeague is scoreCacheLeague with a realistic player directory so benchmarks see
+// the real cost of reading outside ids.
+func benchScoreCacheLeague(t *testing.T) *bracketFixture {
+	t.Helper()
+	f := scoreCacheLeague(t, true)
+	seedBenchDirectory(t, f.s, benchDirectoryPlayers)
+	return f
+}
+
+func seedBenchDirectory(t *testing.T, s *Store, players int) {
+	t.Helper()
+	ctx := t.Context()
+	tx, err := s.pools.ReferencePools().BeginWrite(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	const seedSQL = `
+WITH RECURSIVE seq(n) AS (
+	SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < ?
+)
+INSERT INTO canonical_player(id) SELECT printf('player.%032d', n) FROM seq;
+WITH RECURSIVE seq(n) AS (
+	SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < ?
+)
+INSERT INTO player_external_id(provider, value, player)
+SELECT 'mfl', printf('%06d', 200000 + n), printf('player.%032d', n) FROM seq
+UNION ALL
+SELECT 'gsis', printf('00-%07d', 200000 + n), printf('player.%032d', n) FROM seq
+UNION ALL
+SELECT 'pfr', printf('Bench%05d', n), printf('player.%032d', n) FROM seq;`
+	if _, err := tx.ExecContext(ctx, seedSQL, players, players); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+}
+
 // TestResultsReadCost measures results reads on a 32-team league with the score cache on: one phone
 // polling (sequential) and the burst after a score change, when 20 phones re-read the same week at once.
 // Opt-in: TWR_BENCH=1.
@@ -17,7 +60,7 @@ func TestResultsReadCost(t *testing.T) {
 	if os.Getenv("TWR_BENCH") == "" {
 		t.Skip("set TWR_BENCH=1 to measure")
 	}
-	f := scoreCacheLeague(t, true)
+	f := benchScoreCacheLeague(t)
 	ctx := t.Context()
 	first := readResults(t, f)
 	seq := testing.Benchmark(func(b *testing.B) {
@@ -58,19 +101,38 @@ func TestResultsStandingsReadCost(t *testing.T) {
 	if os.Getenv("TWR_BENCH") == "" {
 		t.Skip("set TWR_BENCH=1 to measure")
 	}
-	f := scoreCacheLeague(t, true)
+	f := benchScoreCacheLeague(t)
 	hosted := commissioner.WithCredentialAdmission(t.Context(), nil)
-	reads := map[string]func() (any, error){
-		"results.read":   func() (any, error) { return f.s.NativeResults(hosted, bracketLeague, 2026, 1) },
-		"standings.read": func() (any, error) { return f.s.NativeStandings(hosted, bracketLeague, 2026) },
+	reads := []struct {
+		name string
+		read func() (any, error)
+	}{
+		{"results.read", func() (any, error) { return f.s.NativeResults(hosted, bracketLeague, 2026, 1) }},
+		{"standings.read", func() (any, error) { return f.s.NativeStandings(hosted, bracketLeague, 2026) }},
 	}
-	for name, read := range reads {
-		r := testing.Benchmark(func(b *testing.B) {
+	for _, item := range reads {
+		if _, err := item.read(); err != nil {
+			t.Fatal(err)
+		}
+		seq := testing.Benchmark(func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				out, err := item.read()
+				if err != nil {
+					b.Fatal(err)
+				}
+				if _, err := encodeLikeWorkflow(out); err != nil {
+					b.Fatal(err)
+				}
+			}
+		})
+		t.Logf("%s sequential: %s %s", item.name, seq.String(), seq.MemString())
+		par := testing.Benchmark(func(b *testing.B) {
 			b.ReportAllocs()
 			b.SetParallelism(16)
 			b.RunParallel(func(pb *testing.PB) {
 				for pb.Next() {
-					out, err := read()
+					out, err := item.read()
 					if err != nil {
 						b.Error(err)
 						return
@@ -82,7 +144,7 @@ func TestResultsStandingsReadCost(t *testing.T) {
 				}
 			})
 		})
-		t.Logf("%s parallel: %s %s", name, r.String(), r.MemString())
+		t.Logf("%s parallel: %s %s", item.name, par.String(), par.MemString())
 	}
 }
 
