@@ -26,6 +26,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 	"github.com/secureprospective/TheWarRoom/internal/measures"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -60,6 +61,7 @@ type hostedFixture struct {
 	join         *accounts.JoinService
 	backupCalls  atomic.Int64
 	backupBusy   atomic.Bool
+	mfl          mflmirror.Source
 }
 
 func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
@@ -180,12 +182,15 @@ func newHostedFixtureWithNFLInjuryFeed(t *testing.T, injuryFeed leagueservice.NF
 		}
 		store.SetPinnedFootball(handler.Football)
 		entries := personal.NewLeague(pools)
-		pinned, bare := serverhttp.LeaguePin{Store: store, Personal: entries, Football: handler.Football, Digest: digest}, store.Sibling()
+		mirror := mflmirror.NewStore(pools, func() time.Time { return time.Now().Add(time.Duration(f.skew.Load())) })
+		pinned, bare := serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, Football: handler.Football, Digest: digest}, store.Sibling()
 		handler.Pins = func(context.Context, string) serverhttp.LeaguePin {
 			if f.footballGone.Load() {
-				return serverhttp.LeaguePin{Store: bare, Personal: entries, Digest: digest, Missing: true}
+				return serverhttp.LeaguePin{Store: bare, Personal: entries, Mirror: mirror, MFL: f.mfl, Digest: digest, Missing: true}
 			}
-			return pinned
+			p := pinned
+			p.MFL = f.mfl
+			return p
 		}
 		handler.Worker = leagueservice.NewDueWorker(history.NewOneFile(store), handler.Football.PlayerFacts, workflowClock{f.skew})
 	}

@@ -18,6 +18,8 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror/mflread"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/internal/serverstatus"
 	accountstore "github.com/secureprospective/TheWarRoom/internal/store/accounts"
@@ -104,21 +106,23 @@ func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.S
 		return serverhttp.LeaguePin{Err: errNoLeague}
 	}
 	entries := personal.NewLeague(pools)
+	mirror := mflmirror.NewStore(pools, nil)
+	mfl := mflread.Fetcher{}
 	store := base.Sibling()
 	store.SetLiveOverlay(p.live)
 	if digest == "" {
-		return serverhttp.LeaguePin{Store: store, Personal: entries}
+		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl}
 	}
 	evidence, err := store.LoadFootball(ctx, digest)
 	if errors.Is(err, history.ErrNoBody) {
 		p.tried[digest] = p.now()
-		return serverhttp.LeaguePin{Store: store, Personal: entries, Digest: digest, Missing: true}
+		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Digest: digest, Missing: true}
 	}
 	if err != nil {
 		return serverhttp.LeaguePin{Err: err}
 	}
 	store.SetPinnedFootball(evidence)
-	return serverhttp.LeaguePin{Store: store, Personal: entries, Football: evidence, Digest: digest}
+	return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Football: evidence, Digest: digest}
 }
 
 // pin is league's store and football; Err says the server does not hold league.

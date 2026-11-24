@@ -7,6 +7,7 @@ import (
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/leagueweek"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
 	"github.com/secureprospective/TheWarRoom/internal/store/personal"
@@ -20,6 +21,9 @@ type StoredHost struct {
 	Principal string
 	Registry  string
 	Personal  *personal.Store
+	// Mirror holds the league's read-only copy of MFL's public data; Fetcher says how MFL is reached.
+	Mirror  *mflmirror.Store
+	Fetcher mflmirror.Source
 }
 
 func (h StoredHost) Ready() error {
@@ -41,6 +45,8 @@ func (StoredHost) CommissionerZone() *time.Location                   { return t
 func (h StoredHost) CommissionerPreviewRegistry() string              { return h.Registry }
 func (StoredHost) NativeFacts() nativecheck.Facts                     { return nil }
 func (h StoredHost) PrivateEntries() *personal.Store                  { return h.Personal }
+func (h StoredHost) MFLMirror() *mflmirror.Store                      { return h.Mirror }
+func (h StoredHost) MFLFetcher() mflmirror.Source                     { return h.Fetcher }
 
 // CommissionerRecords serves the store's revision-keyed shared snapshot, which carries the replay and
 // people-state memos; rebuilding records from a deep-cloned event list on every request defeated both and

@@ -29,6 +29,15 @@ func (s *Store) Initialize(ctx context.Context) error {
 	return nil
 }
 
+// EnsureTables creates only the move tables if missing, leaving a hosted league database's schema
+// version untouched.
+func (s *Store) EnsureTables(ctx context.Context) error {
+	if err := s.pools.EnsureMoveTables(ctx); err != nil {
+		return fmt.Errorf("moves: ensure tables: %w", err)
+	}
+	return nil
+}
+
 // Get restores one envelope; a stored history the transition table rejects is an error.
 func (s *Store) Get(ctx context.Context, id string) (envelope.Envelope, error) {
 	tx, err := s.pools.Read().BeginTx(ctx, nil)

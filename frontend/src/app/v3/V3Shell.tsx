@@ -8,7 +8,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import type { ThinHomeEntry } from '../shell/ThinHome';
 import type { PulseTab } from '../shell/pulseReads';
-import type { HQTab } from '../shell/HQShell';
+import type { HostedHQTab } from '../shell/HQShell';
 import { HQAct } from '../shell/HQAct';
 import { hostedControlTabs, type HostedControlTab } from '../commissioner/hostedControlRoomData';
 import { TeamPick } from './HQLineupV3';
@@ -29,8 +29,8 @@ const WarRoomNative = lazy(() => import('../shell/WarRoomNative'));
 const ControlRoomV3 = lazy(() => import('./ControlRoomV3'));
 const WAR_TABS: [string, string][] = [['valuations-and-pool', 'Valuations and pool'],
   ['trade-desk', 'Trade desk'], ['draft-room', 'Draft room'], ['plans', 'Plans']];
-const HQ_TABS: [HQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
-  ['contracts-and-cap', 'Contracts and cap'], ['my-moves', 'My moves']];
+const HQ_TABS: [HostedHQTab, string][] = [['lineup-and-roster', 'Lineup and roster'],
+  ['contracts-and-cap', 'Contracts and cap'], ['my-moves', 'My moves'], ['mfl-moves', 'My MFL moves']];
 
 export type V3ShellProps = { leagues: LeagueChoice[]; active?: { league: LeagueChoice; entry: ThinHomeEntry };
   onOpen: (league: LeagueChoice, entry: ThinHomeEntry) => void; onHome: () => void; onSignOut: () => void;
@@ -69,7 +69,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
     [needs, leagues, briefs, now]);
   const [selected, setSelected] = useState<string>();
   const [pulseTab, setPulseTab] = useState<PulseTab>('now');
-  const [hqTab, setHqTab] = useState<HQTab>('lineup-and-roster');
+  const [hqTab, setHqTab] = useState<HostedHQTab>('lineup-and-roster');
   const [warTab, setWarTab] = useState('valuations-and-pool');
   const [crTab, setCrTab] = useState<HostedControlTab>('jobs');
   const keep = (screen: ReactNode) => <div hidden={Boolean(panel)}
@@ -173,6 +173,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
           fallback={<div className="st"><div className="eng">Opening Franchise HQ…</div></div>}>
           <NativeFranchiseHQ key={`${L.id}:${hqTeam[L.id] || L.franchise || ''}`} league={L.id}
             mine={hqTeam[L.id] || L.franchise || ''} name={L.franchiseName ?? ''} port={port} embedded
+            mflMoves
             tab={hqTab} navigate={setHqTab} canManage={(hqTeam[L.id] || L.franchise) === L.franchise}
             leave={home} openGame={() => { setPulseTab('now'); open(L, 'pulse'); }}
             v3={{ badge: <Badge L={L} />, kind: roleWords(L).toUpperCase(), pickTeam: L.commish
@@ -250,7 +251,7 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
 type RailProps = { leagues: V3League[]; L: V3League | null; active?: V3ShellProps['active'];
   c: Parameters<typeof HomeBoard>[0]['c']; home: () => void; pick: (id?: string) => void;
   switcher: () => void; onHome: () => void; pulseTab: PulseTab; setPulseTab: (t: PulseTab) => void;
-  hqTab: HQTab; setHqTab: (t: HQTab) => void; warTab: string; setWarTab: (t: string) => void;
+  hqTab: HostedHQTab; setHqTab: (t: HostedHQTab) => void; warTab: string; setWarTab: (t: string) => void;
   crTab: HostedControlTab; setCrTab: (t: HostedControlTab) => void };
 
 function Rail({ leagues, L, active, c, home, pick, switcher, onHome, pulseTab, setPulseTab, hqTab,

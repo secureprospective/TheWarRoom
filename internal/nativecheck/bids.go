@@ -260,6 +260,12 @@ func (p BidPolicy) seasonRefusal(in BidProposal, f BidFacts, _ *BidVerdict) stri
 	return ""
 }
 
+// LimitRefusal is the length rule alone: the one year limit and the years a salary tier requires. It is
+// empty when the bid is within them.
+func (p BidPolicy) LimitRefusal(in BidProposal, f BidFacts) string {
+	return p.lengthRefusal(in, f, nil)
+}
+
 // lengthRefusal holds a bid to the one year limit and to the years its salary tier requires. In the
 // playoffs the league may lift both, because only short bids are left.
 func (p BidPolicy) lengthRefusal(in BidProposal, f BidFacts, _ *BidVerdict) string {

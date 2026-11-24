@@ -405,3 +405,26 @@ func (e Envelope) WithdrawRoster(at time.Time) (Envelope, error) {
 	}
 	return e.move(at, Withdraw, note)
 }
+
+// WithdrawLineup ends only the local lineup plan, never a lineup already saved on MFL.
+func (e Envelope) WithdrawLineup(at time.Time) (Envelope, error) {
+	if e.spec.Intent != "mfl.lineup.set" {
+		return Envelope{}, ErrIllegalTransition{From: e.state, Event: Withdraw}
+	}
+	return e.move(at, Withdraw, RemovePlanNote)
+}
+
+// ValidateMoveURL accepts only an HTTPS address on an MFL host, with no user info: the one kind of page a plan
+// may ask the owner's browser to open.
+func ValidateMoveURL(target string) error {
+	u, err := url.Parse(target)
+	if err != nil {
+		return fmt.Errorf("move URL: %w", err)
+	}
+	host := strings.ToLower(u.Hostname())
+	if u.Scheme != "https" || u.User != nil ||
+		(host != "myfantasyleague.com" && !strings.HasSuffix(host, ".myfantasyleague.com")) {
+		return fmt.Errorf("move URL: HTTPS MFL host without user info required")
+	}
+	return nil
+}

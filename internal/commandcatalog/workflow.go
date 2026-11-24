@@ -222,7 +222,7 @@ type workflowInput interface {
 		*commissioner.RawNativeCapScope | *leagueservice.RawLeagueCalendarScope |
 		*market.RawContractQuote | *market.RawWhatIfStack | *market.RawContractDecisionsScope | *leagueservice.RawDraftQueueScope |
 		*leagueservice.RawDraftQueueSet | *leagueservice.RawPlayerNotesScope | *leagueservice.RawPlayerNoteSet |
-		*leagueservice.RawPlayerWatchReadScope | *leagueservice.RawPlayerWatchSet | *leagueservice.RawPlayerWatchOrder |
+		*leagueservice.RawPlayerWatchReadScope | *leagueservice.RawPlayerWatchSet | *leagueservice.RawPlayerWatchOrder | *leagueservice.RawMflMovesScope | *leagueservice.RawMflTeamSet | *leagueservice.RawMflPoolScope | *leagueservice.RawMflBidCheck | *leagueservice.RawMflLineupCheck | *leagueservice.RawMflPlanSave | *leagueservice.RawMflPlanScope |
 		*leagueservice.RawTradeDraftScope | *leagueservice.RawTradeDraftSave | *leagueservice.RawTradeDraftDelete |
 		*leagueservice.RawBackupNow | *accounts.RawHomeLayoutRead | *accounts.RawHomeLayoutSet |
 		*commissioner.RawLeagueActivityScope | *commissioner.RawProblemReport | *commissioner.RawProblemReportsScope |
@@ -277,7 +277,7 @@ type workflowOutput interface {
 		leagueservice.NFLPlayerStatus |
 		leagueservice.PlayerNewsReading | leagueservice.NewsFeedReading | commissioner.NativeCapCheck |
 		market.ContractQuote | market.WhatIfStack | market.ContractDecisions | leagueservice.DraftQueue |
-		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange |
+		leagueservice.PlayerNotes | leagueservice.PlayerWatchList | leagueservice.PlayerPrivateChange | leagueservice.MflRefresh | leagueservice.MflTeams | leagueservice.MflPool | leagueservice.MflRoster | leagueservice.MflBidCheck | leagueservice.MflLineupCheck | leagueservice.MflPlan | leagueservice.MflPlans | leagueservice.MflPlanLink |
 		leagueservice.TradeDraftList | leagueservice.SavedTradeDraft | leagueservice.TradeDraftDeleted |
 		leagueservice.BackupResult | accounts.HomeLayoutState | commissioner.LeagueActivity |
 		commissioner.ProblemReportReceipt | commissioner.ProblemReportsReading |

@@ -40,6 +40,9 @@ type hostState struct {
 // (the largest fixture in testdata is 167 KB); a body past this is refused, not truncated.
 const maxBodyBytes = 32 << 20
 
+// MaxBodyBytes is maxBodyBytes for transports that read MFL replies outside the client.
+const MaxBodyBytes = maxBodyBytes
+
 // ErrDisallowedHost refuses a request or redirect to anything but https on MFL's own hosts, so
 // a discovered base URL or a redirect cannot send a request (or the API key) elsewhere.
 var ErrDisallowedHost = errors.New("mfl: refusing a host outside myfantasyleague.com")

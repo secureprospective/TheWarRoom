@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
@@ -161,6 +162,40 @@ func TestStartingRuleSourcesArePlainWords(t *testing.T) {
 	}
 	if rolloverWords != "The next rollover has no date yet; the commissioner sets it." {
 		t.Fatal("rollover wording must not depend on implementation status")
+	}
+}
+
+func TestMflLeagueRuleOwnedByLeagueSettingsNotReserveException(t *testing.T) {
+	owner, err := ownerFor("mfl.league")
+	if err != nil || owner.control != "CM-017" || owner.gravity != "G1" {
+		t.Fatalf("mfl.league owner = %+v, %v", owner, err)
+	}
+	catalogue, err := ReadPreviewCatalogue("id,name,gm_question,governs\n" +
+		"M-028,IR placement,IR?,\nM-029,Taxi placement,Taxi?,\nM-030,Rosters,Rosters?,\n" +
+		"M-097,League Rules,Rules?,\nM-185,By-Laws,By-Laws?,\n" +
+		"CM-017,House rules,What else does the league rule that the settings don't cover?,M-097 M-185\n" +
+		"CM-038,Reserve placement exception,Should this player go on IR or taxi despite failing the rule?,M-028 M-029 M-030\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	create, err := RawCommand{League: "native.test", Command: Create, Args: RawArgs{Name: "Ours",
+		Preset: PresetEmpty, Season: 2026, FranchiseCount: 2}, Reason: "start", Request: "create",
+		Effective: "now", Visibility: "league"}.Prepared()
+	if err != nil {
+		t.Fatal(err)
+	}
+	records := []Record{{Command: create, Receipt: Receipt{Entry: "e1", Revision: 1, RecordedAt: time.Now().UTC()}}}
+	preview, err := RulePreview(ruleRaw("mfl.league", `"14432"`, "now", "Follow MFL league"), records, catalogue, time.Now().UTC())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.ToLower(preview.Question), "ir or taxi") {
+		t.Fatalf("mfl.league preview asked IR/taxi question: %q", preview.Question)
+	}
+	for _, r := range preview.Affects.Readings {
+		if strings.Contains(r, "IR") || strings.Contains(r, "Taxi") {
+			t.Fatalf("mfl.league preview claimed IR/Taxi affected: %v", preview.Affects.Readings)
+		}
 	}
 }
 

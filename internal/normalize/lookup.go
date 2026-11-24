@@ -6,6 +6,7 @@
 package normalize
 
 import (
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -33,6 +34,15 @@ type Lookup struct {
 func (l Lookup) entry(id playerid.PlayerID) (lookupEntry, bool) {
 	e, ok := l.byID[id.String()]
 	return e, ok
+}
+
+// NewLookupJSON builds the index from a held copy of the raw players feed stored as JSON.
+func NewLookupJSON(body []byte) (Lookup, error) {
+	var raws []players.RawPlayer
+	if err := json.Unmarshal(body, &raws); err != nil {
+		return Lookup{}, fmt.Errorf("normalize: read held player directory: %w", err)
+	}
+	return NewLookup(raws)
 }
 
 // NewLookup builds the index from the raw players feed, canonicalizing ids and classifying

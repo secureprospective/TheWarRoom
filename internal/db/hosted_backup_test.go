@@ -128,3 +128,30 @@ func TestHostedSnapshotKeepsConfigAndDatabaseBehindSameBarrier(t *testing.T) {
 		t.Fatalf("snapshot torn: %s %v", value, err)
 	}
 }
+
+// Once the move tables exist, EnsureMoveTables answers from a read connection and never
+// queues for a busy writer.
+func TestEnsureMoveTablesSkipsWriterOnceCreated(t *testing.T) {
+	ctx := context.Background()
+	pools, err := OpenScratch(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = pools.Close() })
+	if ok, err := pools.TablesExist(ctx, "move_envelopes"); err != nil || ok {
+		t.Fatalf("fresh scratch: ok=%v err=%v, want no move tables yet", ok, err)
+	}
+	if err := pools.EnsureMoveTables(ctx); err != nil {
+		t.Fatal(err)
+	}
+	busy, err := pools.Write().BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = busy.Rollback() })
+	short, cancel := context.WithTimeout(ctx, 300*time.Millisecond)
+	defer cancel()
+	if err := pools.EnsureMoveTables(short); err != nil {
+		t.Fatalf("ensure waited on the busy writer: %v", err)
+	}
+}

@@ -20,6 +20,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
+	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp/landing"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 	"github.com/secureprospective/TheWarRoom/internal/store/history"
@@ -305,7 +306,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: r.Context, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal, Mirror: pin.Mirror, Fetcher: pin.MFL}
 	gate := accountAdmission{host: host, accounts: h.Sessions, sessions: h.Sessions.Admission(rawSession), totp: h.TOTP, proof: accounts.RecentAuth{Token: r.Header.Get("X-TWR-Recent-Auth")}}
 	if r.URL.Path == ConfirmPath {
 		h.confirm(w, r, gate, raw)
@@ -438,6 +439,8 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 type LeaguePin struct {
 	Store    *history.Store
 	Personal *personal.Store
+	Mirror   *mflmirror.Store
+	MFL      mflmirror.Source
 	Football *history.PinnedFootball
 	Digest   string
 	Missing  bool
@@ -770,13 +773,25 @@ func ServeHosted(ctx context.Context, listener net.Listener, certificate tls.Cer
 }
 
 func privateOwnerPersonalOperation(operation string) bool {
-	if privateTradeDraftOperation(operation) {
+	if privateTradeDraftOperation(operation) || privateMflMovesOperation(operation) {
 		return true
 	}
 	switch operation {
 	case leagueservice.PlayerNoteRead, leagueservice.PlayerNoteSet, leagueservice.PlayerWatchRead,
 		leagueservice.PlayerWatchSet, leagueservice.PlayerWatchOrder, leagueservice.WhatIfStackRead,
 		leagueservice.ContractDecisionsRead, "draft.queue.read", "draft.queue.set":
+		return true
+	default:
+		return false
+	}
+}
+
+func privateMflMovesOperation(operation string) bool {
+	switch operation {
+	case leagueservice.MflMovesRefresh, leagueservice.MflMovesTeamsRead, leagueservice.MflMovesTeamSet,
+		leagueservice.MflMovesRosterRead, leagueservice.MflMovesPoolRead, leagueservice.MflMovesBidCheck,
+		leagueservice.MflMovesLineupCheck, leagueservice.MflMovesPlanSave, leagueservice.MflMovesPlansRead,
+		leagueservice.MflMovesPlanLink, leagueservice.MflMovesPlanDone, leagueservice.MflMovesPlanWithdraw:
 		return true
 	default:
 		return false

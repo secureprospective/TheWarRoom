@@ -31,6 +31,21 @@ func TestProblemReportsCannotBeDelegatedToAgents(t *testing.T) {
 	}
 }
 
+func TestMflMovesCommandsAreDelegable(t *testing.T) {
+	for _, command := range []string{
+		"mflmoves.refresh", "mflmoves.teams.read", "mflmoves.team.set", "mflmoves.roster.read",
+		"mflmoves.pool.read", "mflmoves.bid.check", "mflmoves.lineup.check", "mflmoves.plan.save",
+		"mflmoves.plans.read", "mflmoves.plan.link", "mflmoves.plan.done", "mflmoves.plan.withdraw",
+	} {
+		if !accounts.DelegableCommand(command) {
+			t.Errorf("mflmoves command %s should be delegable", command)
+		}
+	}
+	if accounts.DelegableCommand("mflmoves.unknown") {
+		t.Error("unknown mflmoves command should not be delegable")
+	}
+}
+
 func (p *tokenPolicy) CheckTokenScope(_ context.Context, account accounts.Account, scope accounts.RawTokenScope) error {
 	principal, err := account.Principal()
 	if err != nil || principal != p.principal || scope.League != "native.tokens" || scope.Franchise != "franchise.01" {

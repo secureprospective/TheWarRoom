@@ -162,7 +162,7 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 		http.Error(w, "league access unavailable", http.StatusForbidden)
 		return
 	}
-	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal}
+	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal, Mirror: pin.Mirror, Fetcher: pin.MFL}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
 	pinned, err := h.workflowHost(ctx, host, raw)
 	if err != nil {

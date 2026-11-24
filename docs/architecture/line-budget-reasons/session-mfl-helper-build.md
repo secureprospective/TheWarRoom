@@ -1,0 +1,5 @@
+MFL helper lane A (mflmoves.refresh and mflmoves.pool.read): a new thin internal/mflmirror package, two owner-private commands and their generated client rows. Growth is the feature itself; it adds no per-league-type code.
+MFL helper lane B1 (owner picks the MFL league via the mfl.league rule and their team via mflmoves.team.set; pool values from the held model run): one more rule, two owner-private commands, a franchise-list hold and a model-score read. Growth is the feature itself; no per-league-type code.
+Lane B2 (bid/lineup checks, plans): new hosted check and plan engine, tests and goldens, generated command tables; budget raised to carry them.
+Fix pass F (hosted end to end): wrapper forwarding, admission and delegation for mflmoves.*, plain-word refusals, one TYPE=league fetch per refresh, plus the end-to-end test through the real Hosted handler. Growth is the fix and its test; no per-league-type code.
+Lane H (panel fixes from the live Lab recheck): what each plan is, roster re-read on refresh, one-drop bids, sort words, cap room in the bid check, and their tests.

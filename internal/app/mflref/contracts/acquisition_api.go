@@ -12,6 +12,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/mflref/envelope"
+	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
 	"github.com/secureprospective/TheWarRoom/internal/snapshot"
 	"github.com/secureprospective/TheWarRoom/internal/store/state"
@@ -260,16 +261,8 @@ func acquisitionLimits(out *AcquisitionView, s mflwhatif.WhatIfSession, before, 
 	out.Team = append(out.Team, Figure("Cap used this season", before, after))
 	if s.Cap != nil {
 		out.Team = append(out.Team, Figure("Cap room this season", *s.Cap-before, *s.Cap-after))
-		if after > *s.Cap {
-			out.Reasons = append(out.Reasons, "The add does not fit the salary cap; choose a cut and inspect its dead cap.")
-		}
 	}
-	if active > 48 {
-		out.Reasons = append(out.Reasons, "The add needs a cut to fit 48 active roster spots.")
-	}
-	if active < 35 {
-		out.Reasons = append(out.Reasons, "The roster is below the 35-player in-season minimum.")
-	}
+	out.Reasons = append(out.Reasons, nativecheck.AcquisitionReasons(s.Cap, after, active, nativecheck.InSeasonBounds())...)
 }
 
 func acquisitionCut(ctx context.Context, r RawAcquisition, current, store *state.Store, incomingID string, out *AcquisitionView) error {

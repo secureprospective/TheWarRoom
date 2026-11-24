@@ -1,0 +1,12 @@
+{
+  "note": "Shared by the desktop acquisition preview (contracts) and the hosted bid check (mflmoves.bid.check): same cap used after, same active count, same words.",
+  "cap": 1000000000,
+  "cases": [
+    {"name": "over the cap", "players": 40, "amount": 7000000, "after": 1120000000, "active": 41,
+     "reasons": ["The add does not fit the salary cap; choose a cut and inspect its dead cap."]},
+    {"name": "a 49th active player", "players": 48, "amount": 1000000, "after": 560000000, "active": 49,
+     "reasons": ["The add needs a cut to fit 48 active roster spots."]},
+    {"name": "below the minimum", "players": 20, "amount": 1000000, "after": 420000000, "active": 21,
+     "reasons": ["The roster is below the 35-player in-season minimum."]}
+  ]
+}

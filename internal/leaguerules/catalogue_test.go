@@ -18,7 +18,7 @@ func TestCatalogueDescribesEveryField(t *testing.T) {
 			t.Fatalf("incomplete catalogue entry: %+v", f)
 		}
 		if f.Competitive != (!strings.HasPrefix(string(f.Path), "house.") &&
-			!strings.HasPrefix(string(f.Path), "notify.") && f.Path != "calendar.timezone" && f.Path != "transactions.follow") {
+			!strings.HasPrefix(string(f.Path), "notify.") && !strings.HasPrefix(string(f.Path), "mfl.") && f.Path != "calendar.timezone" && f.Path != "transactions.follow") {
 			t.Fatalf("%s competitive = %v", f.Path, f.Competitive)
 		}
 	}
@@ -133,7 +133,7 @@ func TestSettingWords(t *testing.T) {
 		t.Fatalf("acronyms: %s %s", plainName("UFAEligible"), plainName("QB"))
 	}
 	for path, text := range words {
-		free := path == "house.texts" || path == "calendar.timezone"
+		free := path == "house.texts" || path == "calendar.timezone" || path == "mfl.league"
 		if !free && (strings.Contains(text, "_") || strings.Contains(text, "<")) {
 			t.Fatalf("%s shows an internal term: %s", path, text)
 		}

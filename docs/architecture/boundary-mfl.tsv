@@ -135,3 +135,4 @@ fence	internal/app/offers/offerstest	-
 fence	internal/app/season/seasontest	-
 fence	internal/app/now/nowtest	-
 seam	internal/leagueload	-
+seam	internal/mflmirror/mflread	-
