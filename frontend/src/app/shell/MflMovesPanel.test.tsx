@@ -32,7 +32,9 @@ function port(over: Record<string, (args: Record<string, unknown>) => unknown> =
 }
 
 it('says one line when the league has no MFL number', async () => {
-  const p = vi.fn<HostedPort>(async () => { throw new Error('this league follows no MFL league yet; set it'); });
+  const p = vi.fn<HostedPort>(async () => {
+    throw new Error('this league follows no MFL league yet; set it');
+  });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
   expect(present(host, 'MFL league number')).toBe(true);
@@ -64,7 +66,8 @@ it('says the held copy age and that MFL was not asked again', async () => {
 });
 
 it('shows the server problems for a bid check', async () => {
-  const p = port({ 'mflmoves.bid.check': () => ({ ok: false, words: 'Not ready.', problems: ['This leaves you $2 over the cap.'] }) });
+  const p = port({ 'mflmoves.bid.check': () => ({
+    ok: false, words: 'Not ready.', problems: ['This leaves you $2 over the cap.'] }) });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));
   await flush();
   await type(control(host, 'Player'), '100');
@@ -77,7 +80,8 @@ it('shows the server problems for a bid check', async () => {
 it('opens only the server URL and hides buttons that are not allowed', async () => {
   const open = vi.fn();
   const p = port({
-    'mflmoves.plans.read': () => ({ plans: [plan({ id: 'p1' }), plan({ id: 'p2', canDone: false, canWithdraw: false })] }),
+    'mflmoves.plans.read': () => ({
+      plans: [plan({ id: 'p1' }), plan({ id: 'p2', canDone: false, canWithdraw: false })] }),
     'mflmoves.plan.link': () => ({ url: 'https://www.myfantasyleague.com/x' }),
   });
   const host = await mount(render(MflMovesPanel, { league: 'L', port: p }));

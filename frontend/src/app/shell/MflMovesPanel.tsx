@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
+import { HQAct } from './HQAct';
 import type { HostedPort } from '../commissioner/hostedRoom';
 import type { NativeRequest } from '../commands/native';
 
@@ -18,7 +19,8 @@ type Verdict = { ok: boolean; words: string; problems: string[] };
 type MflRosterPlayer = { id: string; name: string; position: string; status: string };
 
 const NO_LEAGUE = /no MFL league/i;
-const NO_LEAGUE_LINE = 'This league does not follow an MFL league yet. The commissioner sets "MFL league number" in league settings.';
+const NO_LEAGUE_LINE = 'This league does not follow an MFL league yet. '
+  + 'The commissioner sets "MFL league number" in league settings.';
 
 const obj = (v: unknown): Obj => (v && typeof v === 'object' && !Array.isArray(v) ? v as Obj : {});
 const str = (v: unknown) => typeof v === 'string' ? v : '';
@@ -131,7 +133,8 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
     try {
       const row = obj(await call('mflmoves.refresh', 'execute'));
       setNote(row.askedMfl === false
-        ? 'MFL was not asked again: the held copy is under 5 minutes old.' : str(row.words) || 'Refreshed from MFL.');
+        ? 'MFL was not asked again: the held copy is under 5 minutes old.'
+        : str(row.words) || 'Refreshed from MFL.');
       await readPool();
     } catch (e) { setError(say(e)); }
   };
@@ -153,13 +156,13 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
     <h3>Which MFL team is yours?</h3>
     {error && <p role="alert">{error}</p>}
     <ul>{teams.map(t => <li key={t.id}>{t.name}{' '}
-      <button className={btn} onClick={() => { void pickTeam(t.id); }}>This is my team</button></li>)}</ul>
+      <HQAct className={btn} onAction={() => pickTeam(t.id)}>This is my team</HQAct></li>)}</ul>
   </section>;
 
   return <section aria-label="My MFL moves">
     {error && <p role="alert">{error}</p>}
     <div className={box}>
-      <button className={btn} onClick={() => { void refresh(); }}>Refresh from MFL</button>
+      <HQAct className={btn} onAction={refresh}>Refresh from MFL</HQAct>
       {pool && <span className="ml-2">{ageWords(pool.ageSeconds)}</span>}
       {note && <p role="status">{note}</p>}
     </div>
@@ -182,14 +185,17 @@ export default function MflMovesPanel({ league, week, port = hostedWorkflow }: {
       <h3>My plans</h3>
       {plans.length === 0 && <p>No plans yet.</p>}
       <ul>{plans.map(p => <li key={p.id}><b>{p.state}</b> {p.words}{' '}
-        <button className={btn} onClick={() => { void open(p.id); }}>Open on MFL</button>
-        {p.canDone && <button className={btn} onClick={() => { void act('mflmoves.plan.done', p.id); }}>
-          I did it</button>}
-        {p.canWithdraw && <button className={btn} onClick={() => {
-          void act('mflmoves.plan.withdraw', p.id); }}>Withdraw</button>}</li>)}</ul>
+        <HQAct className={btn} onAction={() => open(p.id)}>Open on MFL</HQAct>
+        {p.canDone && <HQAct className={btn} onAction={() => act('mflmoves.plan.done', p.id)}>
+          I did it</HQAct>}
+        {p.canWithdraw && <HQAct className={btn} onAction={() => act('mflmoves.plan.withdraw', p.id)}>
+          Withdraw</HQAct>}</li>)}</ul>
     </div>
   </section>;
 }
+
+const rosterLabel = (p: MflRosterPlayer) => p.name + (p.position ? ` · ${p.position}` : '')
+  + (p.status !== 'active' ? ` (${p.status})` : '');
 
 type Call = (command: NativeRequest['command'], mode: 'read' | 'execute', args?: Obj) => Promise<unknown>;
 
@@ -229,10 +235,11 @@ function BidForm({ call, pool, roster, saved }: { call: Call; pool: PoolRow[]; r
     <label>Years<input className={field} inputMode="numeric" value={years}
       onChange={e => setYears(e.target.value)} /></label>
     <fieldset><legend>Drops</legend>{roster.map(p => <label key={p.id} className="mr-3">
-      <input type="checkbox" checked={drop.includes(p.id)} onChange={e => setDrop(d => e.target.checked
-        ? [...d, p.id] : d.filter(x => x !== p.id))} />{p.name}{p.position && ` · ${p.position}`}{p.status !== 'active' && ` (${p.status})`}</label>)}</fieldset>
-    <button className={btn} disabled={!add || !amount} onClick={() => { void check(); }}>Check</button>{' '}
-    <button className={btn} disabled={!add || !amount} onClick={() => { void save(); }}>Save plan</button>
+      <input type="checkbox" checked={drop.includes(p.id)}
+        onChange={e => setDrop(d => e.target.checked ? [...d, p.id] : d.filter(x => x !== p.id))} />
+      {rosterLabel(p)}</label>)}</fieldset>
+    <HQAct className={btn} disabled={!add || !amount} onAction={check}>Check</HQAct>{' '}
+    <HQAct className={btn} disabled={!add || !amount} onAction={save}>Save plan</HQAct>
     {message && <p role="status">{message}</p>}<Verdicts v={verdict} /></div>;
 }
 
@@ -258,11 +265,10 @@ function LineupForm({ call, roster, week, saved }: { call: Call; roster: MflRost
     <label>Week<input className={field} inputMode="numeric" value={wk}
       onChange={e => setWk(e.target.value)} /></label>
     <fieldset><legend>Starters</legend>{roster.map(p => <label key={p.id} className="mr-3">
-      <input type="checkbox" checked={starters.includes(p.id)} onChange={e => setStarters(s => e.target.checked
-        ? [...s, p.id] : s.filter(x => x !== p.id))} />{p.name}{p.position && ` · ${p.position}`}{p.status !== 'active' && ` (${p.status})`}</label>)}</fieldset>
-    <button className={btn} disabled={!wk || starters.length === 0} onClick={() => { void check(); }}>
-      Check</button>{' '}
-    <button className={btn} disabled={!wk || starters.length === 0} onClick={() => { void save(); }}>
-      Save plan</button>
+      <input type="checkbox" checked={starters.includes(p.id)}
+        onChange={e => setStarters(s => e.target.checked ? [...s, p.id] : s.filter(x => x !== p.id))} />
+      {rosterLabel(p)}</label>)}</fieldset>
+    <HQAct className={btn} disabled={!wk || starters.length === 0} onAction={check}>Check</HQAct>{' '}
+    <HQAct className={btn} disabled={!wk || starters.length === 0} onAction={save}>Save plan</HQAct>
     {message && <p role="status">{message}</p>}<Verdicts v={verdict} /></div>;
 }

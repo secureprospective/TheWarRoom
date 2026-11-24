@@ -127,7 +127,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
       league={league} mine={mine} port={port} cut={cut?.player === selected ? cut : undefined}
       close={() => setDrawer(undefined)} />}</>;
   if (v3) return <>
-    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length} mflMoves={mflMoves}
+    <HQTabs tab={tab} navigate={setTab} badge={v3.badge} kind={v3.kind} moves={moves.length}
+      mflMoves={mflMoves}
       pick={v3.pickTeam && <TeamPick mine={mine} pick={v3.pickTeam}
         teams={snapshot.franchises.value.map(f => ({ id: f.id, name: f.name ?? f.id }))} />} />
     {!mine ? <div className="wbody"><div className="st"><div className="eng">Choose a franchise above. As
@@ -145,7 +146,8 @@ export default function NativeFranchiseHQ({ league, mine, name, port, leave, emb
           key={JSON.stringify([league, mine, snapshot.league.value.season])}
           league={league} franchise={mine} season={snapshot.league.value.season} port={port} />} />}
     {others}</>;
-  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab as HQTab} navigate={setTab}
+  const view = <HQShell fullscreen={!embedded} embedded={embedded} root={root} tab={tab as HQTab}
+    navigate={setTab}
     mflMoves={mflMoves ? { selected: tab === 'mfl-moves', open: () => setTab('mfl-moves') } : undefined}
     week={reading.week}
     leagueName={reading.leagueName}

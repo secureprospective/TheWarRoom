@@ -39,9 +39,12 @@ export function HQShell({ root, week, lock, tab, navigate, navigateNode, childre
             <span className="k">{index + 1}</span>{name}<span className="car">›</span></HQAct>
           {index === 2 && <><HQAct className="leaf now" disabled><span className="tag">NOW</span>{lock?.at
             ? lockLabel(lock.at) : unavailable}</HQAct>
-            {(['lineup-and-roster', 'contracts-and-cap', 'my-moves', ...(mflMoves ? ['mfl-moves' as const] : [])] as const).map((ws, i) => <HQAct
-              key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`} onAction={() => (ws === 'mfl-moves' ? mflMoves?.open() : navigate(ws))}>
-              <span className="tr">{i === (mflMoves ? 3 : 2) ? '└' : '├'}</span>{['Lineup and roster', 'Contracts and cap',
+            {(['lineup-and-roster', 'contracts-and-cap', 'my-moves',
+              ...(mflMoves ? ['mfl-moves' as const] : [])] as const).map((ws, i) => <HQAct
+              key={ws} className={`leaf ${tab === ws ? 'sel' : ''}`}
+              onAction={() => (ws === 'mfl-moves' ? mflMoves?.open() : navigate(ws))}>
+              <span className="tr">{i === (mflMoves ? 3 : 2) ? '└' : '├'}</span>{[
+                'Lineup and roster', 'Contracts and cap',
                 'My moves', 'My MFL moves'][i]}</HQAct>)}</>}
         </div>)}
       </div><div className="rail-foot"><HQAct className="btn" disabled

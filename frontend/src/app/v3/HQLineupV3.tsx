@@ -30,7 +30,9 @@ export function HQTabs({ tab, navigate, badge, kind, moves, pick, mflMoves = fal
   navigate: (t: HostedHQTab) => void; badge: ReactNode; kind: string; moves: number; pick?: ReactNode;
   /** The hosted franchise screens show My MFL moves; the local desktop does not. */ mflMoves?: boolean }) {
   return <div className="ws-tabs"><span className="ttl"><Icon n="shield" />FRANCHISE HQ</span>
-    {TABS.filter(([t]) => mflMoves || t !== 'mfl-moves').map(([t, words]) => <HQAct key={t} className="tb" selected={tab === t} onAction={() => navigate(t)}>
+    {TABS.filter(([t]) => mflMoves || t !== 'mfl-moves').map(([t, words]) => <HQAct key={t} className="tb"
+      selected={tab === t}
+      onAction={() => navigate(t)}>
       {words}{t === 'my-moves' && moves > 0 && <span className="tag am">{moves}</span>}</HQAct>)}
     <div className="tools">{pick}<span className="d mono" style={{ fontSize: 10, letterSpacing: '.08em' }}>
       {badge} {kind}</span></div></div>;

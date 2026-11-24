@@ -18,7 +18,10 @@ vi.mock('./WarRoomNative', async () => {
     return <HQAct onAction={() => setDraft(n => n + 1)}>{mine} draft {draft}</HQAct>;
   } };
 });
-vi.mock('./NativeFranchiseHQ', () => ({ default: (props: Record<string, unknown>) => { counts.hq.push(props); return <p>HQ</p>; } }));
+vi.mock('./NativeFranchiseHQ', () => ({ default: (props: Record<string, unknown>) => {
+    counts.hq.push(props);
+    return <p>HQ</p>;
+  } }));
 
 let close: (() => Promise<void>) | undefined;
 afterEach(async () => { await close?.(); localStorage.clear(); vi.unstubAllGlobals(); });
