@@ -26,20 +26,17 @@ Values in the test log are the engine's fixed-point numbers (10,000 per point): 
 
 ## Playoffs
 
-`TestSeasonInABoxPlayoff` uses the same hosted binary, CLI, fake clock and synthetic official files. The first
-read gate is unresolved conference assignment; it does not use commissioner/store internals for playoff commands.
+`TestSeasonInABoxPlayoff` (`cmd/twr/season_box_playoff_test.go`) runs a complete 4-team playoff bracket against the real `twr-server` binary, CLI, fake clock and synthetic official files (`cmd/twr/testdata/official/*_playoff_w{1,2,3}.csv.gz`). In the playoff test only, normal `commish.rules.set` commands configure a single conference (`league.conferences=1`), a 1-week regular season (`schedule.regularWeeks=1`), and a 4-team, 2-round bracket (`playoffs.perConference=4`, `divisionWinners=0`, `wildCards=4`, `byeSeed=0`, `reseed=false`, `startWeek=2`, `finalWeek=3`, `playoffs.graph` with `semi_1`, `semi_2`, and `championship`), with a 2-game week-1 fixture schedule so all regular-season games go final.
 
 | # | Playoff step | How it runs | Status |
 |---|---|---|---|
-| 1 | Probe bracket build | `twr preview` sends `bracket.build` through the hosted workflow command path | reached (preview only) |
-| 2 | Read bracket status | `twr read bracket.read` through the hosted handler | reached: Needs a ruling |
-| 3 | Build bracket and seed from final standings | blocked by the exact hosted read refusal: `Needs a ruling: which conference the division "Practice division 1" is in` | NOT REACHED |
-| 4 | Score one playoff week and advance | requires a built/seeded bracket; no playoff score or advance was attempted | NOT REACHED |
-| 5 | Decide championship and name champion | requires playoff advancement; no final or champion was attempted | NOT REACHED |
+| 1 | Regular season final | Week 1 lineups via owner door (`LineupPath`); synthetic week-1 official files pinned by the server's official job; `standings.read` reports 2 decided, 0 pending, through week 1 | reached |
+| 2 | Build and seed bracket from standings | `bracket.read` reports `"Ready to build"` with seeds 1–4 (`franchise.01`..`franchise.04`); `bracket.build` (`league_rules`) and `bracket.seed` previewed via `twr preview` + workflow and executed through `/v1/native/workflow` | reached |
+| 3 | Score week-2 semi-finals final | Synthetic week-2 official files pinned; `bracket.read` computes `League/semi_1` (`franchise.01` over `franchise.04`, 29–5) and `League/semi_2` (`franchise.03` over `franchise.02`, 22–11) | reached |
+| 4 | Advance semi-final winners | `bracket.advance` previewed and executed through `/v1/native/workflow` for both semi-finals; `bracket.read` pairs `franchise.01` v `franchise.03` in `League/championship` | reached |
+| 5 | Score week-3 championship final and name champion | Synthetic week-3 official files pinned; `bracket.read` decides `League/championship` (`franchise.03` over `franchise.01`, 26–12); `bracket.advance` confirmed through `/v1/native/workflow`; champion `franchise.03` (`Practice team 3`, `"Won the final"`) | reached |
 
-`bracket.build` has a hosted preview door. The shared fixture has no conference assignment for its practice
-divisions, so the real read cannot construct a ranked playoff field; after that is resolved, its one scheduled
-regular-season week (against thirteen required by the rules) is another gate. No rehearsal playoffs are substituted.
+All bracket writes go through the hosted `/v1/native/workflow` command path and all bracket reads through `twr read bracket.read`. No rehearsal playoffs are substituted.
 
 ## Real versus faked
 
