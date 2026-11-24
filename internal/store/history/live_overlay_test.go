@@ -482,3 +482,26 @@ func TestLiveOverlayRawFinalLineupTotalsMatchNativeScoring(t *testing.T) {
 		t.Fatal("native results omitted scored lineups")
 	}
 }
+
+func TestOfficialWeekScoreEvidenceIsFinalNotProvisional(t *testing.T) {
+	f := resultsTest(t)
+	at := t0().Add(6 * time.Hour)
+	f.s.SetLineupEnvironment(&PinnedFootball{
+		raw:   RawFootballEvidence{Season: 2026, AsOf: at},
+		stats: []heldFile{{at: at, official: map[int]bool{1: true}}},
+	})
+	overlay := &LiveOverlay{}
+	f.s.SetLiveOverlay(overlay)
+	if err := overlay.Publish(overlayTestGeneration("stale-live", 10000)); err != nil {
+		t.Fatal(err)
+	}
+	f.s.SetClock(func() time.Time { return at.Add(time.Hour) })
+	results, err := f.s.NativeResults(t.Context(), "native.test", 2026, 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ev := results.Evidence
+	if ev == nil || ev.Provisional || ev.Stale || ev.Reduced || ev.Source != source.NFLVerse || ev.Live != "final" || !ev.AsOf.Equal(at) {
+		t.Fatalf("official week carried wrong evidence: %+v", ev)
+	}
+}

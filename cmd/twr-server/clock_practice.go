@@ -155,6 +155,7 @@ func publishPracticeLiveFrame(
 	season, week := game.Season, game.Week
 	if override, has := practiceLiveWeek(dir); has {
 		week = override
+		game.Week = override
 	}
 	lines, ids, err := practiceLiveLines(ctx, identities, game, season, week)
 	if err != nil {

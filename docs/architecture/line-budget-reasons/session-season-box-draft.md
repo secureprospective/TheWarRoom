@@ -1,0 +1,1 @@
+Season box binary test now covers STEP 2 (two owner-door rookie picks verified via twr read) and STEP 9 (twr-check Tuesday report card in read mode), plus two small bug fixes that blocked twr-check (agent token LiveGames wiring and official-week ScoreEvidence finality) and updated season-in-a-box.md.

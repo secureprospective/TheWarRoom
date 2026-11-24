@@ -238,10 +238,17 @@ func (s *Store) readingLiveStats(ctx context.Context, evidence source.NativeEvid
 	return s.overlayEvidence(evidence, scope, view.Week(scope.Season, scope.Week)), nil
 }
 
-// scoreEvidence describes the live generation a reading of season/week was scored from: that week's
-// own generation when it is held, else the current one (a season-wide reading passes week 0). A
-// finished week is never stale: its games are over, only not yet official.
+// scoreEvidence describes the evidence a reading of season/week was scored from: official nflverse
+// statistics once the league's pin holds that week as official, otherwise the live generation consulted
+// (a season-wide reading passes week 0). A finished live week is never stale.
 func (n *nativeSources) scoreEvidence(season, week int) *commissioner.ScoreEvidence {
+	if week > 0 {
+		if pinned, ok := n.store.lineupEnv.(*PinnedFootball); ok && pinned.raw.Season == season {
+			if at, official := pinned.officialAsOf(week); official {
+				return &commissioner.ScoreEvidence{Live: "final", Season: season, Week: week, AsOf: at, Source: source.NFLVerse}
+			}
+		}
+	}
 	g := n.overlay.Week(season, week)
 	finished := g != nil && g != n.overlay.Current
 	if g == nil {
