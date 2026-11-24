@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Quick local check; the full suite is CI's job.
-# Docs only: skip. Go: bindings, lint, build all, test directly changed packages.
+# Docs only: skip. Go: lint, build all, test directly changed packages.
 # Gate scripts or an unknown base: lint and build; CI runs the rest.
-# Frontend: bindings, type check, tests, build and bundle budget.
+# Frontend: type check, tests, build and bundle budget.
 set -euo pipefail
 
 fallback=0
@@ -31,11 +31,6 @@ if [[ $build -eq 0 && $fallback -eq 0 && ${#go_changed[@]} -eq 0 && $front -eq 0
   exit 0
 fi
 
-if [[ ${#go_changed[@]} -gt 0 || $front -eq 1 || $build -eq 1 || $fallback -eq 1 ]]; then
-  # Embedded assets and generated bindings must exist before any Go package that embeds them compiles.
-  make bindings >/dev/null
-fi
-
 if [[ ${#go_changed[@]} -gt 0 || $build -eq 1 || $fallback -eq 1 ]]; then
   make lint
   go build ./...
@@ -50,10 +45,6 @@ if [[ ${#go_changed[@]} -gt 0 ]]; then
   pkgs=()
   for d in "${dirs[@]}"; do
     [[ -d "$d" ]] || continue
-    if [[ "$d" == "internal/composition" ]]; then
-      echo "prepush: skipping internal/composition; CI runs it"
-      continue
-    fi
     if go list "./$d" >/dev/null 2>&1; then
       [[ "$d" == "." ]] && pkgs+=("$module") || pkgs+=("$module/${d#./}")
     fi
