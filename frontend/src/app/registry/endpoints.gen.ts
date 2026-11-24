@@ -271,6 +271,8 @@ export type EndpointId =
   | "L-35"
   | "L-36"
   | "S-15"
+  | "S-16"
+  | "S-17"
 ;
 export type Placement =
   | "Home › Overview"
@@ -5044,6 +5046,41 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     status: "built",
     disposition_note: "Desktop only. Saves a matched backup with a local sign-in so league roles surv" +
       "ive a move to another computer.",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-16",
+    source: "shell",
+    name: "Refresh MFL data (read-only)",
+    kind: "Act",
+    gm_question: "Can I get the league's latest free agents from MFL?",
+    gravity: "G0",
+    clock: "none",
+    placement: places[8],
+    verb: "mflmoves.refresh",
+    disposition: "kept",
+    ring: 4,
+    status: "planned",
+    disposition_note: "Reads MFL's public data only and holds a copy; inside the 5-minute window it r" +
+      "eturns the held copy and its age. Nothing is sent to MFL.",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-17",
+    source: "shell",
+    name: "MFL free-agent pool with values",
+    kind: "Read",
+    gm_question: "Who is free on MFL and what are they worth to me?",
+    gravity: "G0",
+    clock: "none",
+    placement: places[8],
+    verb: "mflmoves.pool.read",
+    disposition: "kept",
+    ring: 4,
+    status: "planned",
+    disposition_note: "Reads the held pool, never MFL; filter by position and sort by value.",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),

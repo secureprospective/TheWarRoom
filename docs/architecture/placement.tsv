@@ -140,3 +140,5 @@ internal/feedwire	core
 internal/ingestion/livestats	now
 internal/leagueload	platform
 internal/seams	core
+internal/mflmirror	offers
+internal/mflmirror/mflread	offers

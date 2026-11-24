@@ -1,19 +1,19 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	53774
-frontend-generated	5050
-frontend-src	76566
+docs	53696
+frontend-generated	5087
+frontend-src	76632
 frontend-tests	46789
-go-prod	171634
+go-prod	172409
 go-prod/cmd/twr	1053
 go-prod/cmd/twr-check	508
-go-prod/cmd/twr-server	9952
+go-prod/cmd/twr-server	9956
 go-prod/frontend	572
 go-prod/internal/accounts	2190
 go-prod/internal/app	26684
 go-prod/internal/appvalue	1064
 go-prod/internal/archive	310
-go-prod/internal/commandcatalog	3044
+go-prod/internal/commandcatalog	3052
 go-prod/internal/commissioner	31667
 go-prod/internal/composition	4989
 go-prod/internal/db	3622
@@ -31,7 +31,7 @@ go-prod/internal/leagueload	1273
 go-prod/internal/leaguemigration	5202
 go-prod/internal/leaguerecovery	78
 go-prod/internal/leaguerules	4177
-go-prod/internal/leagueservice	5241
+go-prod/internal/leagueservice	5594
 go-prod/internal/leaguetransfer	478
 go-prod/internal/leagueweek	142
 go-prod/internal/lineupdelta	192
@@ -39,11 +39,12 @@ go-prod/internal/m2service	575
 go-prod/internal/measures	718
 go-prod/internal/mfl	574
 go-prod/internal/mflkey	138
+go-prod/internal/mflmirror	397
 go-prod/internal/mflref	2161
 go-prod/internal/model	2437
 go-prod/internal/modelrun	685
 go-prod/internal/nativecheck	2932
-go-prod/internal/normalize	311
+go-prod/internal/normalize	321
 go-prod/internal/numeric	23
 go-prod/internal/offline	139
 go-prod/internal/offsite	1029
@@ -54,7 +55,7 @@ go-prod/internal/powerrankings	395
 go-prod/internal/projection	113
 go-prod/internal/releasetrust	549
 go-prod/internal/serverclient	2161
-go-prod/internal/serverhttp	4897
+go-prod/internal/serverhttp	4900
 go-prod/internal/serverstatus	510
 go-prod/internal/serverversion	207
 go-prod/internal/snapshot	738
@@ -64,6 +65,6 @@ go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	115522
+go-test	115871
 go-testdata	41011
 other	38346

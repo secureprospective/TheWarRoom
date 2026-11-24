@@ -1,0 +1,1 @@
+MFL helper lane A (mflmoves.refresh and mflmoves.pool.read): a new thin internal/mflmirror package, two owner-private commands and their generated client rows. Growth is the feature itself; it adds no per-league-type code.

@@ -2907,7 +2907,9 @@ export type WorkflowArgumentMap = {
 "player.note.set": NativeArguments<"player.note.set">;
 "player.watch.set": NativeArguments<"player.watch.set">;
 "player.watch.order": NativeArguments<"player.watch.order">;
+"mflmoves.refresh": NativeArguments<"mflmoves.refresh">;
 "player.watch.read": NativeArguments<"player.watch.read">;
+"mflmoves.pool.read": NativeArguments<"mflmoves.pool.read">;
 "contract.decisions.read": NativeArguments<"contract.decisions.read">;
 "market.wins.read": NativeArguments<"market.wins.read">;
 "league.activity.read": NativeArguments<"league.activity.read">;
