@@ -94,16 +94,36 @@ func (p *leaguePins) buildLocked(ctx context.Context, league string) serverhttp.
 	if !ok {
 		return serverhttp.LeaguePin{Err: errNoLeague}
 	}
-	pin := p.loadPin(ctx, league, base, p.digestLocked(league))
+	pin := p.loadPinLocked(ctx, league, base, p.digestLocked(league))
 	if pin.Err == nil {
 		p.built[league] = pin
 	}
 	return pin
 }
 
-// loadPin pins a new store over base's league file to digest's evidence. Evidence the server does not
-// hold gives a store with no football, marked missing; any other failure (damaged evidence) is Err.
-func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.Store, digest string) serverhttp.LeaguePin {
+// loadPinLocked is loadPin with the decoded evidence shared by digest: leagues on the same version hold one
+// copy (it is immutable once loaded). The caller holds p.mu for writing.
+func (p *leaguePins) loadPinLocked(ctx context.Context, league string, base *history.Store, digest string) serverhttp.LeaguePin {
+	pin := p.loadPin(ctx, league, base, digest, p.football[digest])
+	p.keepLocked(pin)
+	return pin
+}
+
+// keepLocked records what loadPin learned: when a missing version was looked for, and a newly decoded version
+// for the next league on it. The caller holds p.mu for writing.
+func (p *leaguePins) keepLocked(pin serverhttp.LeaguePin) {
+	if pin.Missing {
+		p.tried[pin.Digest] = p.now()
+	}
+	if pin.Football != nil && p.football[pin.Digest] == nil {
+		p.football[pin.Digest] = pin.Football
+	}
+}
+
+// loadPin pins a new store over base's league file to digest's evidence, reusing cached when it is that
+// version's decoded copy. Evidence the server does not hold gives a store with no football, marked missing; any
+// other failure (damaged evidence) is Err. It touches no shared state, so it may run without p.mu.
+func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.Store, digest string, cached *history.PinnedFootball) serverhttp.LeaguePin {
 	pools, ok := p.files.pools(league)
 	if !ok {
 		return serverhttp.LeaguePin{Err: errNoLeague}
@@ -116,19 +136,17 @@ func (p *leaguePins) loadPin(ctx context.Context, league string, base *history.S
 	if digest == "" {
 		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl}
 	}
-	evidence := p.football[digest]
-	var err error
+	evidence := cached
 	if evidence == nil {
+		var err error
 		evidence, err = store.LoadFootball(ctx, digest)
+		if errors.Is(err, history.ErrNoBody) {
+			return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Digest: digest, Missing: true}
+		}
+		if err != nil {
+			return serverhttp.LeaguePin{Err: err}
+		}
 	}
-	if errors.Is(err, history.ErrNoBody) {
-		p.tried[digest] = p.now()
-		return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Digest: digest, Missing: true}
-	}
-	if err != nil {
-		return serverhttp.LeaguePin{Err: err}
-	}
-	p.football[digest] = evidence
 	store.SetPinnedFootball(evidence)
 	return serverhttp.LeaguePin{Store: store, Personal: entries, Mirror: mirror, MFL: mfl, Football: evidence, Digest: digest}
 }
@@ -163,7 +181,7 @@ func (p *leaguePins) retryLocked(ctx context.Context, league string, missing ser
 	if !ok {
 		return missing
 	}
-	found := p.loadPin(look, league, base, missing.Digest)
+	found := p.loadPinLocked(look, league, base, missing.Digest)
 	if found.Err != nil || found.Missing {
 		p.tried[missing.Digest] = p.now()
 		return missing
@@ -209,22 +227,27 @@ func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, l
 	if !ok {
 		return fmt.Errorf("league %s is not on this server; nothing was changed", league)
 	}
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	if from != nil && p.digestLocked(league) != *from {
-		return fmt.Errorf("league %s was pinned to other football evidence meanwhile; nothing was changed", league)
-	}
+	p.mu.RLock()
 	effective := digest
 	if effective == "" {
 		effective = p.server
 	}
-	next := p.loadPin(ctx, league, base, effective)
+	cached := p.football[effective]
+	p.mu.RUnlock()
+	// Decoding can take seconds for a big player list; every league's requests read p.mu, so it runs unlocked.
+	next := p.loadPin(ctx, league, base, effective, cached)
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if next.Missing {
+		p.tried[next.Digest] = p.now()
+	}
 	if next.Err != nil || (digest != "" && next.Missing) {
-		p.pruneFootballLocked()
 		return fmt.Errorf("the reference file cannot give that football evidence; nothing was changed: %w", errors.Join(next.Err, missingErr(next)))
 	}
+	if from != nil && p.digestLocked(league) != *from {
+		return fmt.Errorf("league %s was pinned to other football evidence meanwhile; nothing was changed", league)
+	}
 	if err := signIns.PinFootball(ctx, league, digest); err != nil {
-		p.pruneFootballLocked()
 		return fmt.Errorf("pin football: %w", err)
 	}
 	if digest == "" {
@@ -232,6 +255,7 @@ func (p *leaguePins) swapPin(ctx context.Context, signIns *accountstore.Store, l
 	} else {
 		p.chosen[league] = digest
 	}
+	p.keepLocked(next)
 	p.built[league] = next
 	p.pruneFootballLocked()
 	return nil
