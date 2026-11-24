@@ -23,7 +23,7 @@ func TestMflSeparationBidCheckAndPlanSaveAreLocal(t *testing.T) {
 	if err != nil || !ok {
 		t.Fatalf("held MFL copy: ok=%v err=%v", ok, err)
 	}
-	got, err := f.service.MflMovesBidCheckContext(ctx, RawMflBidCheck{League: f.league, Add: "0531", Amount: 1_000_000, Years: 1})
+	got, err := f.service.MflMovesBidCheckContext(ctx, RawMflBidCheck{League: f.league, Add: "0531", AmountCents: 100_000_000, Years: 1})
 	if err != nil || !got.OK {
 		t.Fatalf("bid check = %+v, %v", got, err)
 	}
