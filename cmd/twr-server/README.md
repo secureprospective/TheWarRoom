@@ -382,6 +382,13 @@ football-evidence version is imported and the old pin remains selected. If impor
 fails, the new version remains archived but unselected. No league events are added; restart is required for the running
 service to load the new pin. Verify owner `week.read` and `twr-status` after restart.
 
+### Refresh published NFL schedules (hosted timer)
+
+Opt in by starting hosted mode with `-nfl-schedule-refresh` (the packaged sandbox service enables it
+when `/etc/twr/nfl-schedule-refresh` exists). It waits two minutes after startup, then refreshes every six hours. Each pass fetches each needed NFL week once for the server, revises only leagues
+with published schedules whose pinned evidence changes, and atomically re-pins each revised league through
+the live pin resolver. Failures are logged per league and do not stop the other leagues. The default is off.
+
 ### Refresh NFL player status (hosted automatic & operator)
 
 The hosted worker follows the existing `startArchivePurge` lifetime pattern: fetch immediately, tick

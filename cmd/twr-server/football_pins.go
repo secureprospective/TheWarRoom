@@ -81,6 +81,12 @@ func (p *leaguePins) selectPins(ctx context.Context, digest string, directory []
 	return nil
 }
 
+func (p *leaguePins) digest(league string) string {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
+	return p.digestLocked(league)
+}
+
 func (p *leaguePins) digestLocked(league string) string {
 	if digest, ok := p.chosen[league]; ok {
 		return digest

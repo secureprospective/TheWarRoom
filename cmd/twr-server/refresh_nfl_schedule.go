@@ -61,6 +61,9 @@ func runRefreshNFLSchedule(ctx context.Context, args []string, output io.Writer)
 	if err != nil {
 		return err
 	}
+	if len(weeks) == 0 {
+		return fmt.Errorf("league %s has no published schedule; nothing was changed", *league)
+	}
 	signIns := signInStore(files)
 	digest, err := selectedFootballDigest(ctx, signIns, *league, *pinFile)
 	if err != nil {
@@ -82,7 +85,7 @@ func publishedNFLWeeks(ctx context.Context, store *history.Store, league string,
 		return nil, fmt.Errorf("league %s publishes season %d, not requested season %d", league, published.Season, season)
 	}
 	if len(published.Weeks) == 0 {
-		return nil, fmt.Errorf("league %s has no published schedule; nothing was changed", league)
+		return nil, nil
 	}
 	weeks := make([]int, 0, len(published.Weeks))
 	for _, week := range published.Weeks {
@@ -92,42 +95,57 @@ func publishedNFLWeeks(ctx context.Context, store *history.Store, league string,
 }
 
 func refreshNFLWeekEvidence(ctx context.Context, store *history.Store, signIns *accountstore.Store, league string, season int, digest string, expected []int, fetch nflWeekFetcher, output io.Writer) error {
+	_, err := reviseNFLWeekEvidence(ctx, store, league, season, digest, expected, fetch, output, func(ctx context.Context, next string) error {
+		if err := signIns.PinFootball(ctx, league, next); err != nil {
+			return fmt.Errorf("football evidence %s was imported, but updating league %s's pin failed: %w", next, league, err)
+		}
+		return nil
+	})
+	return err
+}
+
+// reviseNFLWeekEvidence builds and verifies a new immutable evidence digest before handing its pin
+// to the caller. The server supplies leaguePins.setPin; the stopped-server command writes its pin row.
+func reviseNFLWeekEvidence(ctx context.Context, store *history.Store, league string, season int, digest string, expected []int, fetch nflWeekFetcher, output io.Writer, pin func(context.Context, string) error) (bool, error) {
 	football, err := store.LoadFootball(ctx, digest)
 	if err != nil {
-		return fmt.Errorf("load pinned football evidence: %w", err)
+		return false, fmt.Errorf("load pinned football evidence: %w", err)
 	}
 	held, err := football.ScheduleDates(ctx, season)
 	if err != nil {
-		return fmt.Errorf("read pinned NFL dates: %w", err)
+		return false, fmt.Errorf("read pinned NFL dates: %w", err)
 	}
 	missing, err := fetchMissingNFLWeeks(ctx, season, expected, held, fetch)
 	if err != nil {
-		return err
+		return false, err
 	}
 	stale, final, err := refetchStaleNFLWeeks(ctx, season, time.Now().UTC(), held, fetch)
 	if err != nil {
-		return err
+		return false, err
 	}
 	if err := reportRefetchedWeeks(output, stale); err != nil {
-		return err
+		return false, err
 	}
 	if len(missing) == 0 && len(final) == 0 {
 		if _, err := fmt.Fprintf(output, "All %d published league weeks already have NFL kickoff dates; no changes made.\n", len(expected)); err != nil {
-			return fmt.Errorf("report schedule refresh: %w", err)
+			return false, fmt.Errorf("report schedule refresh: %w", err)
 		}
-		return nil
+		return false, nil
 	}
 	next, err := store.ReviseFootballSchedule(ctx, digest, final, missing, time.Now().UTC())
 	if err != nil {
-		return fmt.Errorf("import refreshed NFL schedule: %w", err)
+		return false, fmt.Errorf("import refreshed NFL schedule: %w", err)
 	}
 	if _, err := store.LoadFootball(ctx, next); err != nil {
-		return fmt.Errorf("verify imported football evidence %s: %w", next, err)
+		return false, fmt.Errorf("verify imported football evidence %s: %w", next, err)
 	}
-	if err := signIns.PinFootball(ctx, league, next); err != nil {
-		return fmt.Errorf("football evidence %s was imported, but updating league %s's pin failed: %w", next, league, err)
+	if err := pin(ctx, next); err != nil {
+		return false, err
 	}
-	return reportRevisedWeeks(output, league, final, missing)
+	if err := reportRevisedWeeks(output, league, final, missing); err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 func reportRefetchedWeeks(output io.Writer, stale []int) error {

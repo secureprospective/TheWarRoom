@@ -313,10 +313,13 @@ func (b *binaryBox) runReportCard(t *testing.T) string {
 	return summary
 }
 
-// seedBinaryBox builds the server database offline, as tools/twr-practice does: the workflow league, a
-// second seated owner on franchise.04, pick-2 draft order, franchise.01's lineup, owner sessions, and
-// agent tokens for twr and twr-check.
-func seedBinaryBox(t *testing.T, dir string) binarySeed {
+// binaryBoxExtra runs playoff-specific setup inside seedBinaryBoxWith before auth tokens are issued.
+type binaryBoxExtra func(t *testing.T, store *history.Store, credentials *accountstore.Store, principal governance.Principal, draftAt time.Time)
+
+// seedBinaryBoxWith builds the server database offline, as tools/twr-practice does: the workflow league, a
+// second seated owner on franchise.04, pick-2 draft order, franchise.01's lineup, optional extra setup,
+// owner sessions, and agent tokens for twr and twr-check.
+func seedBinaryBoxWith(t *testing.T, dir string, extra binaryBoxExtra) binarySeed {
 	t.Helper()
 	ctx := t.Context()
 	pools, err := db.Open(ctx, filepath.Join(dir, "server.db"), history.SchemaVersion())
@@ -348,6 +351,9 @@ func seedBinaryBox(t *testing.T, dir string) binarySeed {
 	}
 	draftAt := time.Now().UTC().Add(5 * time.Second)
 	seedBinaryBoxLeague(t, store, digest, principal, draftAt)
+	if extra != nil {
+		extra(t, store, credentials, principal, draftAt)
+	}
 	return seedBinaryBoxAuth(t, store, credentials, digest, commishRaw, ownerRaw, draftAt)
 }
 
@@ -412,7 +418,7 @@ func seedBinaryBoxAuth(
 	twrScope := accounts.RawTokenScope{
 		League: "native.hosted", Franchise: "franchise.01", Modes: []string{"read", "preview"},
 		Commands: []string{"results.read", "standings.read", "commish.ledger.read", "native.assets.read",
-			"native.directory.read", "nfl.games.read", commissioner.LineupSet},
+			"native.directory.read", "nfl.games.read", "bracket.read", commissioner.BracketBuild, commissioner.BracketSeed, commissioner.BracketAdvance, commissioner.LineupSet},
 	}
 	token, err := tokens.Issue(ctx, commish.RawSession, twrScope)
 	if err != nil {
@@ -441,6 +447,11 @@ func boxLineup(expected int64, request string, starters ...string) commissioner.
 
 // startBinaryBox builds twr-server (practice tag) and twr-check, seeds the DB, starts the server and connects twr.
 func startBinaryBox(t *testing.T) *binaryBox {
+	t.Helper()
+	return startBinaryBoxWith(t, nil)
+}
+
+func startBinaryBoxWith(t *testing.T, extra binaryBoxExtra) *binaryBox {
 	t.Helper()
 	dir := t.TempDir()
 	b := &binaryBox{
@@ -476,7 +487,7 @@ func startBinaryBox(t *testing.T) *binaryBox {
 	if err := os.Chmod(key, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	seed := seedBinaryBox(t, dir)
+	seed := seedBinaryBoxWith(t, dir, extra)
 	b.commishBearer, b.owner04Bearer = seed.commishBearer, seed.owner04Bearer
 	b.setClock(t, seed.draftAt) // past draft.start (+2s); football kickoffs are at seed time + 24h
 	registry, err := os.ReadFile("../../docs/ui/endpoint-registry.csv")

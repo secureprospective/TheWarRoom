@@ -24,6 +24,20 @@ Run time (`time go test ./cmd/twr -run TestSeasonInABoxSpike -count=1`, warm cac
 
 Values in the test log are the engine's fixed-point numbers (10,000 per point): `235000` is 23.5 points.
 
+## Playoffs
+
+`TestSeasonInABoxPlayoff` (`cmd/twr/season_box_playoff_test.go`) runs a complete 4-team playoff bracket against the real `twr-server` binary, CLI, fake clock and synthetic official files (`cmd/twr/testdata/official/*_playoff_w{1,2,3}.csv.gz`). In the playoff test only, normal `commish.rules.set` commands configure a single conference (`league.conferences=1`), a 1-week regular season (`schedule.regularWeeks=1`), and a 4-team, 2-round bracket (`playoffs.perConference=4`, `divisionWinners=0`, `wildCards=4`, `byeSeed=0`, `reseed=false`, `startWeek=2`, `finalWeek=3`, `playoffs.graph` with `semi_1`, `semi_2`, and `championship`), with a 2-game week-1 fixture schedule so all regular-season games go final.
+
+| # | Playoff step | How it runs | Status |
+|---|---|---|---|
+| 1 | Regular season final | Week 1 lineups via owner door (`LineupPath`); synthetic week-1 official files pinned by the server's official job; `standings.read` reports 2 decided, 0 pending, through week 1 | reached |
+| 2 | Build and seed bracket from standings | `bracket.read` reports `"Ready to build"` with seeds 1–4 (`franchise.01`..`franchise.04`); `bracket.build` (`league_rules`) and `bracket.seed` previewed via `twr preview` + workflow and executed through `/v1/native/workflow` | reached |
+| 3 | Score week-2 semi-finals final | Synthetic week-2 official files pinned; `bracket.read` computes `League/semi_1` (`franchise.01` over `franchise.04`, 29–5) and `League/semi_2` (`franchise.03` over `franchise.02`, 22–11) | reached |
+| 4 | Advance semi-final winners | `bracket.advance` previewed and executed through `/v1/native/workflow` for both semi-finals; `bracket.read` pairs `franchise.01` v `franchise.03` in `League/championship` | reached |
+| 5 | Score week-3 championship final and name champion | Synthetic week-3 official files pinned; `bracket.read` decides `League/championship` (`franchise.03` over `franchise.01`, 26–12); `bracket.advance` confirmed through `/v1/native/workflow`; champion `franchise.03` (`Practice team 3`, `"Won the final"`) | reached |
+
+All bracket writes go through the hosted `/v1/native/workflow` command path and all bracket reads through `twr read bracket.read`. No rehearsal playoffs are substituted.
+
 ## Real versus faked
 
 Real: the hosted HTTP handler (`serverhttp.Hosted`, TLS, token scope, workflow door), the draft rules and calendar gate (`NativeActionGate`) and the pick checks inside `RecordDraftPick` (seat, turn, rookie pool, roster, cap), the `twr` cobra commands and
