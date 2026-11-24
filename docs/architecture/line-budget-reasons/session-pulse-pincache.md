@@ -1,0 +1,1 @@
+The digest-keyed decoded football cache removes repeated large evidence copies across leagues. The ownership test adds explicit same-digest pointer/pruning coverage and an N=8 allocation measurement; this scoped production and test growth buys the requested memory reduction and safety evidence.
