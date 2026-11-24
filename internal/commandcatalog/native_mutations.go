@@ -157,6 +157,7 @@ func playerPersonalNativeMutations() []Command {
 		ownerPrivateCommand(leagueservice.PlayerNoteSet, "SetPlayerNote", reflect.TypeFor[leagueservice.RawPlayerNoteSet](), Execute, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.PlayerWatchSet, "SetPlayerWatch", reflect.TypeFor[leagueservice.RawPlayerWatchSet](), Execute, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.PlayerWatchOrder, "SetPlayerWatchOrder", reflect.TypeFor[leagueservice.RawPlayerWatchOrder](), Execute, "G0", "none", privatePlayerData()),
+		ownerPrivateCommand(leagueservice.MflMovesTeamSet, "MflMovesTeamSet", reflect.TypeFor[leagueservice.RawMflTeamSet](), Execute, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.MflMovesRefresh, "MflMovesRefresh", reflect.TypeFor[leagueservice.RawMflMovesScope](), Execute, "G0", "none", privatePlayerData()),
 	}
 }

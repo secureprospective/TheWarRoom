@@ -273,6 +273,8 @@ export type EndpointId =
   | "S-15"
   | "S-16"
   | "S-17"
+  | "S-18"
+  | "S-19"
 ;
 export type Placement =
   | "Home › Overview"
@@ -5081,6 +5083,41 @@ export const endpoints: readonly Endpoint[] = Object.freeze([
     ring: 4,
     status: "planned",
     disposition_note: "Reads the held pool, never MFL; filter by position and sort by value.",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-18",
+    source: "shell",
+    name: "Pick my MFL team",
+    kind: "Act",
+    gm_question: "Which team in the MFL league is mine?",
+    gravity: "G0",
+    clock: "none",
+    placement: places[8],
+    verb: "mflmoves.team.set",
+    disposition: "kept",
+    ring: 4,
+    status: "planned",
+    disposition_note: "Saves your own choice, private to your seat; it must be one of the MFL league'" +
+      "s teams. Nothing is sent to MFL.",
+    merged_into: Object.freeze([] as const),
+    merged_place: "",
+  } as const),
+  Object.freeze({
+    id: "S-19",
+    source: "shell",
+    name: "MFL teams with mine marked",
+    kind: "Read",
+    gm_question: "Who is in the MFL league and which one am I?",
+    gravity: "G0",
+    clock: "none",
+    placement: places[8],
+    verb: "mflmoves.teams.read",
+    disposition: "kept",
+    ring: 4,
+    status: "planned",
+    disposition_note: "Reads the held list and your own choice; never MFL.",
     merged_into: Object.freeze([] as const),
     merged_place: "",
   } as const),

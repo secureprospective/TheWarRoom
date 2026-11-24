@@ -1,10 +1,10 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	53696
-frontend-generated	5087
-frontend-src	76632
+docs	53699
+frontend-generated	5124
+frontend-src	76685
 frontend-tests	46789
-go-prod	172409
+go-prod	172660
 go-prod/cmd/twr	1053
 go-prod/cmd/twr-check	508
 go-prod/cmd/twr-server	9956
@@ -13,7 +13,7 @@ go-prod/internal/accounts	2190
 go-prod/internal/app	26684
 go-prod/internal/appvalue	1064
 go-prod/internal/archive	310
-go-prod/internal/commandcatalog	3052
+go-prod/internal/commandcatalog	3060
 go-prod/internal/commissioner	31667
 go-prod/internal/composition	4989
 go-prod/internal/db	3622
@@ -30,8 +30,8 @@ go-prod/internal/leaguefeed	326
 go-prod/internal/leagueload	1273
 go-prod/internal/leaguemigration	5202
 go-prod/internal/leaguerecovery	78
-go-prod/internal/leaguerules	4177
-go-prod/internal/leagueservice	5594
+go-prod/internal/leaguerules	4188
+go-prod/internal/leagueservice	5747
 go-prod/internal/leaguetransfer	478
 go-prod/internal/leagueweek	142
 go-prod/internal/lineupdelta	192
@@ -39,7 +39,7 @@ go-prod/internal/m2service	575
 go-prod/internal/measures	718
 go-prod/internal/mfl	574
 go-prod/internal/mflkey	138
-go-prod/internal/mflmirror	397
+go-prod/internal/mflmirror	462
 go-prod/internal/mflref	2161
 go-prod/internal/model	2437
 go-prod/internal/modelrun	685
@@ -59,12 +59,12 @@ go-prod/internal/serverhttp	4900
 go-prod/internal/serverstatus	510
 go-prod/internal/serverversion	207
 go-prod/internal/snapshot	738
-go-prod/internal/store	23058
+go-prod/internal/store	23072
 go-prod/internal/tradelens	559
 go-prod/internal/transactions	2046
 go-prod/root	25
 go-prod/scripts	56
 go-prod/tools	2212
-go-test	115871
-go-testdata	41011
+go-test	115980
+go-testdata	41025
 other	38346

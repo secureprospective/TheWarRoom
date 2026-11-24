@@ -7,11 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/appvalue"
+	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/engine/bid"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
 	"github.com/secureprospective/TheWarRoom/internal/playerid"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 const (
@@ -108,28 +110,37 @@ type mflFetcherHost interface {
 	MFLFetcher() mflmirror.Source
 }
 
-func (a *Service) mflAccess(ctx context.Context, league, operation, mode string) (
-	context.Context, *mflmirror.Store, mflmirror.Registration, context.CancelFunc, error) {
-	ctx, _, _, cancel, err := a.franchiseOwnerAccess(ctx, league, operation, mode)
+// mflSeat is what a seated owner's MFL request runs on: the league's held-copy store, the MFL league
+// number from the league's rules, and the franchise from the seat.
+type mflSeat struct {
+	store     *mflmirror.Store
+	mflLeague string
+	franchise string
+	records   []commissioner.Record
+	cancel    context.CancelFunc
+}
+
+func (a *Service) mflAccess(ctx context.Context, league, operation, mode string) (context.Context, mflSeat, error) {
+	ctx, franchise, records, cancel, err := a.franchiseOwnerAccess(ctx, league, operation, mode)
 	if err != nil {
-		return nil, nil, mflmirror.Registration{}, nil, err
+		return nil, mflSeat{}, err
 	}
 	host, ok := a.host.(mflMirrorHost)
 	if !ok || host.MFLMirror() == nil {
 		cancel()
-		return nil, nil, mflmirror.Registration{}, nil, fmt.Errorf("MFL moves storage is not available on this host")
+		return nil, mflSeat{}, fmt.Errorf("MFL moves storage is not available on this host")
 	}
-	store := host.MFLMirror()
-	reg, ok, err := store.Registration(ctx)
+	rules, err := commissioner.RulesNow(records, a.host.CommissionerNow())
 	if err != nil {
 		cancel()
-		return nil, nil, mflmirror.Registration{}, nil, fmt.Errorf("read MFL league setting: %w", err)
+		return nil, mflSeat{}, fmt.Errorf("read MFL league setting: %w", err)
 	}
-	if !ok {
+	number := strings.TrimSpace(rules.MFL.League.Value)
+	if rules.MFL.League.State != leaguerules.IsKnown || number == "" {
 		cancel()
-		return nil, nil, mflmirror.Registration{}, nil, fmt.Errorf("this league has no MFL league number yet; set it first")
+		return nil, mflSeat{}, fmt.Errorf("this league follows no MFL league yet; the commissioner sets the MFL league number in the league rules (mfl.league)")
 	}
-	return ctx, store, reg, cancel, nil
+	return ctx, mflSeat{store: host.MFLMirror(), mflLeague: number, franchise: franchise, records: records, cancel: cancel}, nil
 }
 
 func (a *Service) mflSource() mflmirror.Source {
@@ -149,12 +160,12 @@ func (a *Service) MflMovesRefreshContext(ctx context.Context, raw RawMflMovesSco
 	if err := raw.Validate(); err != nil {
 		return MflRefresh{}, fmt.Errorf("MFL moves input: %w", err)
 	}
-	ctx, store, reg, cancel, err := a.mflAccess(ctx, raw.League, MflMovesRefresh, "execute")
+	ctx, seat, err := a.mflAccess(ctx, raw.League, MflMovesRefresh, "execute")
 	if err != nil {
 		return MflRefresh{}, err
 	}
-	defer cancel()
-	res, err := store.Refresh(ctx, a.mflSource(), reg.MFLLeague)
+	defer seat.cancel()
+	res, err := seat.store.Refresh(ctx, a.mflSource(), seat.mflLeague)
 	if err != nil {
 		return MflRefresh{}, fmt.Errorf("refresh MFL data: %w", err)
 	}
@@ -163,7 +174,7 @@ func (a *Service) MflMovesRefreshContext(ctx context.Context, raw RawMflMovesSco
 	if res.Fetched {
 		words = "Fresh from MFL just now."
 	}
-	return MflRefresh{League: raw.League, MFLLeague: reg.MFLLeague, Season: res.Held.Season,
+	return MflRefresh{League: raw.League, MFLLeague: seat.mflLeague, Season: res.Held.Season,
 		FetchedAt: res.Held.FetchedAt, AgeSeconds: int(res.Age.Seconds()), AskedMFL: res.Fetched,
 		FreeAgents: len(res.Held.FreeAgents), Words: words}, nil
 }
@@ -177,12 +188,12 @@ func (a *Service) MflMovesPoolReadContext(ctx context.Context, raw RawMflPoolSco
 	if err := raw.Validate(); err != nil {
 		return MflPool{}, fmt.Errorf("MFL pool input: %w", err)
 	}
-	ctx, store, reg, cancel, err := a.mflAccess(ctx, raw.League, MflMovesPoolRead, "read")
+	ctx, seat, err := a.mflAccess(ctx, raw.League, MflMovesPoolRead, "read")
 	if err != nil {
 		return MflPool{}, err
 	}
-	defer cancel()
-	held, ok, err := store.Read(ctx, reg.MFLLeague)
+	defer seat.cancel()
+	held, ok, err := seat.store.Read(ctx, seat.mflLeague)
 	if err != nil {
 		return MflPool{}, fmt.Errorf("read held MFL pool: %w", err)
 	}
@@ -205,31 +216,59 @@ func (a *Service) MflMovesPoolReadContext(ctx context.Context, raw RawMflPoolSco
 	if valueNote != "" {
 		words += " " + valueNote
 	}
-	return MflPool{League: raw.League, MFLLeague: reg.MFLLeague, Season: held.Season, FetchedAt: held.FetchedAt,
+	return MflPool{League: raw.League, MFLLeague: seat.mflLeague, Season: held.Season, FetchedAt: held.FetchedAt,
 		AgeSeconds: int(now.Sub(held.FetchedAt).Seconds()), Rows: rows, Positions: positions,
 		Sorts: mflPoolSorts(), Words: words}, nil
 }
 
-// mflPoolValues joins the league's own valuation where it holds the player; a free agent the
-// valuation has never seen is shown as not valued, in words.
-func (a *Service) mflPoolValues(ctx context.Context, league string, season int) (map[string]appvalue.Player, string) {
-	host, ok := a.host.(valueHost)
-	if !ok {
-		return nil, "Values are not available on this host."
+// mflValue is one pool player's value and where it came from, or why he has none.
+type mflValue struct {
+	now, dynasty float64
+	ok           bool
+	league       bool // from this league's own valuation, not the held model run
+	why          string
+}
+
+type modelScoreHost interface {
+	LatestModelScores(context.Context) ([]history.ModelScore, bool, error)
+}
+
+// mflPoolValues values every player it can. This league's own valuation (NativeValues) wins where the
+// host has one; otherwise the held model run values every player it scored, rostered or not.
+func (a *Service) mflPoolValues(ctx context.Context, league string, season int) (map[string]mflValue, string) {
+	out := map[string]mflValue{}
+	note := "Values are not available on this host."
+	if host, ok := a.host.(modelScoreHost); ok {
+		scores, held, err := host.LatestModelScores(ctx)
+		switch {
+		case err != nil:
+			note = "Values are not available right now."
+		case !held:
+			note = "No model run is held yet, so no player can be valued."
+		default:
+			note = "Values come from the held model run (not this league's own scoring)."
+			for _, sc := range scores {
+				out[sc.MFLID] = mflValue{now: sc.NowPPG, dynasty: sc.DynastyPPG, ok: !sc.Unavailable, why: sc.Reason}
+			}
+		}
 	}
-	reading, err := host.NativeValues(ctx, league, "", season)
-	if err != nil {
-		return nil, "Values are not available right now."
+	if host, ok := a.host.(valueHost); ok {
+		if reading, err := host.NativeValues(ctx, league, "", season); err == nil {
+			note = ""
+			for _, p := range reading.Players {
+				if p.Available {
+					out[p.Player] = mflValue{now: p.NowPPG, dynasty: p.DynastyPP, ok: true, league: true}
+				} else if _, has := out[p.Player]; !has {
+					out[p.Player] = mflValue{why: p.Words}
+				}
+			}
+		}
 	}
-	out := make(map[string]appvalue.Player, len(reading.Players))
-	for _, p := range reading.Players {
-		out[p.Player] = p
-	}
-	return out, ""
+	return out, note
 }
 
 func mflPoolRows(ids []string, lookup mflmirror.Directory, season int, now time.Time,
-	values map[string]appvalue.Player, position string) ([]MflPoolRow, []string) {
+	values map[string]mflValue, position string) ([]MflPoolRow, []string) {
 	rows := []MflPoolRow{}
 	seen := map[string]bool{}
 	for _, raw := range ids {
@@ -249,10 +288,15 @@ func mflPoolRows(ids []string, lookup mflmirror.Directory, season int, now time.
 		years, experience := mflExperience(season, facts)
 		row := MflPoolRow{ID: id.String(), Name: facts.Name, Position: pos, Team: facts.Team, Age: mflAge(facts, now),
 			Experience: experience, Minimum: bid.MoneyText(bid.MinimumSalary(years)), Value: "Not valued"}
-		if v, ok := values[row.ID]; ok && v.Available {
-			now, dyn := v.NowPPG, v.DynastyPP
+		if v, ok := values[row.ID]; ok && v.ok {
+			now, dyn := v.now, v.dynasty
 			row.NowPPG, row.Dynasty = &now, &dyn
 			row.Value = fmt.Sprintf("%.2f points/game now, %.2f dynasty", now, dyn)
+			if !v.league {
+				row.Value += " (model run)"
+			}
+		} else if ok && v.why != "" {
+			row.Value = "Not valued: " + v.why
 		}
 		rows = append(rows, row)
 	}

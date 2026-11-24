@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"slices"
 	"sync"
 	"time"
 
@@ -19,8 +20,16 @@ import (
 type Source interface {
 	FetchFreeAgents(ctx context.Context, mflLeague string, season int) ([]string, error)
 	FetchPlayers(ctx context.Context, mflLeague string, season int) ([]byte, error)
+	// FetchFranchises reads the league's public franchise list (id and name).
+	FetchFranchises(ctx context.Context, mflLeague string, season int) ([]Franchise, error)
 	// Directory reads a held player directory (the bytes FetchPlayers returned) into player facts.
 	Directory(playersJSON []byte) (Directory, error)
+}
+
+// Franchise is one team in the MFL league's public franchise list.
+type Franchise struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // Directory resolves an MFL player id to name, position, team, age and draft year.
@@ -48,6 +57,7 @@ type Held struct {
 	Season      int
 	FetchedAt   time.Time
 	FreeAgents  []string
+	Franchises  []Franchise
 	PlayersJSON []byte // the player directory as JSON; normalize.NewLookupJSON reads it
 }
 
@@ -67,7 +77,9 @@ func NewStore(pools *db.Pools, now func() time.Time) *Store {
 }
 
 const schema = `
-CREATE TABLE IF NOT EXISTS mfl_mirror_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS mfl_mirror_franchises (mfl_league TEXT PRIMARY KEY, body TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS mfl_mirror_team (
+  franchise TEXT PRIMARY KEY, mfl_league TEXT NOT NULL, team TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS mfl_mirror_hold (
   mfl_league TEXT PRIMARY KEY, season INTEGER NOT NULL, last_fetched_at TEXT NOT NULL, free_agents TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS mfl_mirror_players (
@@ -83,42 +95,44 @@ func (s *Store) ensure(ctx context.Context) error {
 	return nil
 }
 
-const (
-	keyLeague    = "mfl.league"
-	keyFranchise = "mfl.franchise"
-)
-
-// Registration is the league's plain settings that say which MFL league it follows and which
-// MFL franchise the seated owner chose.
-type Registration struct{ MFLLeague, Franchise string }
-
-// Register stores the two settings. They are ordinary league settings, not a league kind.
-func (s *Store) Register(ctx context.Context, r Registration) error {
-	if err := s.ensure(ctx); err != nil {
+// SetTeam records the MFL team the seated franchise's owner chose. The franchise comes from the
+// seat, never from a request, and the team must be one of the held league's franchises.
+func (s *Store) SetTeam(ctx context.Context, franchise, mflLeague, team string) error {
+	if franchise == "" {
+		return errors.New("a seated franchise is required")
+	}
+	held, ok, err := s.Read(ctx, mflLeague)
+	if err != nil {
 		return err
 	}
-	for k, v := range map[string]string{keyLeague: r.MFLLeague, keyFranchise: r.Franchise} {
-		if _, err := s.pools.Write().ExecContext(ctx,
-			`INSERT INTO mfl_mirror_settings(key,value) VALUES(?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
-			k, v); err != nil {
-			return fmt.Errorf("mflmirror: save setting: %w", err)
-		}
+	if !ok || len(held.Franchises) == 0 {
+		return errors.New("MFL teams are not held yet; refresh first")
+	}
+	if !slices.ContainsFunc(held.Franchises, func(f Franchise) bool { return f.ID == team }) {
+		return fmt.Errorf("team %q is not one of this MFL league's teams", team)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_team(franchise,mfl_league,team) VALUES(?,?,?)
+ON CONFLICT(franchise) DO UPDATE SET mfl_league=excluded.mfl_league, team=excluded.team`,
+		franchise, mflLeague, team); err != nil {
+		return fmt.Errorf("mflmirror: save team: %w", err)
 	}
 	return nil
 }
 
-// Registration reads the settings; ok is false when the league follows no MFL league.
-func (s *Store) Registration(ctx context.Context) (Registration, bool, error) {
+// Team reads the seated franchise's chosen MFL team; ok is false when none is chosen for this MFL league.
+func (s *Store) Team(ctx context.Context, franchise, mflLeague string) (string, bool, error) {
 	if err := s.ensure(ctx); err != nil {
-		return Registration{}, false, err
+		return "", false, err
 	}
-	var r Registration
-	for k, dst := range map[string]*string{keyLeague: &r.MFLLeague, keyFranchise: &r.Franchise} {
-		if _, err := s.queryOne(ctx, `SELECT value FROM mfl_mirror_settings WHERE key=?`, []any{k}, dst); err != nil {
-			return Registration{}, false, fmt.Errorf("mflmirror: read setting: %w", err)
-		}
+	var league, team string
+	found, err := s.queryOne(ctx, `SELECT mfl_league,team FROM mfl_mirror_team WHERE franchise=?`, []any{franchise}, &league, &team)
+	if err != nil {
+		return "", false, fmt.Errorf("mflmirror: read team: %w", err)
 	}
-	return r, r.MFLLeague != "", nil
+	if !found || league != mflLeague {
+		return "", false, nil
+	}
+	return team, true, nil
 }
 
 // Result is a refresh answer: the held copy, its age, and whether MFL was asked this time.
@@ -153,8 +167,20 @@ func (s *Store) Refresh(ctx context.Context, f Source, mflLeague string) (Result
 	if err != nil {
 		return Result{}, fmt.Errorf("mflmirror: free agents: %w", err)
 	}
+	franchises, err := f.FetchFranchises(ctx, mflLeague, season)
+	if err != nil {
+		return Result{}, fmt.Errorf("mflmirror: franchises: %w", err)
+	}
 	if err := s.refreshPlayers(ctx, f, mflLeague, season, now); err != nil {
 		return Result{}, err
+	}
+	fbody, err := json.Marshal(franchises)
+	if err != nil {
+		return Result{}, fmt.Errorf("mflmirror: encode franchises: %w", err)
+	}
+	if _, err := s.pools.Write().ExecContext(ctx, `INSERT INTO mfl_mirror_franchises(mfl_league,body) VALUES(?,?)
+ON CONFLICT(mfl_league) DO UPDATE SET body=excluded.body`, mflLeague, string(fbody)); err != nil {
+		return Result{}, fmt.Errorf("mflmirror: hold franchises: %w", err)
 	}
 	body, err := json.Marshal(ids)
 	if err != nil {
@@ -223,6 +249,16 @@ func (s *Store) read(ctx context.Context, mflLeague string) (Held, bool, error) 
 	}
 	if err := json.Unmarshal([]byte(fa), &h.FreeAgents); err != nil {
 		return Held{}, false, fmt.Errorf("mflmirror: held free agents: %w", err)
+	}
+	var fbody string
+	hasTeams, err := s.queryOne(ctx, `SELECT body FROM mfl_mirror_franchises WHERE mfl_league=?`, []any{mflLeague}, &fbody)
+	if err != nil {
+		return Held{}, false, fmt.Errorf("mflmirror: read franchises: %w", err)
+	}
+	if hasTeams {
+		if err := json.Unmarshal([]byte(fbody), &h.Franchises); err != nil {
+			return Held{}, false, fmt.Errorf("mflmirror: held franchises: %w", err)
+		}
 	}
 	var body string
 	hasPlayers, err := s.queryOne(ctx, `SELECT body FROM mfl_mirror_players WHERE season=?`, []any{h.Season}, &body)

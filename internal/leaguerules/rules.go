@@ -16,6 +16,7 @@ type RuleSet struct {
 	Bids         BidsRules
 	Trades       TradesRules
 	Transactions TransactionRules `json:",omitzero"`
+	MFL          MFLRules         `json:",omitzero"`
 	Schedule     ScheduleRules
 	Playoffs     PlayoffsRules
 	House        HouseRules
@@ -39,6 +40,7 @@ func LegacyNFL() RuleSet {
 		Bids:         legacyBids(),
 		Trades:       legacyTrades(),
 		Transactions: TransactionRules{Follow: cited(false, "Follow reference transactions only when enabled")},
+		MFL:          MFLRules{League: cited("", "Follows no MFL league until one is named")},
 		Schedule:     legacySchedule(),
 		Playoffs:     legacyPlayoffs(),
 		House:        legacyHouse(),
@@ -65,6 +67,7 @@ func ruleFields() []ruleField {
 	result = append(result, tradesFields()...)
 	result = append(result, scheduleFields()...)
 	result = append(result, transactionFields()...)
+	result = append(result, mflFields()...)
 	result = append(result, playoffsFields()...)
 	result = append(result, houseFields()...)
 	result = append(result, calendarFields()...)

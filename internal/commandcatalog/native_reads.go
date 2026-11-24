@@ -100,6 +100,7 @@ func playerPersonalNativeReads() []Command {
 				"RawPlayerWatchReadScope.Validate"), Permission: "franchise-owner",
 			Modes: []Mode{Read}, Undo: "none", Facts: "private-player-data",
 			Safeguards: "authenticated seated franchise; no request franchise; uncached private entries"},
+		ownerPrivateCommand(leagueservice.MflMovesTeamsRead, "MflMovesTeamsRead", reflect.TypeFor[leagueservice.RawMflMovesScope](), Read, "G0", "none", privatePlayerData()),
 		ownerPrivateCommand(leagueservice.MflMovesPoolRead, "MflMovesPoolRead", reflect.TypeFor[leagueservice.RawMflPoolScope](), Read, "G0", "none", privatePlayerData()),
 		{ID: leagueservice.ContractDecisionsRead, Method: "TargetNativeContractDecisions", Version: "1",
 			Role: "domain", Gravity: "G0", Availability: "server",

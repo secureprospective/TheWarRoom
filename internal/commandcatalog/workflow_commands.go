@@ -183,6 +183,12 @@ func privatePersonalWorkflows() map[string]WorkflowCommand {
 		leagueservice.ContractDecisionsRead: workflowInputCommand[market.RawContractDecisionsScope, *market.RawContractDecisionsScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input market.RawContractDecisionsScope) (json.RawMessage, error) {
 			return workflowJSON(s.TargetNativeContractDecisionsContext(ctx, input))
 		}),
+		leagueservice.MflMovesTeamSet: workflowInputCommand[leagueservice.RawMflTeamSet, *leagueservice.RawMflTeamSet]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflTeamSet) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesTeamSetContext(ctx, input))
+		}),
+		leagueservice.MflMovesTeamsRead: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("read", "this is a reading only", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
+			return workflowJSON(s.MflMovesTeamsReadContext(ctx, input))
+		}),
 		leagueservice.MflMovesRefresh: workflowInputCommand[leagueservice.RawMflMovesScope, *leagueservice.RawMflMovesScope]("execute", "confirm the change", func(ctx context.Context, s *leagueservice.Service, input leagueservice.RawMflMovesScope) (json.RawMessage, error) {
 			return workflowJSON(s.MflMovesRefreshContext(ctx, input))
 		}),

@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "1dd9b372813f563dec0ac77d26864fab2816f5b36887a2ca1b8309cf27fe2414",
+  "beforeDigest": "f8c191d2180e0e62f80b7cd5c2b341395cf77fa9816898e3dac77c5bbff5383b",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -4055,6 +4055,13 @@
         "State": 1,
         "Value": false,
         "Citation": "Follow reference transactions only when enabled"
+      }
+    },
+    "MFL": {
+      "League": {
+        "State": 1,
+        "Value": "",
+        "Citation": "Follows no MFL league until one is named"
       }
     },
     "Schedule": {

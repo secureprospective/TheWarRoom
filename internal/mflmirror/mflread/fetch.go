@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/secureprospective/TheWarRoom/internal/ingestion"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/freeagents"
 	"github.com/secureprospective/TheWarRoom/internal/ingestion/players"
 	"github.com/secureprospective/TheWarRoom/internal/mfl"
@@ -52,6 +53,34 @@ func (f Fetcher) FetchFreeAgents(ctx context.Context, mflLeague string, season i
 		ids = append(ids, r.ID)
 	}
 	return ids, nil
+}
+
+// FetchFranchises reads the league's public franchise list from the `league` export.
+func (f Fetcher) FetchFranchises(ctx context.Context, mflLeague string, season int) ([]mflmirror.Franchise, error) {
+	c, err := f.client()
+	if err != nil {
+		return nil, err
+	}
+	env, err := ingestion.FetchLeagueExport[struct {
+		League struct {
+			Franchises struct {
+				Franchise ingestion.MFLList[struct {
+					ID   string `json:"id"`
+					Name string `json:"name"`
+				}] `json:"franchise"`
+			} `json:"franchises"`
+		} `json:"league"`
+	}](ctx, c, "league", strconv.Itoa(season), mflLeague, nil)
+	if err != nil {
+		return nil, fmt.Errorf("fetch MFL franchises: %w", err)
+	}
+	out := []mflmirror.Franchise{}
+	for _, row := range env.League.Franchises.Franchise {
+		if row.ID != "" {
+			out = append(out, mflmirror.Franchise{ID: row.ID, Name: row.Name})
+		}
+	}
+	return out, nil
 }
 
 // FetchPlayers reads the player directory. MFL allows this export about once a day, so the

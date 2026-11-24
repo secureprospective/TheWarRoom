@@ -2,6 +2,7 @@ package leagueservice
 
 import (
 	"context"
+	"encoding/json"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -11,6 +12,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/db"
 	"github.com/secureprospective/TheWarRoom/internal/domain"
 	"github.com/secureprospective/TheWarRoom/internal/mflmirror"
+	"github.com/secureprospective/TheWarRoom/internal/model"
+	"github.com/secureprospective/TheWarRoom/internal/store/history"
 )
 
 // mflMovesMFL is a fake MFL source with recorded-shape data that counts calls; no live MFL is ever called.
@@ -19,6 +22,11 @@ type mflMovesMFL struct{ calls atomic.Int32 }
 func (f *mflMovesMFL) FetchFreeAgents(context.Context, string, int) ([]string, error) {
 	f.calls.Add(1)
 	return []string{"0531", "13593"}, nil
+}
+
+func (f *mflMovesMFL) FetchFranchises(context.Context, string, int) ([]mflmirror.Franchise, error) {
+	f.calls.Add(1)
+	return []mflmirror.Franchise{{ID: "0001", Name: "Alpha"}, {ID: "0002", Name: "Beta"}}, nil
 }
 
 func (f *mflMovesMFL) FetchPlayers(context.Context, string, int) ([]byte, error) {
@@ -47,8 +55,16 @@ func (f *mflMovesMFL) Directory([]byte) (mflmirror.Directory, error) {
 }
 
 func newMflMovesFixture(t *testing.T, principal string) mflMovesFixture {
+	return newMflMovesFixtureFor(t, principal, "14432")
+}
+
+// newMflMovesFixtureFor sets the league's mfl.league rule through the rule-change flow ("" leaves it unset).
+func newMflMovesFixtureFor(t *testing.T, principal, mflLeague string) mflMovesFixture {
 	t.Helper()
 	fixture := newDueFixture(t)
+	if mflLeague != "" {
+		fixture.execute(t, "creator", commissioner.RulesSet, commissioner.RawArgs{Field: "mfl.league", Value: json.RawMessage(`"` + mflLeague + `"`)})
+	}
 	pools, err := db.OpenScratch(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -56,9 +72,6 @@ func newMflMovesFixture(t *testing.T, principal string) mflMovesFixture {
 	t.Cleanup(func() { _ = pools.Close() })
 	now := time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
 	mirror := mflmirror.NewStore(pools, func() time.Time { return now })
-	if err := mirror.Register(t.Context(), mflmirror.Registration{MFLLeague: "14432", Franchise: "0001"}); err != nil {
-		t.Fatal(err)
-	}
 	fake := &mflMovesMFL{}
 	var admitted commissioner.Access
 	host := StoredHost{Store: fixture.store, Context: func() context.Context { return t.Context() },
@@ -134,17 +147,91 @@ func TestMflMovesRequiresASeatedOwner(t *testing.T) {
 }
 
 func TestMflMovesNeedsAnMflLeagueSetting(t *testing.T) {
+	f := newMflMovesFixtureFor(t, "owner.one", "")
+	if _, err := f.service.MflMovesRefreshContext(t.Context(), RawMflMovesScope{League: f.league}); err == nil ||
+		!strings.Contains(err.Error(), "follows no MFL league") || f.mfl.calls.Load() != 0 {
+		t.Fatalf("refresh without the mfl.league rule: %v (calls %d)", err, f.mfl.calls.Load())
+	}
+}
+
+func TestMflTeamSetKeepsToTheHeldListAndTheSeat(t *testing.T) {
 	f := newMflMovesFixture(t, "owner.one")
+	ctx := t.Context()
+	if _, err := f.service.MflMovesTeamSetContext(ctx, RawMflTeamSet{League: f.league, Team: "0001"}); err == nil {
+		t.Fatal("team set before any teams were held")
+	}
+	if _, err := f.service.MflMovesRefreshContext(ctx, RawMflMovesScope{League: f.league}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.MflMovesTeamSetContext(ctx, RawMflTeamSet{League: f.league, Team: "0099"}); err == nil ||
+		!strings.Contains(err.Error(), "not one of this MFL league's teams") {
+		t.Fatalf("team outside the held list accepted: %v", err)
+	}
+	if _, err := f.service.MflMovesTeamSetContext(ctx, RawMflTeamSet{League: f.league, Team: "0001", Franchise: "franchise.02"}); err == nil ||
+		!strings.Contains(err.Error(), "no request franchise") {
+		t.Fatalf("request naming a franchise accepted: %v", err)
+	}
+	got, err := f.service.MflMovesTeamSetContext(ctx, RawMflTeamSet{League: f.league, Team: "0002"})
+	if err != nil || got.Yours != "0002" || len(got.Teams) != 2 || !got.Teams[1].Yours {
+		t.Fatalf("team set = %+v, %v", got, err)
+	}
+	read, err := f.service.MflMovesTeamsReadContext(ctx, RawMflMovesScope{League: f.league})
+	if err != nil || read.Yours != "0002" {
+		t.Fatalf("teams read = %+v, %v", read, err)
+	}
+}
+
+func TestMflTeamChoiceIsPrivateToTheSeat(t *testing.T) {
+	f := newMflMovesFixture(t, "owner.one")
+	ctx := t.Context()
+	if _, err := f.service.MflMovesRefreshContext(ctx, RawMflMovesScope{League: f.league}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.MflMovesTeamSetContext(ctx, RawMflTeamSet{League: f.league, Team: "0001"}); err != nil {
+		t.Fatal(err)
+	}
 	host := f.service.host.(StoredHost)
-	pools, err := db.OpenScratch(t.Context())
+	host.Principal = "owner.two"
+	other := NewHosted(host, admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
+	read, err := other.MflMovesTeamsReadContext(ctx, RawMflMovesScope{League: f.league})
+	if err != nil || read.Yours != "" {
+		t.Fatalf("another seat read %q as its team (%v)", read.Yours, err)
+	}
+	for _, team := range read.Teams {
+		if team.Yours {
+			t.Fatalf("another seat sees %s marked as theirs", team.ID)
+		}
+	}
+}
+
+func TestMflPoolValuesAnUnrosteredFreeAgentFromTheModelRun(t *testing.T) {
+	f := newMflMovesFixture(t, "owner.one")
+	ctx := t.Context()
+	store := f.service.host.(StoredHost).Store
+	run := history.NewModelRun{Season: 2026, AsOf: *f.clock, Engine: "test", InputsHash: "h",
+		Params: history.ParamSet{Params: map[string]float64{"a": 1}},
+		Scores: []history.ModelScore{
+			{MFLID: "0531", Position: "WR", Value: model.Value{NowPPG: 11.5, DynastyPPG: 9.25}},
+			{MFLID: "13593", Position: "RB", InputStatus: model.InputStatus{Unavailable: true, Reason: "No usable season: no games"}},
+		}}
+	if _, _, err := store.WriteModelRun(ctx, run); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.service.MflMovesRefreshContext(ctx, RawMflMovesScope{League: f.league}); err != nil {
+		t.Fatal(err)
+	}
+	pool, err := f.service.MflMovesPoolReadContext(ctx, RawMflPoolScope{League: f.league})
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { _ = pools.Close() })
-	host.Mirror = mflmirror.NewStore(pools, nil)
-	service := NewHosted(host, admissionFunc(func(context.Context, commissioner.Access) error { return nil }))
-	if _, err := service.MflMovesRefreshContext(t.Context(), RawMflMovesScope{League: f.league}); err == nil ||
-		!strings.Contains(err.Error(), "no MFL league number") {
-		t.Fatalf("refresh without a registered MFL league: %v", err)
+	byID := map[string]MflPoolRow{}
+	for _, row := range pool.Rows {
+		byID[row.ID] = row
+	}
+	if v := byID["0531"]; v.NowPPG == nil || *v.NowPPG != 11.5 || !strings.Contains(v.Value, "11.50 points/game now") {
+		t.Fatalf("free agent 0531 not valued: %+v", v)
+	}
+	if v := byID["13593"]; v.NowPPG != nil || v.Value != "Not valued: No usable season: no games" {
+		t.Fatalf("free agent 13593 = %+v", v)
 	}
 }
