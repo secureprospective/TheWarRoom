@@ -234,6 +234,13 @@ after it passed the scouting research holdouts.
 
 ---
 
+### Sleeper projections (RotoWire forecast via Sleeper)
+**URL:** api.sleeper.app/projections/nfl/{season}/{week}?season_type=regular
+**Free access:** Yes — no key.
+**What it provides:** Weekly projected NFL stat lines, including offense, IDP, kickers and team defense. The forecast is marked RotoWire in the response and served by Sleeper.
+**Terms:** Endpoint is undocumented; no terms were found. It may change or stop at any time.
+**Primary use:** INTERNAL REHEARSAL ONLY (P10 step 1). Never shown with Sleeper's or RotoWire's name on public pages; public use needs our own model or a licensed feed.
+
 ## TESTED, NOT ADOPTED (2026-10-04)
 
 Free and durable, and tested against the 2023–2025 holdouts in the scouting research
