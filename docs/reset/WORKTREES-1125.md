@@ -246,12 +246,11 @@ Cleanup preserves the branch and its commit. These counts include the main check
 | `/home/chris/work/TheWarRoom/.worktrees/draftpause-repair-1125` | `origin/session/draftpause-repair-1125` at `32b90dc461d5a06b1ce83458c0482a6b92034c44` | [#534 draft-pause fix](https://github.com/secureprospective/TheWarRoom/pull/534) matched the clean worktree before ordinary removal. |
 | `/home/chris/work/TheWarRoom/.worktrees/pulse-draftpause` | `session/pulse-draftpause at ec54544e72556c83ac6f87c11790305d2d785e2e` | Retired #528 after its draft fix moved to #534. The host open-file check found no use. The local branch preserves its extra reconciliation commits. |
 | `/home/chris/work/TheWarRoom/.worktrees/pulse-b1hqdec` | `session/pulse-b1hqdec at 7685de0e8480a330f42a4f880272256590b2abe7` | Exact head of merged #348. Its ignored scratch directory contained only lint cache. The host open-file check found no use. |
-
 | `/home/chris/work/TheWarRoom/.worktrees/draftexpiry-repair-1125` | `origin/session/draftexpiry-repair-1125` at `bd90537652684a127cee778a4d8e9011b9e827ef` | [#535 draft-expiry replacement](https://github.com/secureprospective/TheWarRoom/pull/535) matched the clean worktree before ordinary removal. |
 
 The registered count fell from **75 to 73** after these removals. A temporary checkout was
-then created to publish the draft-expiry replacement and removed after it opened. The merged #527 checkout remains in
-use by protected Vite PID `557753`. The staged release checkout also remains operational.
+then created to publish the draft-expiry replacement and removed after it opened. The merged
+#527 checkout remains in use by protected Vite PID `557753`. The staged release checkout also remains operational.
 Other clean checkouts lack verified merged or retired status. The under-40 target is blocked
 by these retained checkouts and the uncommitted changes below.
 
