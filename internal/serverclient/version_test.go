@@ -1,13 +1,11 @@
 package serverclient
 
 import (
-	"context"
 	"crypto/x509"
 	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -15,7 +13,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 )
 
-func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
+func TestAgentExposesUpdateRequired(t *testing.T) {
 	for _, side := range []serverversion.Side{serverversion.App, serverversion.Server} {
 		t.Run(string(side), func(t *testing.T) {
 			var calls atomic.Int32
@@ -32,13 +30,6 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			defer server.Close()
 			roots := x509.NewCertPool()
 			roots.AddCert(server.Certificate())
-			desktop, err := NewDesktop(server.URL, "native.test", roots, &testCredentials{unavailable: true})
-			if err != nil {
-				t.Fatal(err)
-			}
-			defer desktop.Close()
-			_, err = desktop.Act(t.Context(), RawDesktop{Action: "login", Username: "owner", Password: "private-password"})
-			assertUpdate(t, err, side)
 			agent, err := NewAgent(server.URL, "native.test", "connection-token", roots)
 			if err != nil {
 				t.Fatal(err)
@@ -46,25 +37,8 @@ func TestDesktopAndAgentExposeUpdateRequiredWithoutStream(t *testing.T) {
 			defer agent.client.Close()
 			_, err = agent.Ledger(t.Context())
 			assertUpdate(t, err, side)
-			desktop.bearer = "session"
-			retry, err := desktop.captureInvalidations().watch(t.Context(), func(_ context.Context, _ RawInvalidation) error {
-				t.Fatal("refused stream reread native data")
-				return nil
-			})
-			assertUpdate(t, err, side)
-			request := httptest.NewRequest(http.MethodPost, DesktopPath, strings.NewReader(`{"action":"login","username":"owner","password":"private-password"}`))
-			request.Header.Set("Content-Type", "application/json")
-			response := httptest.NewRecorder()
-			desktop.Handler().ServeHTTP(response, request)
-			if response.Code != http.StatusUpgradeRequired || response.Header().Get(serverhttp.UpdateHeader) != string(side) {
-				t.Fatalf("webview lost update signal: %d %s", response.Code, response.Body.String())
-			}
-			expectedCalls := 4
-			if side == serverversion.App {
-				expectedCalls = 3
-			} // Once refused, native actions stay blocked locally.
-			if retry || int(calls.Load()) != expectedCalls {
-				t.Fatalf("update refusal retried or missing requests: retry %v, calls %d", retry, calls.Load())
+			if calls.Load() != 1 {
+				t.Fatalf("update refusal retried or missing requests: calls %d", calls.Load())
 			}
 		})
 	}

@@ -3,6 +3,7 @@ package serverhttp_test
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -10,7 +11,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
-	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -83,16 +83,8 @@ func TestHostedBackupWorkflowPreviewsExecutesAndRefusesOwnerAndAgent(t *testing.
 	}
 }
 
-func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *testing.T) {
+func TestHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *testing.T) {
 	f := newHostedFixture(t, true)
-	desktop := desktopFor(t, f)
-	raw := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}
-	if _, err := desktop.Act(t.Context(), raw); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := desktop.Workflow(t.Context(), workflowRequest(t, "native.assets.read", "read", `{"league":"native.other"}`, "")); err == nil {
-		t.Fatal("cross-league desktop request accepted")
-	}
 	bearer, proof := f.directCommissioner(t)
 	invoke := func(r serverhttp.RawWorkflow, status int) serverhttp.WorkflowResponse {
 		t.Helper()
@@ -109,6 +101,7 @@ func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *test
 		}
 		return response
 	}
+	invoke(workflowRequest(t, "native.assets.read", "read", `{"league":"native.other"}`, ""), http.StatusForbidden)
 	read := func() (commissioner.NativeAssets, string) {
 		t.Helper()
 		response := invoke(workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, ""), 200)
@@ -164,33 +157,19 @@ func TestDesktopHostedReserveMoveConfirmedRetryAndRefusalPreservesRoster(t *test
 	}
 }
 
-func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
+func TestHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	f := newHostedFixture(t, true)
-	desktop := desktopFor(t, f)
-	raw := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}
-	if _, err := desktop.Act(t.Context(), raw); err != nil {
-		t.Fatal(err)
-	}
-	raw.Action = "totp-begin"
-	setup, err := desktop.Act(t.Context(), raw)
-	if err != nil {
-		t.Fatal(err)
-	}
-	raw.Action = "totp-confirm"
-	raw.Code = testTOTP(t, setup.Seed, f.clockTime())
-	if _, err := desktop.Act(t.Context(), raw); err != nil {
-		t.Fatal(err)
-	}
-	f.advanceTime(30 * time.Second)
-	raw.Action = "totp-step-up"
-	raw.Code = testTOTP(t, setup.Seed, f.clockTime())
-	if _, err := desktop.Act(t.Context(), raw); err != nil {
-		t.Fatal(err)
-	}
+	bearer, proof := f.directCommissioner(t)
 	call := func(command, mode string, args []byte, pin string) serverhttp.WorkflowResponse {
 		t.Helper()
-		result, err := desktop.Workflow(t.Context(), serverhttp.RawWorkflow{Command: command, Mode: mode, Version: "1", Arguments: args, Football: pin})
+		req := serverhttp.RawWorkflow{Command: command, Mode: mode, Version: "1", Arguments: args, Football: pin}
+		body, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &req})
 		if err != nil {
+			t.Fatal(err)
+		}
+		raw := f.post(t, serverhttp.WorkflowPath, string(body), bearer, proof, http.StatusOK)
+		var result serverhttp.WorkflowResponse
+		if err := json.Unmarshal(raw, &result); err != nil {
 			t.Fatalf("%s: %v", command, err)
 		}
 		return result
@@ -241,12 +220,26 @@ func TestDesktopHostedLineupDraftReconnectAndRevocation(t *testing.T) {
 	if !found {
 		t.Fatal("rookie did not reach authoritative roster")
 	}
-	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "revoke-device"}); err != nil {
+	revokeReq, err := http.NewRequestWithContext(t.Context(), http.MethodPost, f.server.URL+serverhttp.RevokePath, strings.NewReader(`{"protocol":1,"allDevices":false}`))
+	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := desktop.Workflow(t.Context(), workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")); err == nil {
-		t.Fatal("revoked device could read")
+	revokeReq.Header.Set("Content-Type", "application/json")
+	revokeReq.Header.Set("Authorization", "Bearer "+bearer)
+	revokeResp, err := f.server.Client().Do(revokeReq)
+	if err != nil {
+		t.Fatal(err)
 	}
+	_ = revokeResp.Body.Close()
+	if revokeResp.StatusCode != http.StatusOK {
+		t.Fatalf("revoke status = %d", revokeResp.StatusCode)
+	}
+	revokedReq := workflowRequest(t, "native.assets.read", "read", `{"league":"native.hosted"}`, "")
+	revokedBody, err := json.Marshal(serverhttp.RawNativeRequest{Protocol: 1, Workflow: &revokedReq})
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.post(t, serverhttp.WorkflowPath, string(revokedBody), bearer, proof, http.StatusUnauthorized)
 }
 
 func TestHostedCommissionerControlRoomReads(t *testing.T) {

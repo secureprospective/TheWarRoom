@@ -20,7 +20,6 @@ func TestExecutableRegistryRejectsBrokenDeclarations(t *testing.T) {
 		"duplicate ID":                  func(r *Registry) { r.entries = append(r.entries, r.entries[0]) },
 		"missing native handler":        func(r *Registry) { r.entries[0].Native[Read] = nil },
 		"unsupported mode":              func(r *Registry) { r.entries[0].Native[Execute] = handler },
-		"missing desktop handler":       func(r *Registry) { r.entries[0].Desktop = []DesktopExposure{{}} },
 		"missing workflow handler":      func(r *Registry) { r.entries[0].Workflow = &WorkflowCommand{} },
 		"empty label":                   func(r *Registry) { r.entries[0].Label = "" },
 		"unsupported CLI":               func(r *Registry) { r.entries[0].CLI = true },
@@ -162,7 +161,7 @@ func TestOperatorRegistryKeepsOfflineAuthorityConsoleOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, door := range []Door{NativeDoor, MFLDoor, WailsDoor, WorkflowDoor, BrowserDoor, "unknown"} {
+	for _, door := range []Door{NativeDoor, MFLDoor, WorkflowDoor, BrowserDoor, "unknown"} {
 		if _, err := registry.Invoke(t.Context(), door, "league.stand_up", Execute, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not available") {
 			t.Fatalf("offline command leaked into %s: %v", door, err)
 		}

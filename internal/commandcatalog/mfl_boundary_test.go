@@ -23,7 +23,7 @@ func checkMFLNames(native, mfl []Command) error {
 }
 
 func TestMFLCommandNamesAreSeparate(t *testing.T) {
-	native := append(NativeCommands(Schema{}), DesktopCommands("commissioner", nil)...)
+	native := NativeCommands(Schema{})
 	mfl := append(MFLCommands(MFLShapes{}), MFLPlanCommands()...)
 	for _, door := range []struct{ feature, method, id string }{
 		{"contracts", "TargetDraftLineup", "mfl.lineup.set"},

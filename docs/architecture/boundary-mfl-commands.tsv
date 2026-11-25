@@ -26,17 +26,6 @@ migration	league.migrate.invites	league.migrate.invites	1	desktop
 migration	league.migrate.invites.send	league.migrate.invites.send	1	desktop
 migration	league.migrate.prepare	league.migrate.prepare	1	desktop
 migration	league.migrate.review	league.migrate.review	1	desktop
-platform	unset	TargetCheckMoves	unset	both
-platform	unset	TargetClock	unset	both
-platform	unset	TargetDraftIR	unset	both
-platform	unset	TargetDraftTaxi	unset	both
-platform	unset	TargetHandOff	unset	desktop
-platform	unset	TargetInjuries	unset	both
-platform	unset	TargetLeagues	unset	both
-platform	unset	TargetMoves	unset	both
-platform	unset	TargetPhoto	unset	both
-platform	unset	TargetSnapshot	unset	both
-platform	unset	TargetWithdrawRoster	unset	both
 trades	mfl.trade.accept	TargetDraftTradeAccept	unset	both
 trades	unset	TargetTradeBuilder	unset	desktop
 trades	unset	TargetTradeBuilderPreview	unset	desktop

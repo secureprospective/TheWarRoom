@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
-	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -44,25 +43,4 @@ func TestRecoveryHTTPSOnceAndThrottle(t *testing.T) {
 		f.post(t, serverhttp.RecoveryPath, body, "", "", 401)
 	}
 	f.post(t, serverhttp.RecoveryPath, body, "", "", 429)
-}
-
-func TestDesktopRecoveryUsesHTTPSAndClearsSession(t *testing.T) {
-	f := newHostedFixture(t)
-	code := recoveryCode(t, f)
-	desktop := desktopFor(t, f)
-	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}); err != nil {
-		t.Fatal(err)
-	}
-	raw := serverclient.RawDesktop{Action: "recover", Username: "commissioner", Code: code, Password: "replacement-password"}
-	view, err := desktop.Act(t.Context(), raw)
-	if err != nil || !strings.Contains(view.Message, "Password reset") {
-		t.Fatalf("recovery: %+v %v", view, err)
-	}
-	view, err = desktop.Act(t.Context(), serverclient.RawDesktop{Action: "status"})
-	if err != nil || view.Message != "" {
-		t.Fatalf("saved session survived: %+v %v", view, err)
-	}
-	if _, err := desktop.Act(t.Context(), raw); err == nil {
-		t.Fatal("code worked twice")
-	}
 }

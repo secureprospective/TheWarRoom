@@ -18,13 +18,11 @@ function typeChecks() {
   const outcome: NativeArguments<'commish.league.create'>['args'] = { tradeOutcome: {} };
   // @ts-expect-error Browser arguments preserve the local domain choices.
   const browser: CommandArguments<'browser', 'density.set'> = { density: 'unknown' };
-  // @ts-expect-error Wails keeps positional arguments and their original scalar types.
-  const desktop: CommandArguments<'wails', 'race.TargetRace'> = ['5', 'team', 'mine', 'lineup'];
   // @ts-expect-error A local MFL command cannot acquire a hosted workflow door.
   const remote: CommandArguments<'workflow', 'mfl.bid.revise'> = {};
   // @ts-expect-error MFL plan IDs stay text.
   const mfl: CommandArguments<'mfl', 'mfl.bid.withdraw'> = { id: 1 };
-  return [upgrade, badLeague, badCommand, outcome, browser, desktop, remote, mfl];
+  return [upgrade, badLeague, badCommand, outcome, browser, remote, mfl];
 }
 void typeChecks;
 
