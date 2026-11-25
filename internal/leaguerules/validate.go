@@ -2,9 +2,11 @@ package leaguerules
 
 import (
 	"fmt"
+	"net/url"
 	"reflect"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 func validateValue(v reflect.Value) error {
@@ -111,6 +113,9 @@ func OLineOn(r RuleSet) bool {
 }
 
 func validateRules(r RuleSet) error {
+	if err := validateChatLink(r.League.ChatLink.Value); err != nil {
+		return err
+	}
 	if r.Trades.DOTSeats.State == IsKnown && r.Trades.DOTSeats.Value < 1 {
 		return fmt.Errorf("trade review needs at least one seat")
 	}
@@ -217,6 +222,27 @@ func validateScheduleFollow(v ScheduleFollow) error {
 		if r < '0' || r > '9' {
 			return fmt.Errorf("reference league number must contain only digits")
 		}
+	}
+	return nil
+}
+
+//nolint:staticcheck // These refusals are complete owner-facing sentences.
+func validateChatLink(link string) error {
+	if link == "" {
+		return nil
+	}
+	if utf8.RuneCountInString(link) > 300 {
+		return fmt.Errorf("The chat link must be at most 300 characters")
+	}
+	u, err := url.Parse(link)
+	if err != nil {
+		return fmt.Errorf("Enter a complete https:// chat link")
+	}
+	if u.Scheme != "https" {
+		return fmt.Errorf("The chat link must start with https://")
+	}
+	if u.Hostname() == "" {
+		return fmt.Errorf("The chat link must include a host")
 	}
 	return nil
 }

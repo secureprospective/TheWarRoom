@@ -7,6 +7,7 @@ import (
 )
 
 type LeagueRules struct {
+	ChatLink       Value[string]         `json:",omitzero"`
 	StartingAssets Value[StartingAssets] `json:",omitzero"`
 	Teams          Value[int]
 	Conferences    Value[int]
@@ -30,6 +31,7 @@ type LeagueRules struct {
 
 func legacyLeague() LeagueRules {
 	return LeagueRules{
+		ChatLink:            cited("", "League chat stays outside TheWarRoom"),
 		StartingAssets:      cited(EmptyAssets, "New leagues start with empty rosters and their rules-defined auction lots"),
 		Teams:               cited[int](32, "Census CM-001"),
 		Conferences:         cited[int](2, "Census CM-001"),
@@ -48,6 +50,7 @@ func legacyLeague() LeagueRules {
 
 func leagueFields() []ruleField {
 	return []ruleField{
+		field[string]{path: "league.chatLink", label: "League chat link", access: func(r *RuleSet) *Value[string] { return &r.League.ChatLink }},
 		field[StartingAssets]{path: "league.startingAssets", label: "Starting assets", access: func(r *RuleSet) *Value[StartingAssets] { return &r.League.StartingAssets }},
 		field[int]{path: "league.teams", label: "Teams", access: func(r *RuleSet) *Value[int] { return &r.League.Teams }},
 		field[int]{path: "league.conferences", label: "Conferences", access: func(r *RuleSet) *Value[int] { return &r.League.Conferences }},
