@@ -4,6 +4,8 @@
 what is running, what to do next, and the rules Christopher set. It replaces `RESUME-edges-1125.md` (11-25 morning)
 for current state; that file is still worth reading for the GATE 2 and chat history.
 
+**Nov 25 closeout:** [session log, next steps and headbrain lessons](#10-session-close--nov-25-2026).
+
 ## 0. The assignment, in one paragraph
 
 Christopher handed Tom two plans written by Astra 6.2 and said: "begin these plans and because your tokens are running out
@@ -196,3 +198,38 @@ Christopher's 11-25 workflow update applies to this workstream. Finish existing 
 - Lanes often stop short or test themselves hollow (Luna's first W3 pass; the hollow note-edit test). Always check the
   report against the done lines, and give a "Part 2" addendum rather than accepting a "NOT MET".
 - A lane's `HANDOFF.md` edits must not be committed. Restore it from main.
+
+## 10. Session close — Nov 25, 2026
+
+**Resume here:** branch `session/handoff-1125`, PR [#529](https://github.com/secureprospective/TheWarRoom/pull/529).
+The canonical file is `docs/resume/RESUME-astra-plan.md` in the `handoff-1125` worktree.
+Older run-folder copies and chain scripts are historical. The current operator rules are in §1 and §Needs Christopher.
+
+### What was done
+
+| Work | Outcome and evidence |
+|---|---|
+| Takeover and draft readiness | Reconciled the Astra rehearsal calendar with BUILD-PLAN and put the merge order and blockers in this RESUME. Confirmed #523–#526 on main. #527 squash-merged at 09:54 as `ca9930d1e`. The timer released it as Lab v96, healthy at 10:03 after both backup checks recovered. T663 is verified on Hermes, including 10 offline calendar checks. Evidence: `~/fleet/runs/astra-exec-1125/T663-RELEASE-1125.md` and `~/fleet/runs/labrel-v96-auto-1125/status.txt`. |
+| Workspace cleanup | Inventoried branches and worktrees against fetched main. Removed 41 clean registrations safely, freed 3.05 GB and verified 74 remaining, 81% used and 84G available at that checkpoint. Left the 36 dirty worktrees untouched. The per-tree evidence and keep/drop recommendations are in [#532](https://github.com/secureprospective/TheWarRoom/pull/532), `docs/reset/WORKTREES-1125.md`, and `~/fleet/runs/twr-worktrees-1125/`. |
+| Practice shape cleanup | [#531](https://github.com/secureprospective/TheWarRoom/pull/531) keeps the commissioner-held seat and revokes the three helper tokens. The offline regression rejects an unintended SSH seat mutation. CI is green. |
+| Load and lineup verification | Christopher accepted v93's 31 owners and 62 devices for the Stage 5–6 gate. It produced 24,784 HTTP 200s, zero errors, p95 193.2 ms and a sampled 664 MiB peak. The 64-device and integrity proof remains separate. [#533](https://github.com/secureprospective/TheWarRoom/pull/533) fixes the false pass for an incomplete load. Seven local tests and CI passed. T662 was fixed by #475, and all 4,110 v93 lineup reads returned 200. Evidence and full-load work order: `~/fleet/runs/twr-t631-1125/RESULT.md`. |
+| Build stages and security review | Verified Stage 4 rulings in #478. Luna reconciled the Stage 2 shipped code in #468 with remaining phone and first-open observations, and ranked Stage 5 work behind draft readiness. T649's weekly audit found zero advisories when the withdrawn exception was omitted in scratch. T640's public Week 10 MFL recheck found five changed totals; saved native scores were provisional. Evidence: `STAGE2-EVIDENCE-1125.md`, `STAGE5-START-1125.md`, `T649-AUDIT-1125.md` and `OPERATORS-1125.md` in the Astra run folder. |
+| Lab preparations and windows | Prepared the 1A/1B preflight and Saturday/Sunday/Tuesday work orders. Four local race regressions for seats passed. Both handset shells rendered, with the full phone walkthrough and seat proof still pending. Christopher named Codex for the Lab app/Beelink-script work. The first approved league-ID window stopped with no S8 attached. The approved USB retry read the disposable commissioner session successfully. Zero of four expected IDs were in that account's admission list. No league data changed. Evidence: `1A-1B-PREFLIGHT-1125.md`, `2A-SATURDAY-WORK-ORDER.md`, `3-4-DRAFT-RUN-ORDER.md` and `1C-LEAGUE-ID-WINDOW-02.md` in the Astra run folder. |
+| Dec 8 report and correction proof | Confirmed the Hermes report still targets Tom Test, skips Dec 8 and can treat AMBER/UNKNOWN as green. The offline wrapper proposal passed 11 checks for league coverage, dates and status handling. It has not been deployed. The authorized operator still needs all four confirmed IDs and scoped reader files. T708 remains separate. 8A still needs a post-Dec 6 decision on the owner-readable correction contract. Evidence: `1C-REPORTCARD-1125.md` and `~/fleet/runs/pulse-astra8b/RESULT.md`. |
+
+### Restart order and decisions
+
+1. **Finish the draft queue.** #528 and #530 have baseline conflicts. The #528 feature, tests and rationale apply cleanly in scratch to fetched main at `ca9930d1e`. Clear one of the four tracked work PRs before opening the #528 replacement branch. Preserve main's HANDOFF, regenerate the line budget, run the touched race tests and obtain Christopher's merge OK. Then transplant only #530's incremental server changes, followed by the missed-pick frontend PR. The new default leaves a draft open while any pick is owed unless the commissioner closes it. Remind Christopher before Tuesday.
+2. **Protect the next Lab window.** The hold was absent at close. Set it before Sunday practice and Tuesday real drafts. 1B requires its own go plus proof of the hold and all drafts closed before any restart. 1A requires its own go and disposable identities. For the league-ID task, obtain an authorized directory source with visibility of all four leagues before requesting another window. Keep Saturday's Season swap under its separate sign-off.
+3. **Resolve remaining approvals.** Christopher or Claudebox handles T640 read-only and T621 privileged work on CT 257 after Christopher confirms its host. T632 access is Christopher's decision, limited to the approved TWR hostnames and the scopes in §Needs Christopher. Keep the 36 dirty worktrees for Christopher's keep/drop rulings. Start the ranked Stage 5 cleanup after the draft queue clears.
+
+**PR state at close:** #531, #532 and #533 were green and clean. #528 and #530 were green at their prior heads and conflicted with main. #529 is the open handoff branch and has a baseline conflict to reconcile once the draft PRs land. No additional main merge was authorized in this closeout.
+
+### Headbrain lessons
+
+- Start the next in-scope independent item in the same turn. I stopped after naming next work, and Christopher had to restart me. Keep a durable continuation line after each item with landed PRs, open work, exact blockers and the next runnable step. When usage or compaction interrupts work, resume from that line and send an explicit closeout.
+- Treat assignment, approval and observed access as separate facts. I initially treated my Tom proposal as a confirmed assignment, then corrected it. Christopher decides who operates. His go covers one named window and the posted commands. A tested transport or role mismatch calls for a fresh scope or verified prerequisite.
+- Keep hands-on work in a narrow Luna brief. Give one outcome, concrete done lines and exact files. The headbrain owns the plan, authority checks, diff review, deliberate break, PR and evidence. Run the mutation in a disposable copy. Bundle unrelated reads and use small summaries to protect context.
+- Track requested coverage separately from successful requests. The old load runner returned success with missing seats; the report wrapper returned success when evidence was incomplete. Exercise both false-pass cases. Likewise a successful browser session read proves only what the account can see, and a successful build does not close a missing phone observation.
+- Verify landed code from fetched main when GitHub's PR state lags. Match the installed Lab commit and wait for backup-verified health before claiming sign-ins are available. Record when each result was observed.
+- Keep one worktree per task and finish an open branch before spending another slot. Preserve dirty and operational worktrees, use clean base transplants, and regenerate generated baselines. Keep scoped tests and report preparation moving while a merge or live window is blocked.
