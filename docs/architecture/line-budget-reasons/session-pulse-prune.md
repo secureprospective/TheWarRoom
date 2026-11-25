@@ -1,0 +1,1 @@
+About 21 lines in deploy/server: upgrade.sh now prunes saved upgrade sets to the newest 5 after a successful upgrade (the Lab had 41 sets, 1.4 GB, with 1.1 GB disk free before the Dec 1 drafts), plus its Alpine test assertion.

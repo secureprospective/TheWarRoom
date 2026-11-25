@@ -48,7 +48,7 @@ In normal mode, the tool first reads the league file without migrating it. An un
 newer server stamp is refused without changing it. It then stops the Tunnel and server,
 keeps the installed binary and private settings, and takes a SQLite snapshot of the
 whole league, accounts, audit chains, and transfer fences. It verifies and saves their
-checkpoint. If R2 is configured, a matched encrypted recovery set must upload and read
+checkpoint. After a successful upgrade only the newest 5 saved sets are kept. If R2 is configured, a matched encrypted recovery set must upload and read
 back successfully before migration. With no R2, the server remains practice/read-only
 for native changes as before; local migration still needs its verified snapshot.
 Migration and the new release stamp happen only after backup. The tool checks the
