@@ -179,3 +179,18 @@ func TestClosingSealsTheDraftAndSkipsWhatIsLeft(t *testing.T) {
 		t.Fatalf("a closed draft: exhausted=%v onClock=%v", d.Exhausted, d.OnClock)
 	}
 }
+
+func TestHeldVacantTurnPreservesPreviouslyRecordedSkips(t *testing.T) {
+	r := testRules().Draft
+	start := fixedStart()
+	at := start.Add(7 * time.Hour)
+	acts := []Act{{Kind: Select, At: at, Pick: second(), Owner: "b", Player: "0001"}}
+	d, err := ReplayActs(r, testOrder(t, r), start, at, acts,
+		func(string, time.Time) (bool, error) { return true, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !d.Picks[0].Skipped || d.Picks[1].Player != "0001" {
+		t.Fatalf("rewrote recorded history: %+v", d.Picks[:2])
+	}
+}

@@ -121,7 +121,7 @@ func readDraft(records []Record, key DraftKey, at time.Time, standings DraftStan
 	if key.Side != "" {
 		replay = rookiedraft.ReplaySideActs
 	}
-	basis.draft, err = replay(rules.Draft, basis.order, basis.start, at, draftActs(records, key))
+	basis.draft, err = replay(rules.Draft, basis.order, basis.start, at, draftActs(records, key), holdVacantDraftTurn(records))
 	if err != nil {
 		return basis, fmt.Errorf("replay the rookie draft: %w", err)
 	}

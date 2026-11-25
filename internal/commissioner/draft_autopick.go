@@ -166,3 +166,11 @@ func CheckAutoDraftPickAppend(raw RawCommand, records []Record, at time.Time,
 	}
 	return nil
 }
+
+// holdVacantDraftTurn preserves a computer turn using the seats at its deadline.
+// A later seating change must not rewrite an earlier human timeout.
+func holdVacantDraftTurn(records []Record) func(string, time.Time) (bool, error) {
+	return func(owner string, deadline time.Time) (bool, error) {
+		return AutomaticFranchise(RecordsThrough(records, deadline), owner)
+	}
+}
