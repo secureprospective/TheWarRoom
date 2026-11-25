@@ -1,79 +1,47 @@
-# Resume — overnight run 11-23/24 (Claude Opus head brain on the Beelink) — CLOSED
-Updated 2026-11-24 07:25 CT. Run folder: `~/fleet/runs/overnight-twr-1123/` (REPORT.md: closing summary on top, full log below).
+# RESUME — overnight-gaps-1124 (Tom head brain), written ~7:50 PM CT 11-24
+First action after compaction: `~/fleet/bin/run-watch.sh status ~/fleet/runs/overnight-gaps-1124`, then re-arm
+`run-watch.sh wait ~/fleet/runs/overnight-gaps-1124 50` (background) if `pgrep -f "run-watch.sh wait"` is empty.
+Event log: REPORT.md (append `- <time> CT <job>: <result>`). Plan/done lines: PLAN.md.
 
-## 1. What we did
-We worked the pickup note's five steps (docs/from-tom/2026-11-23-twr-pickup.md, branch session/resume-1123e).
-Repo: `~/work/TheWarRoom`. Lab: `ssh -F ~/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/ssh-lab.conf lab`, then `pct exec 260 -- …`.
+## Authority (Christopher 11-24 ~4:20 PM): merge ANY PR that is CI green AND has a caught planted break (squash: gh pr merge N --squash).
+## Routing (Christopher ~7 PM): builds -> Sol 6.2 (`launch-pulse-lane.sh sol62 <lane> <brief> medium`); Luna high/xhigh = research/specs; no Gemini unless GPT low. AGY Claude quota out ~68 h.
 
-## 2. Done looks like
-1. **MET.** #487 merged and carried by the Lab (now v70, faa12dd1e).
-2. **MET.** The MFL helper is PR #489, merged as a99d18c84 and live on the Lab as v71. It was observed
-   working on the real Lab server in `~/fleet/runs/mfllive2-1124/`, `mfllive3-1124/` and `mfllive4-1124/`.
-3. **MET.** standings.read is 2.3x faster: #488 merged.
-4. **MET.** The load test was rerun on v68 and v70 (`<run>/load2/RESULT.md`).
-   - The median request dropped from 95 to 39 ms.
-   - p95 is 316 ms, so the < 200 ms target is NOT met.
-5. **MET.** The Sunday practice drafts are #490, merged.
+## Open now
+- #515 MERGED ~7:55 PM.
+- #516 PR-H Wails removal (Sol 6.2 + Tom gate fixes, 2 planted breaks). Merge when green (watch ci516).
+- Lane `hostbench` (Sol 6.2): bench to hosted storage shape + guard test + re-profile. On done: review diff (test files only), revert any root HANDOFF.md edit, plant own break, commit, push, PR, watch, merge.
+## Recurring fixes
+- Line-budget baseline conflicts on every PR: merge origin/main into branch (force-push is BLOCKED), `git checkout --theirs docs/architecture/line-budget-baseline.txt && git add` it, then `scripts/check-line-budget.sh --write`, add, commit. Growth needs docs/architecture/line-budget-reasons/<branch-with-dashes>.md.
+- Fresh worktree push fails until `cd frontend && pnpm install --frozen-lockfile && pnpm build`.
+- Lanes write into tracked root HANDOFF.md: `git checkout -- HANDOFF.md` before commit; move RESULT.md out.
+- Main checkout is on main: create worktrees with `git -C ~/work/TheWarRoom worktree add ...` from ~ (hook blocks cwd on main).
+- Env: PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1
+## Next candidates (in order)
+1. PR-I (desktop step 9): Makefile Wails targets, check-bindings-fresh.sh, check-wails-version.sh, wails.json refs in release/version scripts; Makefile LDFLAGS -> internal/serverversion; `make build` stays the server build. Sol 6.2 brief, after #516 merges.
+2. Act on hostbench's verdict (real hosted p95 cause).
+3. Clean 32-team load rerun with merges held (load/REPORT.md has run 1: 0x502, p95 273 ms, RSS 523 MB).
+4. Worktree cleanup: wt-kept.txt (49 kept; most likely dirty only from untracked dist/node_modules) — remove merged ones whose `git status --porcelain --untracked-files=no` is empty.
+5. Morning: finish REPORT.md (Needs Christopher on top), tidy-check.sh, tracker line, stop the watcher.
+## Needs Christopher (so far)
+- Canary (T708) token: mint a connection token for native.canary on the Lab with his authenticator; paste into Hermes ~/canary/canary.token (mode 600); `systemctl --user start twr-canary.service`. Agent guessed server twr-lab-260 (override TWR_CANARY_SERVER).
+- PR-F ruling (solo-owner desktop leaves; internal/app/mflref kept tonight).
+- Approve drafts on main: docs/specs/{draft-room-undo,history-in-out,football-evidence-split}-1124.md (questions inside each).
+- Owner chat: retired 11-04, doesn't exist; revive? (docs/research/owner-chat-check-1124.md)
+- MFL import has no screen since PR-H (hosted import = server console command). Want one?
+- Clock-expiry auto-pick not built (Legacy rule = skip, correct for Dec 1).
+- Idea: make the line-budget baseline regenerate on merge so parallel PRs stop colliding.
+- Open: auto-draft skips 4-5 picks per round with only franchise.01 seated (expected 1) — check.
 
-## 3. Agents and harnesses (as used)
-- **Gemini lanes:** `~/fleet/bin/agy-run.sh <job> <brief> "Gemini 4 Neon (High)" <workdir>`, output in `~/fleet/runs/<job>-MMDD/`.
-- **Luna lanes:** `BASE=<branch> ~/fleet/bin/launch-pulse-lane.sh luna <lane> <brief> high`.
-  - Output goes to `~/fleet/runs/pulse-<lane>/`; the worktree is `.worktrees/pulse-<lane>`.
-- **Routing ruling (11-24):** when GPT is up, use Luna high with tight briefs; use Gemini Neon when a job needs more thinking.
-- **Watcher:** `~/fleet/bin/run-watch.sh`. It is stopped at close; nothing is armed.
-
-## 4. Gates / status
-| Item | State |
-|---|---|
-| #488, #490, #491, #492 | MERGED 11-24 ~04:00 on Christopher's OK |
-| #489 My MFL moves | MERGED a99d18c84 (Lab v71) |
-| #493 `twr workflow` | MERGED 60ebd21fe |
-| Lab CT 260 | v70 faa12dd1e, twr-status all OK at 12:17 UTC |
-
-## 5. Artifacts
-- **Lab release binary:** sha256 9aab720fe596b54206f25efb7d13872f30c47c400674ace0e8b11c0bb7d3dd29 (v70); a copy is at /root/twr-server.release.
-- **Lab kit:** `~/scratch/commish-1123/`. It holds secrets: never print them. It has a KEEP.md.
-
-## 6. Current bug
-None open on #489. Known limits are listed in the PR body:
-- Values come from the house model.
-- MFL names no roster minimum.
-- A helper token also needs `native.directory.read`.
-
-## 7. Refuted. Do not retest
-- **"Unit tests prove a hosted command works":** they don't. They miss the wrappers, admission and decode. Every
-  hosted command needs a serverhttp end-to-end test and a live Lab check (memory hosted-commands-need-e2e).
-- **"A refusal in Validate reaches the owner":** it doesn't. Hosted decode turns any Validate error into 400 "invalid
-  native request", so business rules belong in the command body.
-- **"Writes that skip db writeGuard are a blocker":** they aren't. Owner-private stores (`internal/store/personal`) do the same.
-- **"The slow load-test tail is one slow read":** it isn't. All read types share it (p50 ~40, p95 250–420 ms).
-
-## 8. Decisions
-- **mfl.league:** a plain league setting.
-- **MFL team:** chosen per seat.
-- **Values:** from the model run.
-- **Roster limits:** from MFL's own rules.
-- **Bids:** one drop per bid.
-- **mflmoves executes:** delegable.
-- **Practice leagues:** native.rehtest-* only.
-
-## 9. Ledger
-Everything is committed and pushed. Nothing is uncommitted.
-
-## 10. Next actions
-1. **Optional:** profile one score-update burst on the Lab (method: `~/fleet/runs/profile-1123/`) to find what the p95 tail is.
-2. **Later:** money units in the MFL JSON are mixed (dollars in, cents out). Settle this before more helpers build on it.
-3. **Handoff:** `docs/from-tom/2026-11-24-overnight-close.md`.
-
-## 11. Needs Christopher
-- **Merge OKs:** none waiting.
-- **Sunday 11-29:** `cycle.sh` -> `seat-link.sh native.rehtest-default` -> `open-drafts.sh` (scripts/lab/README.md).
-
-## 12. Environment notes
-- **Force-push is blocked by a hook:** to update a branch after main moved, merge main into it and push normally.
-- **Pre-push in a worktree:** needs a `frontend/node_modules` symlink and `frontend/dist/.keep`.
-
-## 13. Honest status
-- **#491 and #492:** proven under load on the Lab.
-- **#489:** proven live, step by step, at 49da38235 (full), b46ae7d9c (18/19), and 541fb783f (the fixed step).
-- **#493:** proven by tests only. No live run, because the CLI talks to a server only after merge plus release, or through a branch build.
+## Merged tonight
+#508, #510 (was #509), #511, #512 (PR-E), #513 (PR-G), #514 (results reads ledger once), #515 (flight test).
+## In-flight detail (alive checks)
+- ci516: `~/fleet/runs/overnight-gaps-1124/ci-done.sh 516` (0 done, 1 pending). Then merge if green (PR body names 2 planted breaks).
+- hostbench lane: alive `pgrep -f pulse-hostbench`; done `~/fleet/runs/pulse-hostbench/completion.txt`; report `~/fleet/runs/pulse-hostbench/RESULT.md`; transcript `~/fleet/runs/pulse-hostbench/sessions/*.jsonl`; worktree ~/work/TheWarRoom/.worktrees/pulse-hostbench.
+## Refuted — do not retest
+- "Auto-draft is broken for all-computer leagues": no — 1,133 picks ran on native.load1124b (~3 s/pick); driver wait was killed.
+- "Clock expiry auto-picks for seated owners": not built; Legacy rule = SkipPick (Census CM-040); setup refuses AutoPick on purpose.
+- "Rescoring the week causes the 360 ms burst": no — carrying unaffected scores saved only 4% (lane scorecarry, not shipped; worktree pulse-scorecarry kept for reference).
+- "The 360 ms burst is the hosted p95 cause": not shown — it is a bench artifact (single-file storage rebuilds the 55k directory); hosted uses OpenWithReference. hostbench measures the real shape.
+- "Evidence split needed for memory": no — RSS 523 MB flat vs v59 535 MB with #496 shared decoded copies.
+- "Owner chat exists": no — retired 11-04 (endpoint-registry M-121).
+- "#509 force-push": BLOCKED by guard; use new branch or merge main in.
