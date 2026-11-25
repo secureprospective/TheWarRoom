@@ -32,6 +32,13 @@ class _KeepAliveHandler(http.server.BaseHTTPRequestHandler):
 
 
 class TestConnectTiming(unittest.TestCase):
+    def test_parse_server_timing(self):
+        self.assertEqual(gameday.parse_server_timing("app;dur=12.3"), 12.3)
+        self.assertIsNone(gameday.parse_server_timing(None))
+        self.assertIsNone(gameday.parse_server_timing("invalid"))
+        self.assertEqual(gameday.parse_server_timing('cfL4;desc="?proto=TCP", app;dur=7.5'), 7.5)
+        self.assertIsNone(gameday.parse_server_timing("myapp;dur=9"))
+
     def setUp(self):
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _KeepAliveHandler)
         self.port = self.server.server_address[1]

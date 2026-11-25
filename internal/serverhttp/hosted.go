@@ -43,6 +43,7 @@ const (
 // file; every write that withdraws a credential reserves the league writer first (the accounts store's
 // commit fence), so revocation cannot commit between transaction admission and ledger append.
 type Hosted struct {
+	now       func() time.Time
 	Publisher *Publisher
 	// LiveGames is the server's shared NFL scoreboard (public data) behind nfl.games.read; nil reads empty.
 	LiveGames *leagueservice.LiveGames
