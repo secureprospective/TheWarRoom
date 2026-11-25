@@ -81,7 +81,7 @@ vet:
 # is explicit so a slow package fails as a timeout we chose, not one we inherited. Raised to 60m
 # on 2026-10-19: the root package took 39.5 minutes, too close to 45.
 GO_TEST_TIMEOUT := 60m
-test:
+test: test-deploy
 	go test -race -timeout $(GO_TEST_TIMEOUT) ./...
 
 COVERAGE_THRESHOLD := 80
@@ -154,3 +154,7 @@ bench-league: bench-league-build
 	export BENCH_LEAGUE_SCRATCH="$$scratch"; \
 	go test -v -tags leaguebench -run '^$$' -bench '^BenchmarkLeague' -benchmem -count=5 -timeout $(GO_TEST_TIMEOUT) ./internal/store/history; \
 	go test -v -tags leaguebench -run '^$$' -bench '^BenchmarkLeagueWhatIf$$' -benchmem -count=5 -timeout $(GO_TEST_TIMEOUT) ./internal/app/contracts
+
+.PHONY: test-deploy
+test-deploy:
+	python3 -m unittest discover -s deploy/season -v

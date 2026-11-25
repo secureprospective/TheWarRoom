@@ -15,6 +15,8 @@ password), `totp.seed`, `phone-<name>.json`, `helper-commands.json`, `bin/twr` a
 | `labcommish.py confirm <file>` | Signs a G2/G3 confirm request (`twrc1.…`), prints only the code. |
 | `labcommish.py revoke <league>` | Disconnects the helper made for a league. |
 | `apply.sh <change.json>` | Preview, confirm when asked, execute, through `twr`. |
+| `shapes.sh setup` | Creates 10/12/16-team one-season Lab leagues, schedules them, sets the draft clock and opens startup drafts. |
+| `shapes.sh release` | Revokes each league helper and releases franchise.01 so every team is computer-run. |
 | `cycle.sh` | One command: deletes and recreates `native.rehtest-default` and `native.rehtest-twin`, sets the schedule and the 13-day pick clock, loads NFL kickoff dates; drafts stay closed (needs `LAB_SSH_CONF`). Refuses any id not starting `native.rehtest-`. |
 | `open-drafts.sh` | Opens both practice drafts. Run only after every human has claimed a seat. |
 | `seat-link.sh <league>` | Prints one new join link on the terminal only (stops the Lab server, starts it again). |

@@ -1,0 +1,1 @@
+Adds the rehearsal league chat URL setting, URL safety validation, shared external-link rendering and rules read, and regression coverage. Generated preset and rollover fixtures carry the new empty default. Catalogue remains one cohesive rule-schema registry (700 lines); splitting it for size would scatter the schema responsibility.

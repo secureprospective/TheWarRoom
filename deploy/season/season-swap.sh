@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Saturday-night swap on the Season server (Alpine, OpenRC). Read deploy/season/README.md first.
-# Usage: season-swap.sh <version-dir-name> [--christopher-ok] [--dry-run]
+# Usage: season-swap.sh <version-dir-name> [--rollback] [--christopher-ok] [--dry-run]
 #   <version-dir-name>  a folder under $APP_ROOT/versions/ on the server
 #   --christopher-ok    Christopher has approved this exact run; lets it run outside the window
 #   --dry-run           print every step and command; send nothing to the server
@@ -8,25 +8,27 @@
 set -euo pipefail
 
 SEASON_HOST="root@192.168.1.162"
-APP_ROOT="/opt/twr"
-DATA_DIR="/var/lib/twr"
+APP_ROOT="${SEASON_APP_ROOT:-/opt/twr}"
+DATA_DIR="${SEASON_DATA_DIR:-/var/lib/twr}"
 SERVICE="twr"
 PORT="5199"
-BACKUP_DIR="/var/backups/twr"
+BACKUP_DIR="${SEASON_BACKUP_DIR:-/var/backups/twr}"
 SSH_OPTS=(-o BatchMode=yes -o ConnectTimeout=10)
 
 usage() {
-  echo "usage: $0 <version-dir-name> [--christopher-ok] [--dry-run]" >&2
+  echo "usage: $0 <version-dir-name> [--rollback] [--christopher-ok] [--dry-run]" >&2
   exit 2
 }
 
 VERSION=""
 CHRISTOPHER_OK=0
 DRY_RUN=0
+ROLLBACK=0
 for arg in "$@"; do
   case "$arg" in
     --christopher-ok) CHRISTOPHER_OK=1 ;;
     --dry-run) DRY_RUN=1 ;;
+    --rollback) ROLLBACK=1 ;;
     -*) echo "unknown option: $arg" >&2; usage ;;
     *)
       [ -z "$VERSION" ] || { echo "give one version name only" >&2; usage; }
@@ -59,7 +61,7 @@ read_clock() {
 
 print_approval() {
   echo "Exact command for Christopher to approve (run it only after he says yes):"
-  echo "  $0 $VERSION --christopher-ok"
+  echo "  $0 $VERSION $([ "$ROLLBACK" -eq 0 ] || echo --rollback) --christopher-ok"
 }
 
 # The guard runs before anything else touches the server.
@@ -81,15 +83,13 @@ if ! [[ "$VERSION" =~ ^[A-Za-z0-9][A-Za-z0-9._-]*$ ]] || [[ "$VERSION" == *..* ]
   exit 2
 fi
 
-STAMP=$(date -u +%Y%m%dT%H%M%SZ)
-VERSION_DIR="$APP_ROOT/versions/$VERSION"
-CURRENT="$APP_ROOT/current"
-PREVIOUS="$APP_ROOT/versions/<previous-version-folder>"
-BACKUP_FILE="$BACKUP_DIR/twr-data-$STAMP.tgz"
-HEALTH_URL="http://127.0.0.1:$PORT/app/"
-HEALTH_CMD="i=0; until curl -fsS $HEALTH_URL >/dev/null; do"
-HEALTH_CMD+=" i=\$((i+1)); [ \$i -ge 15 ] && exit 1; sleep 2; done"
-FLIPPED=0
+for path in "$APP_ROOT" "$DATA_DIR" "$BACKUP_DIR"; do
+  [[ "$path" =~ ^/[A-Za-z0-9/_-]+$ ]] && [ "$path" != / ] || {
+    echo "Paths must be absolute plain paths, not the filesystem root." >&2; exit 2;
+  }
+done
+STAMP=$(date -u +%Y%m%dT%H%M%SZ)-$$
+[ "$ROLLBACK" -eq 0 ] || STAMP="$VERSION"
 
 step() { echo ""; echo "== $*"; }
 
@@ -103,53 +103,30 @@ remote() {
 }
 
 print_rollback() {
-  echo "  ssh $SEASON_HOST 'ln -sfn $PREVIOUS $CURRENT && rc-service $SERVICE restart'"
+  echo "  $0 $STAMP --rollback --christopher-ok"
 }
 
 die() {
   echo "FAILED: $1" >&2
-  if [ "$FLIPPED" -eq 1 ]; then
-    echo "The link already points at $VERSION. Roll back with:" >&2
-    print_rollback >&2
-  fi
+  echo "Recovery command (inspect server state before approving):" >&2
+  print_rollback >&2
   exit 1
 }
 
-step "1/6 Back up the league data ($DATA_DIR) before anything changes"
-remote "mkdir -p $BACKUP_DIR && tar -C $(dirname "$DATA_DIR") -czf $BACKUP_FILE $(basename "$DATA_DIR")" \
-  || die "backup failed; nothing was changed"
-
-step "2/6 Check the new version folder is on the server"
-remote "test -d $VERSION_DIR" || die "$VERSION_DIR is not on the server; nothing was changed"
-
-step "3/6 Read the current version, for rollback"
-if [ "$DRY_RUN" -eq 0 ]; then
-  echo "   ssh $SEASON_HOST 'readlink $CURRENT'"
-  # shellcheck disable=SC2029  # on purpose: $CURRENT is a fixed path from the top of this file
-  PREVIOUS=$(ssh "${SSH_OPTS[@]}" "$SEASON_HOST" "readlink $CURRENT") \
-    || die "cannot read $CURRENT; nothing was changed"
-  [ -n "$PREVIOUS" ] || die "$CURRENT is not a link; nothing was changed"
-  echo "   previous version: $PREVIOUS"
-else
-  echo "   ssh $SEASON_HOST 'readlink $CURRENT'   (dry run: the real value is read here)"
-fi
-
-step "4/6 Flip the current link to the new version"
-remote "ln -sfn $VERSION_DIR $CURRENT" || die "could not flip the link"
-FLIPPED=1
-
-step "5/6 Restart the service"
-remote "rc-service $SERVICE restart" || die "restart failed"
-
-step "6/6 Health check on the server (port $PORT, up to about 30 seconds)"
-remote "$HEALTH_CMD" \
-  || die "health check failed"
-
-echo ""
-if [ "$DRY_RUN" -eq 1 ]; then
-  echo "Dry run: nothing was sent. A real run does the steps above."
-else
-  echo "Swap done: $VERSION is live and answered 200 on port $PORT."
-fi
-echo "Rollback command (flip back to the previous version):"
+# The same on-host transaction is exercised offline through a local ssh stub.
+PAYLOAD="APP_ROOT='$APP_ROOT'
+DATA_DIR='$DATA_DIR'
+BACKUP_DIR='$BACKUP_DIR'
+VERSION='$VERSION'
+STAMP='$STAMP'
+ROLLBACK='$ROLLBACK'
+$(cat "$(dirname "$0")/season-data.sh")"
+step "1/6 Validate recovery inputs"
+step "2/6 Stop service before touching data"
+step "3/6 Back up or stage the recorded backup"
+step "4/6 Preserve data and change version link"
+step "5/6 Start service"
+step "6/6 Health check"
+remote "$PAYLOAD" || die "transaction failed; inspect the printed step; service may be stopped"
+echo "Rollback command (restore pre-swap data and version):"
 print_rollback
