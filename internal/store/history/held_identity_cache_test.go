@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"reflect"
+	"sync"
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
@@ -107,8 +108,8 @@ func TestHeldIdentityKeyInvalidatesOnOutsideIDWrite(t *testing.T) {
 	}
 }
 
-func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
-	t.Parallel()
+func splitScoreCacheLeague(t *testing.T) (*bracketFixture, *Store) {
+	t.Helper()
 	ctx := t.Context()
 	dir := t.TempDir()
 	reg, err := measures.Embedded()
@@ -143,6 +144,12 @@ func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
 	leagueStore.SetNativeLineups(&fixedLineups{})
 	leagueStore.SetSeasonScoreCache(true)
 
+	seedSplitScoreCacheLeague(t, leagueStore, refStore)
+	return &bracketFixture{s: leagueStore, pools: leaguePools}, refStore
+}
+
+func seedSplitScoreCacheLeague(t *testing.T, leagueStore, refStore *Store) {
+	t.Helper()
 	runScoreCommand(t, leagueStore, importedLegacy(0), "creator")
 	runScoreCommand(t, leagueStore, bracketSeedCommand(t), "creator")
 	runScoreCommand(t, leagueStore, ruleCommand("schedule.regularWeeks", "1", "now", "Choose the season length", 2), "creator")
@@ -159,12 +166,17 @@ func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
 	for n := 1; n <= 32; n++ {
 		links = append(links, PlayerIDLink{IDType: "gsis", IDValue: heldSeasonGSIS(n), PlayerID: fmt.Sprintf("10%02d", n)})
 	}
-	if _, err := refStore.LinkPlayerIDs(ctx, "dynastyprocess", links); err != nil {
+	if _, err := refStore.LinkPlayerIDs(t.Context(), "dynastyprocess", links); err != nil {
 		t.Fatal(err)
 	}
 	putHeldSeasonWeeks(t, refStore, 0, t0())
+}
 
-	f := &bracketFixture{s: leagueStore, pools: leaguePools}
+func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	f, refStore := splitScoreCacheLeague(t)
+	leagueStore := f.s
 	before := readResults(t, f)
 	keyBefore, _, err := leagueStore.heldSeasonKey(ctx, 2026)
 	if err != nil {
@@ -177,10 +189,12 @@ func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
 	// A league write commits only to league.db, so reference.db's data_version stays put and the
 	// identity cache does not rebuild.
 	changeScore(t, f, before.Games[0].Home, "split-league-write")
-	afterLeagueWrite := readResults(t, f)
+	assertHostedResultsBurstChanged(t, f, before)
 	if leagueStore.seasons.identity.builds != 1 {
 		t.Fatalf("league write rebuilt reference identity cache: builds=%d, want 1", leagueStore.seasons.identity.builds)
 	}
+
+	afterLeagueWrite := readResults(t, f)
 
 	// An outside-id write from the separate reference store (as keepLiveIdentities does) must
 	// invalidate leagueStore on the very next read.
@@ -203,4 +217,23 @@ func TestHeldIdentityKeyInvalidatesAcrossSeparateReferenceStore(t *testing.T) {
 	if reflect.DeepEqual(afterIDWrite.Scores, afterLeagueWrite.Scores) {
 		t.Fatal("league store results.read served old scores after separate reference store wrote gsis")
 	}
+}
+
+func assertHostedResultsBurstChanged(t *testing.T, f *bracketFixture, before commissioner.NativeResults) {
+	t.Helper()
+	hosted := commissioner.WithCredentialAdmission(t.Context(), nil)
+	var wg sync.WaitGroup
+	for range 20 {
+		wg.Go(func() {
+			after, err := f.s.NativeResults(hosted, bracketLeague, 2026, 1)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if after.Revision == before.Revision || reflect.DeepEqual(after.Scores, before.Scores) {
+				t.Error("hosted results after a score write kept the old scores or revision")
+			}
+		})
+	}
+	wg.Wait()
 }
