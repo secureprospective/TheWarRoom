@@ -1,0 +1,1 @@
+Preserve overdue vacant draft turns through an injected, historical-seat expiry policy shared by startup and rookie replay. Adds regression coverage for actual durability refusal and unchanged human timeout. Small production growth avoids a second selection path or ledger schema change; existing ranking, validation and recording remain authoritative.
