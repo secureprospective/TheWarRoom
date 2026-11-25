@@ -2,7 +2,7 @@
 # Go overlay (templates/go/Makefile.snippet). `make lint` runs ifaceguard, filelen,
 # bloat, placement and golangci-lint; all must pass to clear. Never bypass with --no-verify.
 
-.PHONY: measure-dictionary lint fmt vet test test-coverage build dev mutation-test ifaceguard filelen bloat placement release sync-product-version verify setup
+.PHONY: measure-dictionary lint fmt vet test test-coverage build mutation-test ifaceguard filelen bloat placement release verify setup
 
 # ── Build stamp (D-V2) ────────────────────────────────────────────────────────
 # The release tag (vX.Y.Z) is the single source of truth. `git describe` yields
@@ -75,8 +75,8 @@ fmt:
 vet:
 	go vet ./...
 
-# -race is non-negotiable in the full gate (make verify, run by GitHub CI before every merge) (failure mode #2: concurrent map access from Wails IPC
-# goroutines hitting B3c). Never make this optional.
+# -race is non-negotiable in the full gate (make verify, run by GitHub CI before every merge)
+# because concurrent requests to the hosted server can expose map races.
 # The root package's race run passed 10 minutes (Go's default) as the commissioner side grew; the limit
 # is explicit so a slow package fails as a timeout we chose, not one we inherited. Raised to 60m
 # on 2026-10-19: the root package took 39.5 minutes, too close to 45.
@@ -121,30 +121,16 @@ build:
 # ── Release (D-V4) ────────────────────────────────────────────────────────────
 # Tags a version off already-gated main. There is NO separate release gate: the
 # merge gate (lint 0 / go test -race / tsc+vite / live Beelink gate) IS it.
-# Refuses a dirty tree, enforces a SemVer vX.Y.Z tag, syncs the packaging
-# metadata, then creates an annotated tag. Usage: make release TAG=v0.5.0
+# Refuses a dirty tree, enforces a SemVer vX.Y.Z tag, then creates an annotated tag.
+# Usage: make release TAG=v0.5.0
 release:
 	@test -n "$(TAG)" || { echo "release: usage — make release TAG=vX.Y.Z"; exit 1; }
 	@echo "$(TAG)" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$$' || \
 	  { echo "release: TAG must be SemVer vX.Y.Z (got '$(TAG)')"; exit 1; }
 	@test -z "$$(git status --porcelain)" || \
 	  { echo "release: refusing to tag a dirty tree — commit or stash first"; exit 1; }
-	@$(MAKE) --no-print-directory sync-product-version TAG=$(TAG)
-	@if [ -n "$$(git status --porcelain)" ]; then \
-	  git commit -am "release: $(TAG) — sync wails.json productVersion"; \
-	else echo "release: wails.json productVersion already $(TAG:v%=%)"; fi
 	git tag -a "$(TAG)" -m "The War Room $(TAG)"
 	@echo "release: tagged $(TAG). Push with: git push origin $$(git rev-parse --abbrev-ref HEAD) --tags"
-
-# sync-product-version writes the SemVer core (TAG minus leading 'v') into
-# wails.json info.productVersion — Wails installer metadata, inert on the Linux
-# alpha, consumed by the Windows/macOS packagers at Beta. Idempotent: the binary
-# stamp (LDFLAGS) is the runtime authority; this is packaging only. Usage:
-# make sync-product-version TAG=v0.5.0
-sync-product-version:
-	@test -n "$(TAG)" || { echo "sync-product-version: TAG required (vX.Y.Z)"; exit 1; }
-	@tmp=$$(mktemp) && jq --arg v "$(TAG:v%=%)" '.info.productVersion = $$v' wails.json > "$$tmp" \
-	  && mv "$$tmp" wails.json && echo "sync-product-version: wails.json productVersion = $(TAG:v%=%)"
 
 # gremlins v0.6.0, pinned. Scoped to internal/engine/... (pure-logic packages
 # are where a mutation score has signal). NOT run in CI by default — running a

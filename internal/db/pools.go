@@ -1,7 +1,7 @@
 // Package db owns SQLite access (only db and store may import database/sql). SQLite allows
 // one writer, so the write pool is one connection with _txlock=immediate (writes never race
 // into SQLITE_BUSY) and the read pool is many read-only connections, over one WAL file. The
-// driver is modernc.org/sqlite: pure Go, so Wails needs no C toolchain.
+// driver is modernc.org/sqlite: pure Go, so SQLite needs no C toolchain.
 package db
 
 import (

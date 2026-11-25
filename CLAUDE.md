@@ -12,14 +12,8 @@ strategic reference is `North_Star.md`; read it before deciding what earns build
 - **AI first, CLI first.** Every action is a named command in one catalogue (`internal/commandcatalog`).
   An AI agent working for a named person does everything through `cmd/twr` (CLI and MCP). Screens,
   minigames and reports are outputs laid over the same commands.
-- **PWA-centric (the target).** The React app served by `cmd/twr-server` to a browser or phone is the
-  end-state interface. The desktop app (Wails) is first-class and supported. Where a desktop-only path
-  and a hosted path do the same job, protect the hosted one.
-- **Today the desktop has two modes. Read `docs/architecture/desktop-modes.md` before planning
-  desktop, server or phone work.** Thin mode (`-native <server>`) is the product (ruling 2026-11-14):
-  server client plus window, no local engine, and so far only sign-in and the hosted league panel.
-  Local mode (no flag) is the legacy all-in-one app holding the full screens. "Desktop" means thin
-  mode unless Christopher says otherwise; if unclear, ask. Never assume.
+- **PWA-centric.** `twr-server` serves the React PWA to browsers on phones and computers.
+  There is no standalone desktop app.
 - **The native ledger is the record.** MFL is import and reference only. The MFL→Native import is
   the front door and must be flawless for any league size or type.
 - **Solo-owner tools.** `mflref`, `transactions` and the what-if desk let one owner use TheWarRoom on
@@ -30,7 +24,7 @@ strategic reference is `North_Star.md`; read it before deciding what earns build
 - **Small on purpose.** One build serves every league type and rule set. Never add infrastructure
   per league type. Less code is a feature.
 
-Stack: Go 1.26, SQLite (WAL), React + Tailwind + Zustand, Wails v2. The first league is the Legacy
+Stack: Go 1.26, SQLite (WAL), and a React PWA served by `twr-server` (Tailwind and Zustand). The first league is the Legacy
 NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 
 ## Where the work stands
@@ -106,7 +100,7 @@ Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday
 1. `git branch --show-current`. Never work on main; branches are `session/<short-description>`.
 2. Follow the reading order: `README.md` -> `North_Star.md` -> `docs/adr/product/README.md` ->
    newest resume in `docs/resume/` (`docs/resume/README.md` -> `RESUME-build-plan.md`), plus
-   `docs/architecture/desktop-modes.md` (run its checks).
+   the current hosted architecture in `docs/architecture/system-narrative.md`.
 3. Toolchain (Go 1.26.11; the git hooks need this too):
    `export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11 GOMEMLIMIT=1500MiB
    GOMAXPROCS=8 GOFLAGS="-mod=readonly -buildvcs=false" VITEST_MAX_THREADS=2 VITEST_MIN_THREADS=1`.
@@ -114,7 +108,7 @@ Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday
    `timeout 600 nice -n 10 make verify …` and `make build …`, both exit 0.
    The entry bundle cap is **321,818 B** (ring 2 ended at 317,727): keep new screens lazy.
 4. Gates: `make lint` (ifaceguard, filelen report, bloat ratchet, golangci-lint), `make test`
-   (`go test -race ./...`), `make verify` (lint, race tests, vulnerability/bindings checks and
+   (`go test -race ./...`), `make verify` (lint, race tests, vulnerability checks and
    frontend checks/build). `make setup` once per clone wires the hooks. Pre-push runs
    `scripts/prepush.sh`: docs-only skips; Go changes run lint and shuffled tests on changed
    packages and importers (race runs in CI); frontend changes run typecheck, tests, build and
@@ -123,10 +117,8 @@ Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday
 5. Live tests are opt-in: `TWR_LIVE_MFL=1`, `TWR_LIVE_NFLVERSE=1`, `TWR_LIVE_CFBD=1`,
    `TWR_LIVE_EA=1`. MFL's players endpoint allows one call a day; leave its live test alone
    unless that call is the point.
-6. Headless startup check: `go build -o /tmp/twr . && /tmp/twr -probe`. A dev build uses
-   `thewarroom-dev.db`; never point a dev build at the real `thewarroom.db`.
-   - Never run a production binary (`build/bin/thewarroom`) on the Beelink: it opens the real
-     `thewarroom.db` and `history.db`. Check its stamp with `strings` or on Claude-OS.
+6. Build-stamp check: `make build VERSION=dev COMMIT=local BUILD_DATE=local`, then
+   `build/bin/twr-server version` must print `dev`. Use disposable league state for local tests.
 
 ## Workflow (R4)
 
@@ -154,20 +146,9 @@ Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday
   output is a recommendation to Christopher, not a decision.
 - **Christopher follows progress** in the savvy-progress `/fleet` panel, where each pi session
   (Sol's phases, each panel seat) shows as its own card.
-- **Claude runs live gates on Claude-OS (R12):** the production build (`make build`) against a
-  snapshot of the live database, taken with SQLite's backup API, never a plain file copy.
-  - Claude-OS is the libvirt VM `Claude-OS` under `qemu:///session` on this box. Start it with
-    `virsh -c qemu:///session start Claude-OS` if it is off, and leave it running afterwards:
-    it is light and in nobody's way (Christopher, 2026-10-03).
-  - Reach it with `ssh claudeos`. Drive it with xdotool and scrot on `DISPLAY=:0`, and launch
-    the app with `setsid -f` so the ssh session returns.
-  - If Bee reboots, the VM comes back at the login screen: Christopher logs into the desktop
-    before the app can start (otherwise GTK fails to init).
-  - Deploy: `scp` the build to `~/warroom-ring1/thewarroom.new`, then
-    `~/warroom-ring1/deploy.sh <old-sha>`, which keeps the previous binary.
-  - Close the MFL tabs you opened when the work is done (spec revision 1, §8 Q12).
-  - Screenshots and logs go to the run directory.
-  - Never launch the app on Christopher's live desktop.
+- **Hosted live gates** follow the Environments section above. For any live check against
+  a database snapshot, take it with SQLite's backup API, never a plain file copy. Keep
+  screenshots and logs in the run directory.
 - Merge to main only on Christopher's go-ahead, after a passing live gate. `main` requires
   linear history and rebase fails on a branch holding a merge commit: **squash-merge**
   (`~/.local/bin/gh pr merge <n> --squash`).

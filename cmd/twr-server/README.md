@@ -2,7 +2,7 @@
 
 Development only: one fixed, public native ledger reading computed by the existing
 commissioner engine. No database, writes, real league selection, MFL calls, accounts,
-catalog publication or Wails/display. The explicit `-fixture` flag is mandatory.
+catalog publication or graphical runtime. The explicit `-fixture` flag is mandatory.
 Do not deploy this as an owner-facing server.
 
 From the repository root, create disposable local TLS material (OpenSSL required):
@@ -242,7 +242,7 @@ See [CT setup, retention and restore handoff](../../deploy/server/BACKUPS.md).
 
 ## Stand the league's rosters and contracts back up
 
-Offline operator console only; no listener, HTTP/Wails route, account enrollment or
+Offline operator console only; no listener, HTTP route, account enrollment or
 league activation. Use an existing `history.db` or a `server.db` decrypted by the
 normal R2 restore procedure. The source must already contain a roster restore
 point (history v9 or newer); this command never migrates or writes the source.
