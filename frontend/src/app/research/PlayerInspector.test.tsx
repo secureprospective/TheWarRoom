@@ -12,7 +12,6 @@ afterEach(async () => {
   root = undefined;
   host?.remove();
   host = undefined;
-  delete (window as { go?: unknown }).go;
   vi.restoreAllMocks();
 });
 
