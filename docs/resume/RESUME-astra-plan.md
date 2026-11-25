@@ -233,3 +233,25 @@ Older run-folder copies and chain scripts are historical. The current operator r
 - Track requested coverage separately from successful requests. The old load runner returned success with missing seats; the report wrapper returned success when evidence was incomplete. Exercise both false-pass cases. Likewise a successful browser session read proves only what the account can see, and a successful build does not close a missing phone observation.
 - Verify landed code from fetched main when GitHub's PR state lags. Match the installed Lab commit and wait for backup-verified health before claiming sign-ins are available. Record when each result was observed.
 - Keep one worktree per task and finish an open branch before spending another slot. Preserve dirty and operational worktrees, use clean base transplants, and regenerate generated baselines. Keep scoped tests and report preparation moving while a merge or live window is blocked.
+
+## 11. Codex continuation — Nov 25, 2026 Central
+
+- [#534](https://github.com/secureprospective/TheWarRoom/pull/534) replaces the closed #528.
+  Its draft-pause regression failed on unpatched main and passed with the fix. All GitHub checks
+  passed at `32b90dc46`. Christopher's squash merge is the remaining gate.
+- [#535](https://github.com/secureprospective/TheWarRoom/pull/535) replaces the closed #530.
+  It is open as a draft on #534 so review and CI can proceed. It preserves the
+  original price of a made-up pick, keeps the computer on its live slot, preserves closed
+  startup and rookie draft history after a later policy change, and keeps closed results
+  readable by the current draft room. The repair and race-test evidence are in
+  `~/fleet/runs/twr-draft-queue-1125/STATUS.md`.
+- After #534 lands, verify its source on fetched main, then replay only the tested expiry
+  delta from `~/fleet/runs/twr-draft-queue-1125/530-incremental.patch` and regenerate the line
+  budget. After both draft PRs land, reconcile #529 against main. Its docs-only patch already
+  applies on top of the expiry candidate.
+- The shared desktop draft-room preflight found that the read lacks the exact owed-slot
+  price. The phone's existing My picks sheet is read-only. Confirm those two dependencies
+  before calling the owner prompt available on both devices.
+- Worktree cleanup dropped the registered count from 75 to 73. The merged #527 checkout is
+  in use by the protected Vite process. The removals and dirty-checkout decisions are in
+  `docs/reset/WORKTREES-1125.md` on #532.
