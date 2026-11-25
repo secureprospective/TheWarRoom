@@ -1,3 +1,4 @@
+import { LeagueChat, readChatLink } from './LeagueChat';
 import { useEffect, useMemo, useState } from 'react';
 import { onHostedTopics } from '../data/hostedReads';
 import { HQAct as PulseAct } from './HQAct';
@@ -106,6 +107,8 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     document.addEventListener('keydown', close, { capture: true });
     return () => document.removeEventListener('keydown', close, { capture: true });
   }, [drawer]);
+  const chat = usePulseRead<string>(JSON.stringify(['chat', scope.league]),
+    () => readChatLink(scope.league, port), 'league');
   const league = usePulseRead<NativePulse>(JSON.stringify(['pulse', scope.league, scope.mine]),
     publish => readNativePulse(scope.league, scope.mine, port, publish, scope.serverTime, false), 'league');
   const season = league.reading?.season;
@@ -135,6 +138,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
     return () => clearTimeout(timer);
   }, [errored, scope.refresh, scope.serverTime]);
   if (scope.v3 && tab === 'race') return <>
+    <LeagueChat link={chat.reading} />
     <PulseTabs tab={tab} navigate={scope.navigate} badge={scope.v3.badge} kind={scope.v3.kind} />
     <div className="wbody scr scr-pulse">{!reading
       ? <div className="st"><div className="eng">{league.error
@@ -143,6 +147,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
         pull={drawer === 'tb' || drawer === 'bk' ? drawer : undefined} onPull={pull} />}</div>
   </>;
   if (scope.v3 && tab === 'now') return <>
+    <LeagueChat link={chat.reading} />
     <PulseTabs tab={tab} navigate={scope.navigate} badge={scope.v3.badge} kind={scope.v3.kind} />
     <div className="wbody scr scr-pulse">{!reading
       ? <div className="st"><div className="eng">{league.error
@@ -158,6 +163,7 @@ function PulseBody(scope: PulseScope & { tab?: PulseTab;
   const body = <div className={`lp-v14${scope.embedded ? ' embedded' : ''}${modeClass}`}>
     <div className="shell">
       <main className="work">
+        <LeagueChat link={chat.reading} />
         {scope.serverTime && !scope.embedded && <nav className="ws-tabs" aria-label="League Pulse">
           <PulseAct onAction={scope.back ?? (() => scope.leave())}>Back</PulseAct>
           <PulseAct role="tab" selected={tab === 'now'} onAction={() => scope.navigate?.('now')}>

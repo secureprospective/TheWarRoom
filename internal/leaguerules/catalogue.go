@@ -85,7 +85,7 @@ func buildCatalogue() []CatalogueField {
 		fieldBounds(f.pathName(), &schema)
 		// Reference refresh, text and display timezone do not change competitive rules.
 		result = append(result, CatalogueField{f.pathName(), f.labelText(), sectionLabels()[section], schema,
-			section != "house" && section != "notify" && section != "mfl" && f.pathName() != "calendar.timezone" && f.pathName() != "transactions.follow"})
+			section != "house" && section != "notify" && section != "mfl" && f.pathName() != "league.chatLink" && f.pathName() != "calendar.timezone" && f.pathName() != "transactions.follow"})
 	}
 	return result
 }

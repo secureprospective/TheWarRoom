@@ -287,3 +287,14 @@ describe('LeagueTab', () => {
     expect(css).toMatch(/\.lg5-cr span em \{[^}]*text-transform: uppercase/);
   });
 });
+
+it.each(['https://discord.com/invite/league', ''])('shows league chat only when set: %s', async link => {
+  await show(owner, async () => ({ ...loaded(), chatLink: { value: link } }));
+  const chat = [...host!.querySelectorAll('button')].find(b => b.textContent?.includes('League chat'));
+  if (!link) { expect(chat).toBeUndefined(); return; }
+  expect(chat?.textContent).toContain('opens outside TheWarRoom');
+  const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  await act(async () => { chat!.click(); });
+  expect(open).toHaveBeenCalledWith(link, '_blank', 'noopener,noreferrer');
+  open.mockRestore();
+});

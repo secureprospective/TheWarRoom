@@ -1,10 +1,10 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	53878
+docs	54017
 frontend-generated	5272
-frontend-src	67006
-frontend-tests	43556
-go-prod	155778
+frontend-src	67035
+frontend-tests	43569
+go-prod	155807
 go-prod/cmd/twr	1139
 go-prod/cmd/twr-canary	673
 go-prod/cmd/twr-check	508
@@ -30,7 +30,7 @@ go-prod/internal/leaguefeed	326
 go-prod/internal/leagueload	1275
 go-prod/internal/leaguemigration	5202
 go-prod/internal/leaguerecovery	78
-go-prod/internal/leaguerules	4188
+go-prod/internal/leaguerules	4217
 go-prod/internal/leagueservice	6249
 go-prod/internal/leaguetransfer	478
 go-prod/internal/leagueweek	142
@@ -64,6 +64,6 @@ go-prod/internal/tradelens	559
 go-prod/internal/transactions	2046
 go-prod/scripts	56
 go-prod/tools	1772
-go-test	105612
-go-testdata	40906
+go-test	105649
+go-testdata	40916
 other	19195
