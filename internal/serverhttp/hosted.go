@@ -237,32 +237,37 @@ type RawNativeRequest struct {
 }
 
 func (r RawNativeRequest) Validate() error {
+	_, err := r.validatedLeague()
+	return err
+}
+
+func (r RawNativeRequest) validatedLeague() (string, error) {
 	if r.Protocol != 1 {
-		return fmt.Errorf("unsupported protocol")
+		return "", fmt.Errorf("unsupported protocol")
 	}
 	if r.Workflow != nil {
 		if r.Command != nil || r.Pick != nil || r.League+r.TokenID != "" {
-			return fmt.Errorf("send only a workflow")
+			return "", fmt.Errorf("send only a workflow")
 		}
 		//nolint:wrapcheck // Preserve the catalog-owned workflow refusal text.
-		return r.Workflow.Validate()
+		return r.Workflow.League()
 	}
 	if r.Pick != nil {
-		return r.validatePick()
+		return r.Pick.League, r.validatePick()
 	}
 	if r.Command == nil {
 		if !strings.HasPrefix(r.League, "native.") || len(r.League) <= len("native.") || len(r.League) > 128 {
-			return fmt.Errorf("invalid league")
+			return "", fmt.Errorf("invalid league")
 		}
-		return nil
+		return r.League, nil
 	}
 	if r.League != "" {
-		return fmt.Errorf("choose command or league")
+		return "", fmt.Errorf("choose command or league")
 	}
 	if err := r.Command.ValidatePreview(); err != nil {
-		return fmt.Errorf("invalid command: %w", err)
+		return "", fmt.Errorf("invalid command: %w", err)
 	}
-	return nil
+	return r.Command.League, nil
 }
 
 func (r RawNativeRequest) validatePick() error {
@@ -282,13 +287,14 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	rawSession, account, authenticationErr := auth.raw, auth.account, auth.agent
 	var raw RawNativeRequest
-	if !decodeNative(w, r, &raw) {
+	league, ok := decodeNative(w, r, &raw)
+	if !ok {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
 		return
 	}
-	recordNativeFailureMeta(r.Context(), raw)
+	recordNativeFailureMeta(r.Context(), raw, league)
 	if authenticationErr != nil {
-		h.agent(w, r, rawSession, raw)
+		h.agent(w, r, rawSession, raw, league)
 		return
 	}
 	if raw.Workflow != nil && catalog.IsAccountWorkflow(raw.Workflow.Command) {
@@ -300,10 +306,10 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		h.writeFailure(w, r, "session refused", http.StatusUnauthorized)
 		return
 	}
-	ctx := h.requestContext(r.Context(), raw, string(principal))
+	ctx := h.requestContext(r.Context(), raw, league, string(principal))
 	r = r.WithContext(ctx)
 	backupNow := raw.Workflow != nil && raw.Workflow.Command == leagueservice.BackupNowCommand
-	pin, ok := h.admitLeague(ctx, w, raw.leagueName(), backupNow)
+	pin, ok := h.admitLeague(ctx, w, league, backupNow)
 	if !ok {
 		return
 	}
@@ -313,7 +319,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 		h.confirm(w, r, gate, raw)
 		return
 	}
-	workflowHost, err := h.workflowHost(ctx, host, raw)
+	workflowHost, err := workflowHost(host, raw, pin)
 	if err != nil {
 		writeUnavailable(w, "football reference unavailable")
 		return
@@ -321,7 +327,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	service := leagueservice.NewHosted(h.Worker.Host(workflowHost), gate).
 		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithNews(h.News).
 		WithBackupRunner(h.BackupLeague).WithProblemReportStore(pin.Store)
-	h.dispatch(w, r, service, raw)
+	h.dispatch(w, r, service, raw, league)
 }
 
 // nativeAuth is who a native request's bearer is: an owner session, or an agent token when agent holds
@@ -385,15 +391,15 @@ func (h Hosted) authenticateNative(w http.ResponseWriter, r *http.Request) (nati
 
 // requestContext carries what the rest of the request reads: the football the workflow names, who
 // asks, and the league's pin, fixed once for the whole request.
-func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, principal string) context.Context {
+func (h Hosted) requestContext(ctx context.Context, raw RawNativeRequest, league, principal string) context.Context {
 	if raw.Workflow != nil {
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
-	ctx = h.withRequestPin(withReplyPrincipal(ctx, principal), raw.leagueName())
+	ctx = h.withRequestPin(withReplyPrincipal(ctx, principal), league)
 	if raw.Pick != nil {
 		// A pick names no evidence the owner reviewed, so it is judged by the league's own pinned football,
 		// the same evidence its draft reading shows.
-		ctx = leagueservice.WithFootballDigest(ctx, h.pinFor(ctx, raw.leagueName()).Digest)
+		ctx = leagueservice.WithFootballDigest(ctx, h.pinFor(ctx, league).Digest)
 	}
 	return ctx
 }
@@ -418,19 +424,20 @@ func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league s
 
 // decodeNative logs why a request was refused (never its body): an old app copy sending a shape
 // this server no longer reads otherwise shows only "400, no command" in the error log.
-func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) bool {
+func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) (string, bool) {
 	if r.Method != http.MethodPost {
-		return false
+		return "", false
 	}
 	if err := decodeHosted(w, r, raw); err != nil {
 		log.Printf("native request refused: %v", err)
-		return false
+		return "", false
 	}
-	if err := raw.Validate(); err != nil {
+	league, err := raw.validatedLeague()
+	if err != nil {
 		log.Printf("native request refused: %v", err)
-		return false
+		return "", false
 	}
-	return raw.matchesPath(r.URL.Path)
+	return league, raw.matchesPath(r.URL.Path)
 }
 
 // LeaguePin is the store a league is served from and the football evidence it is pinned to. Missing
@@ -486,24 +493,10 @@ func (h Hosted) pinFor(ctx context.Context, league string) LeaguePin {
 	return h.pin(ctx, league)
 }
 
-func (r RawNativeRequest) leagueName() string {
-	switch {
-	case r.Workflow != nil:
-		league, _ := r.Workflow.League()
-		return league
-	case r.Command != nil:
-		return r.Command.League
-	case r.Pick != nil:
-		return r.Pick.League
-	}
-	return r.League
-}
-
 // workflowHost pins a workflow or rookie-pick request to its league's football evidence. A league whose
 // evidence is missing is served without football: its readings say what they cannot show, and workflow
 // refuses its changes.
-func (h Hosted) workflowHost(ctx context.Context, host leagueservice.Host, raw RawNativeRequest) (leagueservice.Host, error) {
-	pin := h.pinFor(ctx, raw.leagueName())
+func workflowHost(host leagueservice.Host, raw RawNativeRequest, pin LeaguePin) (leagueservice.Host, error) {
 	if (raw.Workflow != nil || raw.Pick != nil) && pin.Digest != "" && !pin.Missing {
 		pinned, err := leagueservice.WithPinnedFootball(host, pin.Football)
 		if err != nil {
@@ -516,9 +509,9 @@ func (h Hosted) workflowHost(ctx context.Context, host leagueservice.Host, raw R
 
 const catalogUpdate = "League changes now go through the league catalog: update twr to the latest version, then run it again."
 
-func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest) {
+func (h Hosted) dispatch(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawNativeRequest, league string) {
 	if raw.Workflow != nil {
-		h.workflow(w, r, service, *raw.Workflow)
+		h.workflow(w, r, service, *raw.Workflow, league)
 		return
 	}
 	switch r.URL.Path {

@@ -64,7 +64,7 @@ type hostedFixture struct {
 	mfl          mflmirror.Source
 }
 
-func initializePrivateEntriesFixture(t *testing.T, pools *db.Pools) {
+func initializePrivateEntriesFixture(t testing.TB, pools *db.Pools) {
 	t.Helper()
 	_, err := pools.Write().ExecContext(t.Context(), `CREATE TABLE private_entries (
  franchise_id TEXT NOT NULL, mine TEXT NOT NULL, kind TEXT NOT NULL, entity TEXT NOT NULL,
@@ -98,11 +98,11 @@ func (f *hostedFixture) advanceTime(delta time.Duration) {
 	f.now.Add(int64(delta))
 }
 
-func newHostedFixture(t *testing.T, workflows ...bool) *hostedFixture {
+func newHostedFixture(t testing.TB, workflows ...bool) *hostedFixture {
 	return newHostedFixtureWithNFLInjuryFeed(t, nil, workflows...)
 }
 
-func newHostedFixtureWithNFLInjuryFeed(t *testing.T, injuryFeed leagueservice.NFLInjuryFeedSource, workflows ...bool) *hostedFixture {
+func newHostedFixtureWithNFLInjuryFeed(t testing.TB, injuryFeed leagueservice.NFLInjuryFeedSource, workflows ...bool) *hostedFixture {
 	t.Helper()
 	var registries []*measures.Registry
 	if len(workflows) > 1 && workflows[1] {

@@ -17,7 +17,7 @@ func writeReading(w http.ResponseWriter, r *http.Request, encoded []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Add("Vary", "Accept-Encoding")
 	if len(encoded) < gzipMinimum || !acceptsGzip(r.Header.Values("Accept-Encoding")) {
-		_, _ = w.Write(encoded)
+		_, _ = w.Write(encoded) //nolint:gosec // G705: the marshaled body is served as application/json with nosniff.
 		return
 	}
 	w.Header().Set("Content-Encoding", "gzip")

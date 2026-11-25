@@ -130,8 +130,8 @@ func setFailureCommand(ctx context.Context, command string) {
 	meta.mu.Unlock()
 }
 
-func recordNativeFailureMeta(ctx context.Context, raw RawNativeRequest) {
-	setFailureLeague(ctx, raw.leagueName())
+func recordNativeFailureMeta(ctx context.Context, raw RawNativeRequest, league string) {
+	setFailureLeague(ctx, league)
 	if raw.Workflow != nil {
 		setFailureCommand(ctx, raw.Workflow.Command)
 	} else if raw.Command != nil {

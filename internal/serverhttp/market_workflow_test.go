@@ -544,3 +544,41 @@ func requirePlainPreviews(t *testing.T, previews map[string][]commissioner.Previ
 		}
 	}
 }
+
+func TestHostedResultsUseRequestLeagueAndSeeCommittedScore(t *testing.T) {
+	c := workflowClient(t)
+	lineup := c.command(commissioner.LineupSet, commissioner.RawArgs{Lineup: &commissioner.RawLineupChange{
+		Season: 2026, Week: 1, Franchise: "franchise.01", Starters: []string{"0099"},
+	}}, "burst.lineup")
+	lineup.Visibility = "private"
+	c.run(lineup)
+	owner := c
+	owner.bearer, owner.proof = c.f.login(t, "owner", "private-password"), ""
+	args := []byte(`{"league":"native.hosted","season":2026,"week":1}`)
+	readAdjustment := func(want leaguerules.Decimal) {
+		t.Helper()
+		var results commissioner.NativeResults
+		if err := json.Unmarshal(owner.invoke("results.read", "read", args, 200).Data, &results); err != nil {
+			t.Fatal(err)
+		}
+		if results.League != "native.hosted" || results.Season != 2026 || results.Week != 1 {
+			t.Fatalf("wrong results scope: %s season %d week %d", results.League, results.Season, results.Week)
+		}
+		for _, score := range results.Scores {
+			if score.Franchise == "franchise.01" {
+				if score.Adjustment != want {
+					t.Fatalf("score adjustment = %v, want %v", score.Adjustment, want)
+				}
+				return
+			}
+		}
+		t.Fatal("results omitted franchise.01")
+	}
+	readAdjustment(0)
+	owner.invoke("results.read", "read", []byte(`{"league":"native.other","season":2026,"week":1}`), 403)
+	delta := leaguerules.Decimal(15001)
+	c.run(c.command(commissioner.ScoreFranchise, commissioner.RawArgs{
+		Score: &commissioner.RawScoreChange{Franchise: "franchise.01", Season: 2026, Week: 1, Delta: &delta},
+	}, "burst.score"))
+	readAdjustment(delta)
+}

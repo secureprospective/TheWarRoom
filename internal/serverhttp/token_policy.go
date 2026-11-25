@@ -123,7 +123,7 @@ func (a agentAdmission) Admit(ctx context.Context, access commissioner.Access) e
 	return nil
 }
 
-func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.RawSession, raw RawNativeRequest) {
+func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.RawSession, raw RawNativeRequest, league string) {
 	if h.Tokens == nil || r.URL.Path == ConfirmPath {
 		http.Error(w, "session refused", http.StatusUnauthorized)
 		return
@@ -156,22 +156,22 @@ func (h Hosted) agent(w http.ResponseWriter, r *http.Request, session accounts.R
 	if raw.Workflow != nil {
 		ctx = leagueservice.WithFootballDigest(ctx, raw.Workflow.Football)
 	}
-	ctx = h.withRequestPin(ctx, raw.leagueName())
-	pin := h.pinFor(ctx, raw.leagueName())
+	ctx = h.withRequestPin(ctx, league)
+	pin := h.pinFor(ctx, league)
 	if pin.Err != nil {
 		http.Error(w, "league access unavailable", http.StatusForbidden)
 		return
 	}
 	host := leagueservice.StoredHost{Store: pin.Store, Context: func() context.Context { return ctx }, Principal: string(principal), Registry: h.Registry, Personal: pin.Personal, Mirror: pin.Mirror, Fetcher: pin.MFL}
 	gate := agentAdmission{token: h.Tokens.Admission(session), confirmations: h.Confirmations, confirmation: r.Header.Get("X-TWR-Human-Confirmation"), auditID: token.ID}
-	pinned, err := h.workflowHost(ctx, host, raw)
+	pinned, err := workflowHost(host, raw, pin)
 	if err != nil {
 		writeUnavailable(w, "football reference unavailable")
 		return
 	}
 	service := leagueservice.NewHosted(h.Worker.Host(pinned), gate).
 		WithLiveGames(h.LiveGames).WithNFLInjuryFeed(h.InjuryFeed).WithNews(h.News)
-	h.dispatch(w, r.WithContext(ctx), service, raw)
+	h.dispatch(w, r.WithContext(ctx), service, raw, league)
 }
 
 func privateOwnerTokenSeat(records []commissioner.Record, principal, franchise string) error {
