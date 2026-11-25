@@ -134,8 +134,22 @@ while [ "$attempt" -lt 30 ]; do
   case "$code" in
     404|426)
       rc-service twr-tunnel --ifstopped start
+      # Names are restricted below; ls | sort provides the specified UTC name ordering.
+      # shellcheck disable=SC2012
+      old_sets=$(ls /var/lib/twr/upgrades | sort)
+      set_count=$(printf '%s\n' "$old_sets" | grep -Ec '^[0-9]{8}T[0-9]{6}Z-[0-9]+$' || true)
+      if [ "$set_count" -gt 5 ]; then
+        remove_count=$((set_count - 5))
+        printf '%s\n' "$old_sets" | grep -E '^[0-9]{8}T[0-9]{6}Z-[0-9]+$' | while IFS= read -r name; do
+          [ "$remove_count" -gt 0 ] || break
+          [ "$name" = "${save##*/}" ] && continue
+          rm -rf -- "/var/lib/twr/upgrades/$name"
+          remove_count=$((remove_count - 1))
+        done
+      fi
       printf '%s\n' "Server upgrade ready. The previous server, settings and league copy are in $save." \
-        'Update the desktop apps next. Changes stay paused until a fresh off-site backup verifies.'
+        'Only the newest 5 saved sets are kept; older ones were removed.' \
+        'Changes stay paused until a fresh off-site backup verifies.'
       exit 0 ;;
   esac
   attempt=$((attempt + 1))

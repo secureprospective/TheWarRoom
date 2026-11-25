@@ -175,6 +175,8 @@ SERVICE
   chmod 640 /etc/cloudflared/config.yml
   rm /usr/local/libexec/twr-move-league
   printf "# older\n" >> /etc/init.d/twr-tunnel
+  for n in 1 2 3 4 5 6 7; do mkdir -p "/var/lib/twr/upgrades/2020010${n}T000000Z-1"; done
+  mkdir -p /var/lib/twr/upgrades/keep-me
   PATH=/tmp/upgrade-tools:$PATH sh /usr/local/libexec/twr-upgrade "$DELIVERY/good/server.tar.gz" "$DELIVERY/good" > /tmp/upgrade-result
   cat /tmp/upgrade-result
   grep -F "Server upgrade ready" /tmp/upgrade-result
@@ -191,6 +193,11 @@ SERVICE
   rc-service twr-server status
   saved=$(find /var/lib/twr/upgrades -name checkpoint.json)
   test -n "$saved"
+  test "$(find /var/lib/twr/upgrades -mindepth 1 -maxdepth 1 -type d | grep -Ec "/[0-9]{8}T[0-9]{6}Z-[0-9]+\$")" = 5
+  test -d /var/lib/twr/upgrades/keep-me
+  for old in 20200101 20200102 20200103; do test ! -e "/var/lib/twr/upgrades/${old}T000000Z-1"; done
+  case "$saved" in /var/lib/twr/upgrades/*/checkpoint.json) ;; *) exit 1 ;; esac
+  echo "Upgrade kept newest 5 saved sets: PASS"
   /usr/local/bin/twr-server checkpoint -db /var/lib/twr/server.db -check "$saved"
   test "$(sqlite3 /var/lib/twr/server.db "PRAGMA user_version")" = 16
   echo "Upgraded league database schema: PASS"
