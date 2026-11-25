@@ -5,10 +5,13 @@ import (
 	"reflect"
 	"slices"
 	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 	"github.com/secureprospective/TheWarRoom/internal/deepclone"
+	"github.com/secureprospective/TheWarRoom/internal/fantasyscore/source"
 )
 
 // ledgerView is the part of a held record a reading may see: everything but the private memos.
@@ -161,5 +164,65 @@ func TestJoinedReadingsCannotChangeEachOther(t *testing.T) {
 		if !reflect.DeepEqual(got[i], map[string][]int{"a": {1, 2}}) {
 			t.Fatalf("caller %d sees another caller's write: %v", i, got[i])
 		}
+	}
+}
+
+func TestLedgerWriteDoesNotJoinPreviousReadingFlight(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		read func(context.Context, *Store) (int64, error)
+	}{
+		{"NativeResults", func(ctx context.Context, s *Store) (int64, error) {
+			out, err := s.NativeResults(ctx, bracketLeague, 2026, 1)
+			return out.Revision, err
+		}},
+		{"NativeStandings", func(ctx context.Context, s *Store) (int64, error) {
+			out, err := s.NativeStandings(ctx, bracketLeague, 2026)
+			return out.Revision, err
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := bracketTest(t)
+			baseline := readResults(t, f)
+			entered, release := make(chan struct{}), make(chan struct{})
+			unblock := sync.OnceFunc(func() { close(release) })
+			original := f.s.evidence
+			var blocked atomic.Bool
+			f.s.evidence = func(ctx context.Context, scope source.RawNativeScope) (source.NativeEvidence, error) {
+				if blocked.CompareAndSwap(false, true) {
+					close(entered)
+					<-release
+				}
+				return original(ctx, scope)
+			}
+			var oldRevision int64
+			var oldErr error
+			var wg sync.WaitGroup
+			wg.Go(func() { oldRevision, oldErr = tc.read(t.Context(), f.s) })
+			defer func() {
+				unblock()
+				wg.Wait()
+			}()
+			select {
+			case <-entered:
+			case <-time.After(5 * time.Second):
+				t.Fatal("pre-write reading did not reach score evidence")
+			}
+
+			changeScore(t, f, baseline.Games[0].Home, "flight-write")
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			newRevision, err := tc.read(ctx, f.s)
+			if err != nil || newRevision != baseline.Revision+1 {
+				t.Fatalf("post-write reading while the old flight is held: revision %d, err %v; want revision %d",
+					newRevision, err, baseline.Revision+1)
+			}
+			unblock()
+			wg.Wait()
+			if oldErr != nil || oldRevision != baseline.Revision {
+				t.Fatalf("pre-write reading: revision %d, err %v; want revision %d", oldRevision, oldErr, baseline.Revision)
+			}
+		})
 	}
 }
