@@ -20,7 +20,7 @@ setup)
   lab_stop
   for n in 10 12 16; do id=native.rehtest-$n
     if ! out=$(lab_twrserver delete-league -db "$DB" -league "$id" </dev/null 2>&1); then case $out in *"is not on this server"*) ;; *) echo "STOPPED: could not delete $id: ${out:0:300}" >&2; exit 1;; esac; fi
-    lab_twrserver create-league -db "$DB" -league "$id" -name "\"Shape $n\"" -preset "one_season_$n" -season 2026 -commissioner < lab-commish.json | head -1
+    lab_twrserver create-league -db "$DB" -league "$id" -name "\"Shape $n\"" -preset "one_season_$n" -teams "$n" -season 2026 -commissioner < lab-commish.json | head -1
     lab_twrserver join-link -db "$DB" -league "$id" -take franchise.01 -no-login </dev/null >/dev/null
 done
   lab_start
