@@ -1,0 +1,1 @@
+Four specs Christopher asked for on 11-24 (draft-room undo, GATE 4 history in/out, GATE 3 evidence split, owner chat check) plus that day's rulings. They are the build plan for December; docs that steer the build are worth the lines.
