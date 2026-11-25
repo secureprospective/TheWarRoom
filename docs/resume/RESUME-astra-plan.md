@@ -22,6 +22,7 @@ context."
 
 - Repo `~/work/TheWarRoom`. **Never work in the main checkout; it sits on `main`, and a hook blocks git writes there.** Use
   `.worktrees/<name>` on `session/<name>` branches. Toolchain line: project `CLAUDE.md`, Session start step 3.
+- Only Christopher and Claudebox may access Proxmox host `192.168.1.200` or its guests, including CT 257. Tom may recover the host only when Christopher declares it down.
 - Lab = Proxmox CT 260. `ssh -F /home/chris/work/TheWarRoom/.worktrees/pulse-a010s/.scratch/ssh-lab.conf lab`, then
   `pct exec 260 -- <cmd>`. Log: `/var/lib/twr/server.log`. Lab kit (holds **secrets**, never print it):
   `TWR_LAB_KIT=~/scratch/commish-1123` (it has KEEP.md). The kit scripts are `scripts/lab/*`.
@@ -69,7 +70,7 @@ context."
 | #524 10/12/16-team shape leagues (`scripts/lab/shapes.sh`) | **MERGED** | |
 | #525 `league.chatLink` + "League chat" control (phone League, League Pulse) | **MERGED** | planted breaks: http://, dropped noopener |
 | #526 Season rollback restores the data backup | **MERGED** | 8 offline tests; planted breaks caught |
-| #527 Note privacy + edit test | On main at `ca9930d1e` | planted break: any-seat match |
+| #527 Note privacy + edit test | Squash-merged at 09:54 Central, `ca9930d1e` | planted break: any-seat match |
 | #528 Lost computer picks during write pauses | Open, conflicts with main | `TestAutoPickRetainsTurnAcrossDurabilityPause`; planted break caught |
 | GATE 2: native.rehtest-10/12/16 drafted by computer, 43 rounds | Done, **with findings** | `~/fleet/runs/pulse-gate2verify/RESULT.md` |
 | 1A static 56-row phone checklist | Done (47 expected-pass, 7 blocked, 2 excluded) | `~/fleet/runs/pulse-astra1a/RESULT.md` |
@@ -84,8 +85,8 @@ Work through this list in order. Christopher performs each main merge after CI a
 
 | Order | PR | What it unblocks | Dependency and current gate |
 |---|---|---|---|
-| 1 | [#527](https://github.com/secureprospective/TheWarRoom/pull/527) | Regression coverage for editing a private note and keeping it private across owners. | Christopher authorized this merge. Fetched main contains the exact test at `ca9930d1e`; Lab v96 verified healthy at 10:03 Central. |
-| 2 | [#528](https://github.com/secureprospective/TheWarRoom/pull/528) | Reliable computer picks through write pauses, needed on the Lab for Sunday practice. | No code dependency on #527; finish #527 first to settle the base. Conflicted. Carry `7410ed0ae` onto fetched `origin/main` in a replacement PR, preserve main's HANDOFF, regenerate the baseline, and rerun CI. |
+| 1 | [#527](https://github.com/secureprospective/TheWarRoom/pull/527) | Regression coverage for editing a private note and keeping it private across owners. | Squash-merged at 09:54 Central as `ca9930d1e`. Lab v96 verified healthy at 10:03 Central. |
+| 2 | [#528](https://github.com/secureprospective/TheWarRoom/pull/528) | Reliable computer picks through write pauses, needed on the Lab for Sunday practice. | No code dependency on #527. #527 has landed. Conflicted. Carry `7410ed0ae` onto fetched `origin/main` in a replacement PR, preserve main's HANDOFF, regenerate the baseline, and rerun CI. |
 | 3 | [#530](https://github.com/secureprospective/TheWarRoom/pull/530) | Server-side draft expiry and owed picks. Unblocks the shared missed-pick draft-room UI. | Depends on #528's lost-pick fix being on main. Conflicted. Carry only `7410ed0ae..3e4210a09` onto fetched `origin/main` in a replacement PR, regenerate the baseline, and rerun CI. |
 | 4 | [#529](https://github.com/secureprospective/TheWarRoom/pull/529) | Publishes this handoff and the rehearsal run order on main. | No product dependency. Mergeable as of 08:07 Central. Docs follow the draft fixes so the handoff records their final PR numbers and status. |
 
@@ -153,12 +154,13 @@ Christopher's 11-25 workflow update applies to this workstream. Finish existing 
 
 ## Needs Christopher
 
-- **1B — seat proof.** Tom is the designated operator. Proceed in the first confirmed quiet window before Sunday. Tom verifies that all Lab drafts are closed, stages a separate `native.rehtest-*` league with two open seats and two test owner identities, then runs `cd "$TWR_LAB_KIT" && bash ./seat-link.sh "$DISPOSABLE_LEAGUE"` in a private terminal with the approved `TWR_LAB_KIT` and `LAB_SSH_CONF` set. `DISPOSABLE_LEAGUE` is the verified isolated copy. This restarts the shared Lab. After health and sign-in recover, the operator follows rehearsal-plan 1B for separate claims, wrong-seat denial, sign-in read-back, rotation and revocation. Keep links and credentials out of evidence.
-- **1A — phone checklist.** Tom stages the approved separate disposable owner and commissioner sign-ins for the S8 and iPhone. On each phone, open the Lab PWA, select the staged league, and confirm the correct role and league before starting from Live with all sheets closed. Follow the 56 rows in `~/fleet/runs/twr-v3-1117/MOBILE-V1-PARITY.md`; any row requiring a missing fixture stays blocked. Device and local regression evidence is in `~/fleet/runs/astra-exec-1125/1A-1B-PREFLIGHT-1125.md`.
+- **1B — seat proof.** Codex proposed Tom for Lab app work only. Christopher must confirm the operator and quiet window. If CT 260 is on the restricted host, only Christopher or Claudebox can execute its host or guest commands. The confirmed operator verifies that all Lab drafts are closed, stages a separate `native.rehtest-*` league with two open seats and two test owner identities, then runs `cd "$TWR_LAB_KIT" && bash ./seat-link.sh "$DISPOSABLE_LEAGUE"` in a private terminal with the approved `TWR_LAB_KIT` and `LAB_SSH_CONF` set. `DISPOSABLE_LEAGUE` is the verified isolated copy. This restarts the shared Lab. After health and sign-in recover, the operator follows rehearsal-plan 1B for separate claims, wrong-seat denial, sign-in read-back, rotation and revocation. Keep links and credentials out of evidence.
+- **1A — phone checklist.** Codex proposed Tom for Lab app work only. Christopher confirms the operator to stage separate disposable owner and commissioner sign-ins for the S8 and iPhone. On each phone, open the Lab PWA, select the staged league, and confirm the correct role and league before starting from Live with all sheets closed. Follow the 56 rows in `~/fleet/runs/twr-v3-1117/MOBILE-V1-PARITY.md`; any row requiring a missing fixture stays blocked. Device and local regression evidence is in `~/fleet/runs/astra-exec-1125/1A-1B-PREFLIGHT-1125.md`.
 - **BUILD-PLAN Stage 3 step 1 (T631).** Christopher accepted the 62-device v93 run for the Stage 5–6 gate. A 64-device run and integrity result remain separate proof and are outside this gate decision. Exact work order: `~/fleet/runs/twr-t631-1125/RESULT.md`.
-- **T640 — Week 10 comparison.** Tom is the designated read operator, pending confirmation of current CT 257 access. Verify the official native pin includes Week 10 and capture all 32 final `points` values using `~/fleet/runs/pulse-wk10/RESULT.md`. Compare to a fresh public MFL export. The older native capture was provisional.
-- **Stage 3 step 4 — security actions.** Codex owns T621 and T632. T621 requires authorized CT 257 privileged execution and verified authenticator recovery. T632 requires Cloudflare access for the exact TWR hostnames. See `~/fleet/runs/astra-exec-1125/OPERATORS-1125.md`.
-- **1C — Tuesday report and canary.** Designate Lab and Hermes operators to verify IDs and provision each reader with `python3 labcommish.py reader "$LEAGUE"` before the Dec 8 rollout. Issue T708 separately for the allowlisted disposable canary league. The wrapper patch and operator steps are in §7.1.
+- **T640 — Week 10 comparison.** Christopher or Claudebox needs read-only CT 257 access to the official Week 10 statistics pin and native results. Capture all 32 final `points` values using `~/fleet/runs/pulse-wk10/RESULT.md`. Compare to a fresh public MFL export. The older native capture was provisional.
+- **T621 — CT 257 rotation.** Christopher or Claudebox needs privileged CT 257 console, service and key-file access to rotate the TLS origin and authenticator keys, update tunnel trust and verify sign-in and backups. Validate authenticator recovery before rotation.
+- **T632 — Cloudflare.** Christopher decides access. Scope to the zone serving the approved TWR hostnames: Dynamic URL Redirects Read/Write for Single Redirects and SSL and Certificates Read/Write for per-host TLS settings. Changes are limited to those exact hostnames. Per-host TLS requires Advanced Certificate Manager. See `~/fleet/runs/astra-exec-1125/OPERATORS-1125.md`.
+- **1C — Tuesday report and canary.** Christopher confirms the Lab operator. Codex proposed Tom for the Lab league-ID check only, within the host access rule. The confirmed Lab operator verifies IDs and provisions each reader with `python3 labcommish.py reader "$LEAGUE"` before the Dec 8 rollout. Issue T708 separately for the allowlisted disposable canary league. The wrapper patch and operator steps are in §7.1.
 - **8A — owner correction explanation.** After Dec 6, Christopher approves a spec for showing the previous and corrected official figures and the reason. The headbrain owns the spec. The scoring/read owner then needs to expose the prior official version and an owner-readable correction event. Until that contract exists, leave the display blocked. To reproduce the evidence, use a disposable checkout at `e85334123`, run `git apply ~/fleet/runs/pulse-astra8b/capture.patch`, then `go test -race ./cmd/twr -run '^TestPulse8ACapture$' -count=1 -v`. The capture confirms changed totals and the missing explanation.
 
 ## Hourly progress (Central)
@@ -173,8 +175,9 @@ Christopher's 11-25 workflow update applies to this workstream. Finish existing 
 - 11-25 09:00 — No new merges. #527–#533 open; #533 is green. Repeated the T649 audit successfully after resuming. Stages 5–6 still await the T631 load gate; T621 and T632 await Christopher.
 - 11-25 09:43 — Stage 2 evidence reconciled. #468 shipped T668/T677/T679; phone update and refresh captures and first-open timing still need an authorized observation. See `~/fleet/runs/astra-exec-1125/STAGE2-EVIDENCE-1125.md`.
 - 11-25 09:45 — Rehearsal 1C: Tuesday report patch and 11 offline checks filed. Live rollout awaits the four verified leagues, scoped read tokens, and the Lab and Hermes operators.
-- 11-25 09:58 — Christopher accepted the 62-device stage gate. #527 is on main at `ca9930d1e`; #528 repair is next. Stage 5 ranking and the named Lab, Hermes, CT 257 and security assignments are filed in `~/fleet/runs/astra-exec-1125/`.
-- 11-25 10:00 — #527 confirmed on healthy Lab v96 at 10:03. #528 feature/test transplant applies cleanly to current main in scratch. The replacement branch awaits one of the four tracked work PRs landing or closing. T621 and T632 are assigned to Codex and await privileged operator or Cloudflare access.
+- 11-25 09:58 — Christopher accepted the 62-device stage gate. #527 is on main at `ca9930d1e`; #528 repair is next. Stage 5 ranking and the operator handoff are filed in `~/fleet/runs/astra-exec-1125/`.
+- 11-25 10:00 — #527 confirmed on healthy Lab v96 at 10:03. #528 feature/test transplant applies cleanly to current main in scratch. The replacement branch awaits one of the four tracked work PRs landing or closing. See the current access assignments under Needs Christopher.
+- 11-25 10:22 — #527 recorded as squash-merged at 09:54. T621/T640 require Christopher or Claudebox on CT 257. T632 access scope documented for Christopher's decision. Tom remains a Lab app operator proposal for 1A, 1B and league-ID verification.
 
 ## 9. Lessons from 11-25 — do not repeat
 
