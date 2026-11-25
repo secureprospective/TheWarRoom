@@ -44,8 +44,10 @@ func TestExpiryPoliciesAndLateSelection(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if d.Owed() || d.Picks[0].How != HowUnmade {
-				t.Fatalf("debt survived close: %+v", d.Picks[0])
+			closedPick := d.Picks[0]
+			if d.Owed() || !closedPick.Skipped || closedPick.How != "skipped" ||
+				closedPick.MadeAt == nil || !closedPick.MadeAt.Equal(at) {
+				t.Fatalf("closure did not finalize owed pick in the existing wire format: %+v", closedPick)
 			}
 			act.At = at.Add(time.Second)
 			if _, err = ReplayActs(r, order, start, act.At, []Act{closeAct, act}); err == nil {

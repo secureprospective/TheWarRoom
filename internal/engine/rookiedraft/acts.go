@@ -42,7 +42,6 @@ const (
 	HowExpired      = "expired"
 	HowSkipped      = "skipped"
 	HowOverrode     = "overrode"
-	HowUnmade       = "Not made before the draft closed"
 )
 
 // PickRef names one pick of a draft: its round, the franchise it began with and, for an extra pick a person
@@ -269,9 +268,10 @@ func (t *timeline) seal(at time.Time) {
 	t.closed = true
 	for i := range t.picks {
 		pick := &t.picks[i]
-		if pick.Player == "" && !pick.Forfeited && pick.Extra == 0 {
+		if pick.Player == "" && !pick.Forfeited && pick.Extra == 0 &&
+			(!pick.Skipped || pick.How == HowExpired) {
 			closedAt := at
-			pick.Skipped, pick.MadeAt, pick.How = true, &closedAt, HowUnmade
+			pick.Skipped, pick.MadeAt, pick.How = true, &closedAt, HowSkipped
 		}
 	}
 	t.cursor = len(t.picks)
