@@ -14,11 +14,10 @@ import (
 // benchmark fixture: 110,000 outside ids, matching the ~125k directory DynastyProcess loads on the Lab.
 const benchDirectoryPlayers = 55000
 
-// benchScoreCacheLeague is scoreCacheLeague with a realistic player directory so benchmarks see
-// the real cost of reading outside ids.
+// benchScoreCacheLeague uses hosted storage with a realistic player directory in the reference file.
 func benchScoreCacheLeague(t *testing.T) *bracketFixture {
 	t.Helper()
-	f := scoreCacheLeague(t, true)
+	f, _ := splitScoreCacheLeague(t)
 	seedBenchDirectory(t, f.s, benchDirectoryPlayers)
 	return f
 }
