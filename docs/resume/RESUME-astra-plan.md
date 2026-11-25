@@ -65,12 +65,12 @@ context."
 
 | Item | State | Evidence |
 |---|---|---|
-| #523 Astra brief + 11-25 rulings (chat, draft expiry, lost picks) | In merge chain | PR #523 |
+| #523 Astra brief + 11-25 rulings (chat, draft expiry, lost picks) | **MERGED** | PR #523 |
 | #524 10/12/16-team shape leagues (`scripts/lab/shapes.sh`) | **MERGED** | |
 | #525 `league.chatLink` + "League chat" control (phone League, League Pulse) | **MERGED** | planted breaks: http://, dropped noopener |
-| #526 Season rollback restores the data backup | In merge chain | 8 offline tests; planted breaks caught |
-| #527 Note privacy + edit test | In merge chain | planted break: any-seat match |
-| #528 Lost computer picks during write pauses | In merge chain | `TestAutoPickRetainsTurnAcrossDurabilityPause`; planted break caught |
+| #526 Season rollback restores the data backup | **MERGED** | 8 offline tests; planted breaks caught |
+| #527 Note privacy + edit test | Open, green and mergeable | planted break: any-seat match |
+| #528 Lost computer picks during write pauses | Open, conflicts with main | `TestAutoPickRetainsTurnAcrossDurabilityPause`; planted break caught |
 | GATE 2: native.rehtest-10/12/16 drafted by computer, 43 rounds | Done, **with findings** | `~/fleet/runs/pulse-gate2verify/RESULT.md` |
 | 1A static 56-row phone checklist | Done (47 expected-pass, 7 blocked, 2 excluded) | `~/fleet/runs/pulse-astra1a/RESULT.md` |
 | 1C Tuesday report readiness | Done: **wrong leagues** (see §7) | `pulse-astra1c/`, `pulse-astra1c2/RESULT.md` |
@@ -78,23 +78,16 @@ context."
 | W3 desktop inert controls | Done: 146 controls; 18 inert; 0 with a ready command | `~/fleet/runs/pulse-astraw3b/RESULT.md` |
 | Lost-pick diagnosis | Done | `~/fleet/runs/pulse-lostpicks/RESULT.md` |
 
-**Merge chain** (background): `~/fleet/runs/astra-exec-1125/merge-chain.sh`, log `merge-chain.log`. It works through
-526 → 523 → 527 → 528 in order. For each PR it re-merges main (`remerge.sh`, which resolves only line-budget-baseline
-conflicts), waits for CI and squash-merges if all checks pass. **First thing to do: `cat ~/fleet/runs/astra-exec-1125/merge-chain.log`.**
-Any line saying "NOT GREEN" or "FAILED" is yours to fix. Then re-run the chain with the remaining `pr:worktree` pairs.
+## 5. Merge queue — Christopher merges
 
-## 5. Running when this was written (final update, 11-25 ~12:40 UTC)
+Work through this list in order. Christopher performs each main merge after CI and review. Confirm the resulting Lab build from the release state and health evidence. The old chain scripts and logs are historical.
 
-No GPT lane is running. Two background merge jobs are:
-
-| Job | What | Check |
-|---|---|---|
-| `merge-chain.sh` | #526 (merged), then #523, #527, #528 | `cat ~/fleet/runs/astra-exec-1125/merge-chain.log` |
-| `merge-chain2.sh` | After #528: #529 (this handoff), then #530 (draft-expiry server half) | `cat ~/fleet/runs/astra-exec-1125/merge-chain2.log` |
-
-The logs say "#N MERGED", "#N NOT GREEN: <checks>" or "remerge FAILED". For anything not merged, open the PR checks,
-fix the failure, push with `remerge.sh <worktree>`, then squash-merge (`~/.local/bin/gh pr merge N --squash`). Merge
-authority covers #523–#530 (§6.1).
+| Order | PR | What it unblocks | Dependency and current gate |
+|---|---|---|---|
+| 1 | [#527](https://github.com/secureprospective/TheWarRoom/pull/527) | Regression coverage for editing a private note and keeping it private across owners. | No PR dependency. Green and mergeable. Christopher can squash-merge the reviewed head `bac81da05b`. |
+| 2 | [#528](https://github.com/secureprospective/TheWarRoom/pull/528) | Reliable computer picks through write pauses, needed on the Lab for Sunday practice. | No code dependency on #527; finish #527 first to settle the base. Conflicted. Carry `7410ed0ae` onto fetched `origin/main` in a replacement PR, preserve main's HANDOFF, regenerate the baseline, and rerun CI. |
+| 3 | [#530](https://github.com/secureprospective/TheWarRoom/pull/530) | Server-side draft expiry and owed picks. Unblocks the shared missed-pick draft-room UI. | Depends on #528's lost-pick fix being on main. Conflicted. Carry only `7410ed0ae..3e4210a09` onto fetched `origin/main` in a replacement PR, regenerate the baseline, and rerun CI. |
+| 4 | [#529](https://github.com/secureprospective/TheWarRoom/pull/529) | Publishes this handoff and the rehearsal run order on main. | No product dependency. Conflicted. Docs follow the draft fixes so the handoff records their final PR numbers and status. |
 
 Finished 11-25 afternoon:
 - **8A (`astra8b`):** owner correction explanation is **BLOCKED**. After a correction the totals and the player's stats
@@ -108,9 +101,7 @@ Finished 11-25 afternoon:
 
 ## 6. Christopher's decisions — do not reopen
 
-1. Merge authority (11-25): "After these lanes finish, review them, build the PR's and merge them when green." That
-   covers #523–#528 and the `draftexpirea` PR. **Anything new after that needs his merge OK again**, and nothing merges
-   Mon 11-30 – Tue 12-1.
+1. Christopher merges to main. Follow §5 for the order and gates. The Nov 30–Dec 1 freeze still applies.
 2. Draft clock expiry for a human seat (11-25), verbatim: "Lets build a commissioner setting that does the above, default is
    that pick is skipped but can be picked at any time." The setting `draft.onExpire` gets three values: `autopick` (the
    best-ranked available player), `skip` (**the default**: the turn moves on, the seat keeps the pick and can make it
@@ -142,15 +133,16 @@ Finished 11-25 afternoon:
 
 ## 8. Next actions, in order
 
-1. Read `merge-chain.log`. Fix anything that isn't merged, and re-run `merge-chain.sh` for the rest. Confirm the Lab
-   picked up the new main: `~/fleet/runs/twr-lab-autorelease/state`, and the Lab version on the health page.
-2. `run-watch.sh status ~/fleet/runs/astra-exec-1125`; re-arm `wait`.
-3. Confirm #530 merged (merge-chain2.log). Then check the Lab got it before Sun 11-29.
+Christopher's 11-25 workflow update applies to this workstream. Finish existing work first. Start no branch or worktree while more than three of your own branches are open and unmerged. Use one worktree per task, branch from `origin/main`, and remove it after merge when clean. Do not merge main into task branches. Name the BUILD-PLAN step or RULINGS-1122 ruling in each brief. Record unrelated ideas without building them. Record blockers under Needs Christopher, then continue with the next plan item. Add one progress line per hour with PRs landed, open work, and blockers.
+
+1. Prepare one PR at a time in the order in §5. Christopher merges each ready PR.
+2. Confirm the automatic Lab release in `~/fleet/runs/twr-lab-autorelease/state` and verify health.
+3. Confirm the draft-expiry server change is deployed before Sun 11-29.
 4. Launch the frontend half: brief `sol-draftexpire-b` (base main after merge). The draft room shows "You missed round R
    pick P. Pick any time." on desktop and phone (shared component), and the late pick uses the existing `draft.pick`.
    Include vitest; the line rules (`controls.test.ts`: no raw `<a>`/`<button>` outside Act/HQAct, lines ≤110 chars); and
    a full `pnpm vitest run`, not only the touched files (an 11-25 lesson). Merging it needs Christopher's OK (§6.1).
-5. Fix the `shapes.sh release` franchise.01 step (§7.3).
+5. Practice shape cleanup is in #531. The local verification passed and GitHub CI is running.
 6. 1B seat proof: plan item 1B on a disposable copy. **`seat-link.sh` restarts the shared Lab**: do it in a quiet window,
    never with a draft open.
 7. 1A on real phones: use `pulse-astra1a/RESULT.md` as the checklist. Phones: `~/fleet/bin/phone-chrome.py <s8|iphone> …`.
@@ -160,13 +152,21 @@ Finished 11-25 afternoon:
    note the new `--rollback` data restore from #526.
 10. Sunday and Tuesday: follow plan items 3A/3B/4A/4B exactly. Put `hold` back first.
 
+## Needs Christopher
+
+- **1B and 1A — seat proof and phone checklist.** An authorized Lab operator needs to confirm a quiet, closed-draft window and stage an isolated practice league with two test owners. On the approved copy only, use `bash ./seat-link.sh <verified-disposable-league>` from the staged Lab kit. It restarts the shared Lab. Complete claim/rotation/revocation and verify disposable owner and commissioner admissions before walking the phone checklist. See `~/fleet/runs/astra-exec-1125/1A-1B-PREFLIGHT-1125.md` for device and local regression evidence.
+- **8A — owner correction explanation.** After Dec 6, Christopher approves a spec for showing the previous and corrected official figures and the reason. The headbrain owns the spec. The scoring/read owner then needs to expose the prior official version and an owner-readable correction event. Until that contract exists, leave the display blocked. To reproduce the evidence, use a disposable checkout at `e85334123`, run `git apply ~/fleet/runs/pulse-astra8b/capture.patch`, then `go test -race ./cmd/twr -run '^TestPulse8ACapture$' -count=1 -v`. The capture confirms changed totals and the missing explanation.
+
+## Hourly progress (Central)
+
+- 11-25 07:00 — #523 and #526 confirmed merged, Lab v95 verified; #527–#530 open; 8A blocked on the post-Dec 6 spec, canary blocked on T708. Stage 1 cleanup removed 41 clean worktrees and freed 3.05 GB; see `docs/reset/WORKTREES-1125.md` on `session/worktree-audit-1125`. Cleanup docs are open as #532 and practice-seat cleanup is open as #531. The merge queue is in §5. The 36 pre-existing dirty worktrees await Christopher’s keep/drop decisions.
+
 ## 9. Lessons from 11-25 — do not repeat
 
 - **Never plant a break with `git checkout -- <file>` on a lane's uncommitted tree.** It wiped Sol's change, and it had
   to be rebuilt. Use `cp file /tmp/x.bak`, then sed, then `cp` it back.
 - **`python3 -I -m unittest` can't find modules in the current folder.** Use the repo's `make test-deploy` target.
-- Every PR edits `docs/architecture/line-budget-baseline.txt`, so each merge makes the next PR conflict. Use
-  `~/fleet/runs/astra-exec-1125/remerge.sh <worktree>`. Docs growth also needs a reason file.
+- Regenerate the line-budget baseline on branches cut from current main. Record line growth in the reason file.
 - A fresh worktree has no `frontend/node_modules`, and pre-push then fails with TS5108. Fix: `cd frontend && pnpm
   install --frozen-lockfile --prefer-offline`.
 - Only one lint can run at a time ("parallel golangci-lint is running"). Retry the push after about 90 s.
