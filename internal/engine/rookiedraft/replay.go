@@ -65,23 +65,26 @@ func Replay(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
 	return ReplayActs(r, order, start, at, acts)
 }
 
+// HoldExpired says whether a vacant owner must retain its turn at the deadline.
+type HoldExpired func(owner string, deadline time.Time) (bool, error)
+
 // ReplayActs uses the supplied instant, never wall time. Expiry is inclusive: at the deadline the pick
-// has already skipped. Successive overdue clocks start at the prior deadline, not at the read time. A
+// has already skipped unless hold retains its turn. Overdue clocks start at the prior deadline. A
 // Restart is the one act that does not first let the clock run out: it puts the draft back as it stood.
 // Exhausted does not seal the draft or issue new picks; closing is a separate commissioner phase.
-func ReplayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time, acts []Act) (Draft, error) {
-	return replayActs(r, order, start, at, acts, false)
+func ReplayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time, acts []Act, hold ...HoldExpired) (Draft, error) {
+	return replayActs(r, order, start, at, acts, false, hold)
 }
 
 // ReplaySideActs replays one side's share of a validated league order. Traded picks follow their owners,
 // so rounds can have different original franchises or no picks at all on this side.
 func ReplaySideActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
-	acts []Act) (Draft, error) {
-	return replayActs(r, order, start, at, acts, true)
+	acts []Act, hold ...HoldExpired) (Draft, error) {
+	return replayActs(r, order, start, at, acts, true, hold)
 }
 
 func replayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Time,
-	acts []Act, perSide bool) (Draft, error) {
+	acts []Act, perSide bool, hold []HoldExpired) (Draft, error) {
 	setup, err := ResolveSetup(r)
 	if err != nil {
 		return Draft{}, err
@@ -101,6 +104,9 @@ func replayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Tim
 		return out, nil
 	}
 	line := newTimeline(out.Picks, start, setup.Clock)
+	if len(hold) > 0 {
+		line.hold = hold[0]
+	}
 	for _, act := range acts {
 		if act.At.After(at) {
 			return Draft{}, fmt.Errorf("draft selections must follow their clock in time order")
@@ -109,7 +115,9 @@ func replayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Tim
 			return Draft{}, err
 		}
 	}
-	line.advance(at)
+	if err := line.advance(at); err != nil {
+		return Draft{}, err
+	}
 	out.Picks, out.Exhausted = line.picks, !line.onClock()
 	if out.OnClock, err = line.clockAt(r, at); err != nil {
 		return Draft{}, err

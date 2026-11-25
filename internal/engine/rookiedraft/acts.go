@@ -70,6 +70,7 @@ type Act struct {
 
 // timeline is the clock of a draft being replayed. remaining is only read while the clock is paused.
 type timeline struct {
+	hold      HoldExpired
 	picks     []Result
 	cursor    int
 	deadline  time.Time
@@ -102,14 +103,24 @@ func (t *timeline) open(at time.Time) {
 
 // advance skips every pick whose clock ran out by the instant, each at its own deadline. A paused clock
 // runs out of nothing.
-func (t *timeline) advance(until time.Time) {
+func (t *timeline) advance(until time.Time) error {
 	t.settle()
 	for t.cursor < len(t.picks) && !t.paused && !until.Before(t.deadline) {
+		if t.hold != nil {
+			hold, err := t.hold(t.picks[t.cursor].Owner, t.deadline)
+			if err != nil {
+				return fmt.Errorf("check draft expiry: %w", err)
+			}
+			if hold {
+				return nil
+			}
+		}
 		deadline := t.deadline
 		pick := &t.picks[t.cursor]
 		pick.Skipped, pick.MadeAt, pick.How = true, &deadline, HowExpired
 		t.open(deadline)
 	}
+	return nil
 }
 
 func (t *timeline) onClock() bool { return t.cursor < len(t.picks) }
@@ -131,10 +142,12 @@ func (t *timeline) apply(r leaguerules.DraftRules, a Act) error {
 		return fmt.Errorf("draft selections must follow their clock in time order")
 	}
 	t.last = a.At
+	until := a.At
 	if a.Kind == Restart {
-		t.advance(a.Since)
-	} else {
-		t.advance(a.At)
+		until = a.Since
+	}
+	if err := t.advanceForAct(until, a); err != nil {
+		return err
 	}
 	switch a.Kind {
 	case Select, Assign:
@@ -156,6 +169,24 @@ func (t *timeline) apply(r leaguerules.DraftRules, a Act) error {
 		return nil
 	}
 	return fmt.Errorf("this draft action is not available")
+}
+
+// Existing selections can follow turns that expired before vacant turns were held.
+// Preserve those recorded skips rather than moving an accepted selection to another slot.
+func (t *timeline) advanceForAct(until time.Time, a Act) error {
+	hold := t.hold
+	if hold != nil && a.Kind == Select {
+		t.hold = func(owner string, deadline time.Time) (bool, error) {
+			pick := t.picks[t.cursor]
+			if pick.Round != a.Pick.Round || pick.Original != a.Pick.Original || pick.Extra != a.Pick.Extra {
+				return false, nil
+			}
+			return hold(owner, deadline)
+		}
+	}
+	err := t.advance(until)
+	t.hold = hold
+	return err
 }
 
 func (t *timeline) choose(r leaguerules.DraftRules, a Act) error {

@@ -1,4 +1,5 @@
 Baton: Bee — 2026-11-28
-State: B2 tests-only slice complete; both server twins absent and are explicit GAP skips. Focused run passed with skips; lint blocked by branch line-budget gate (docs/go-test overruns require reason). tidy-check clean.
-Next: commit tests and REPORT.md once; no push.
-Blocked: requested behavior/mutation proof impossible without server twins; lint requires line-budget reason.
+State: Vacant overdue turns retained by replay using historical seats; existing ranking and write path record late picks at actual time. Human SkipPick unchanged. Race suite and lint pass.
+Next: review branch and approve merge; Lab restart rehearsal still needed.
+Blocked: none.
+Rejected: backdating ledger picks would misrepresent actual recording time. Existing accepted selections retain historical preceding skips; no retroactive backfill.

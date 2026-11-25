@@ -139,7 +139,7 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 		basis.words = draftWords(err)
 		return basis, nil
 	}
-	basis.draft, err = rookiedraft.ReplayActs(draft, basis.order, basis.start, at, draftActs(records, key))
+	basis.draft, err = rookiedraft.ReplayActs(draft, basis.order, basis.start, at, draftActs(records, key), holdVacantDraftTurn(records))
 	if err != nil {
 		return basis, fmt.Errorf("replay the startup draft: %w", err)
 	}
