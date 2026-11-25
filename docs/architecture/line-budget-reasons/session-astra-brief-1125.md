@@ -1,0 +1,1 @@
+Adds the 11-25 UI edges brief handed to Astra (docs/reset/UI-EDGES-1125.md, including the 263-command and 287-edge appendices), the 11-25 chat and draft rulings, and the session resume. Planning record the next sessions build from.
