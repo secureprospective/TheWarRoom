@@ -1,11 +1,15 @@
 # System narrative
 
-The long account of what exists in TheWarRoom: layers, IPC surface, data, external services and the
-native league. Moved from the root `SYSTEM_MAP.md` on 2026-10-20; that file is now a one-page feature
-directory and `docs/architecture/placement.tsv` assigns every root file and package to a feature.
-Update this narrative in the same commit as any new package, IPC method or external service. Current as of 2026-10-19: ring 4 merged (`main`
-5739c5c9), then the clean sweep checked every path, symbol and IPC method named here against the
-code.
+## Current hosted architecture
+
+`cmd/twr-server` serves the React PWA at `/app/` and hosts the league. There is no standalone
+desktop app or local league engine in the browser. `cmd/twr` exposes the CLI and MCP; the
+PWA and CLI use the server's authorized command routes in `internal/serverhttp`. Commands
+are defined in `internal/commandcatalog`. `internal/leagueservice` supplies native reads,
+previews and changes; `internal/store/history` owns atomic authorization and ledger append.
+The engines consume typed facts and do not depend on storage or transport. SQLite holds the
+league state. Use `cmd/twr-server/README.md` for the server/operator commands and
+`SYSTEM_MAP.md` plus `docs/architecture/placement.tsv` to locate current packages.
 
 ## Loopback native fixture path
 
@@ -13,7 +17,7 @@ code.
 validated read-only `/v1/fixture/ledger`) → `internal/leagueservice.FixtureLedger` →
 `commissioner.Reading` over freshly decoded/validated built-in creation evidence.
 The fixed observer has no command permissions; caller input cannot choose a league or principal.
-The service owns no database, writes, MFL credentials, catalog publication or Wails runtime.
+The service owns no database, writes, MFL credentials, catalog publication or league hosting.
 Unknown routes/major versions, mutation methods and read arguments fail before engine access.
 
 `cmd/twr-server -fixture -read` uses `internal/serverclient` with an explicit trusted CA,
@@ -23,7 +27,13 @@ normal hostname/certificate verification, no proxy or redirects, and bounded JSO
 compares its JSON with a direct engine reading, and checks certificate/version/write rejection.
 This is not an authenticated/deployable server. Usage: `cmd/twr-server/README.md`.
 
-## Layers and packages
+## Historical architecture notes (before desktop removal)
+
+The rest of this document records earlier implementation and design evidence. Local startup,
+IPC, bindings and desktop-only routes described below are not current interfaces. Check the
+current feature map and server source before relying on any path or symbol from this history.
+
+### Layers and packages
 
 Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conventions.
 
@@ -93,7 +103,7 @@ Import rules marked **(depguard)** are build errors in `.golangci.yml`, not conv
 - `database/sql` is confined to `db` and `store`.
 - `transactions/*` handler packages are imported only by `transactions`.
 
-## App-owned calendar reading
+### App-owned calendar reading
 
 `internal/leagueclock/action_calendar.go` dates commissioner action windows at civil midnight in
 league time, assigns shared dates to the chosen side, and provides one default-deny action decision
@@ -155,7 +165,7 @@ optional label, capped at 50 rows and under 16 KB per proposal. This is not a tr
 migration. Reopening keeps every saved asset ID and runs the existing `trade.offer` preview, so stale
 assets remain visible as unavailable rather than disappearing.
 
-## IPC surface
+### IPC surface
 
 | File | Methods |
 |---|---|
@@ -194,7 +204,7 @@ assets remain visible as unavailable rather than disappearing.
 Every method that takes frontend input validates it before acting. Bindings in
 `frontend/wailsjs/` are generated (`wails generate module`); never hand-edit them.
 
-## Data and logs
+### Data and logs
 
 - **Databases,** in `~/.config/TheWarRoom/`, split by lifecycle:
   - `thewarroom.db`: the MFL mirror and app settings. Rebuildable from MFL.
@@ -220,7 +230,7 @@ Every method that takes frontend input validates it before acting. Bindings in
   non-zero on failure. `-version` prints the build label. Any other argument exits 2, so a
   mistyped flag never opens a window on the real database.
 
-## External services
+### External services
 
 - Every outbound request goes through `internal/archive`, so every body received is kept in
   `history.db`. A URL with no row in `sources.csv` is logged as `unregistered`.
@@ -230,14 +240,14 @@ Every method that takes frontend input validates it before acting. Bindings in
   `CFBD_API_KEY`). EA Madden was removed from the prior (R8); its `sources.csv` row is retired so
   its archived fetches stay labelled. See `docs/sources/Approved_Sources.md`.
 
-## Scheduled for replacement
+### Scheduled for replacement
 
 These work and are tested, but the core plan rewrites or deletes them. Do not extend them.
 
 Nothing at present. The scouting fetchers listed here were removed with the layer 1–4 engine
 on 2026-10-20.
 
-## Built but not wired
+### Built but not wired
 
 Found by the 2026-10-19 sweep. Each works and is tested, but nothing in the shipped app reaches it.
 Wire it or retire it when its ring comes up; do not count it as landed.
@@ -264,7 +274,7 @@ Wire it or retire it when its ring comes up; do not count it as landed.
   writer was never reachable from the app and was removed; commissioner corrections live in
   `history.db`.
 
-### Scoring orchestration
+#### Scoring orchestration
 
 `internal/app/scoring` reads the current and previous model runs, builds the power boards,
 refreshes season fantasy-point totals and executes synchronous model passes through explicit
@@ -276,7 +286,7 @@ publication and health notifications. Directory ages and free-agent snapshots st
 they read shared held state under its existing locks; callbacks preserve their original read
 order. Root wire goldens and integration tests complement implementation tests in the service.
 
-## What does not exist, on purpose
+### What does not exist, on purpose
 
 - No ORM: parameterized `database/sql` only, inside the data layer.
 - No DI framework: constructor injection from `app.go`.
@@ -461,7 +471,7 @@ League Pulse › Race: `race_app.go` holds weeklyResults, the playoff brackets, 
 
 League Pulse › Now: `now_app.go` owns each opened week's NFL schedule, the season's bye weeks and the first archived copy of each week's scores. `TargetNowRefresh(week, force)` refreshes Race feeds, then that week's NFL schedule and byes (5-minute freshness, archive fallback scoped by `W`). `TargetNow(week, reportWeek, mine)` reads held data only and validates the week (0: current NFL week; reportWeek 0: last scored week). `now_reading.go` captures detached schedule/first-score indexes and feed metadata under `seasonMu`, then releases the lock before `internal/app/now` constructs X-03 and M-001, M-003–M-007, M-015, M-016, M-018, M-021, M-022, M-072 and M-088. The service delegates shared season calculations to `internal/app/race`. Root-declared wire types and converters preserve Wails names and JSON. Live game construction, box reports and strict ESPN-id spine matching also live in `internal/app/now`; polling, backoff, archive/crosswalk I/O and photos remain root-owned. `LiveSnapshot` contains a copied detail index and immutable published payloads, not the stateful adapter. `nowtest` shares source fixtures; root tests freeze bindings and race refresh against reads. The lazy screens remain `frontend/src/app/now/Now.tsx` and `LiveGame.tsx`.
 
-### Data and sources
+#### Data and sources
 
 - `internal/ingestion/leaguearchive`: offline, prevalidated MFL file-tree import through the archive Sink.
 - `internal/manifest`: pinned-input identity, body resolution and last-good snapshot standing; no I/O except the injected body reader.
@@ -470,7 +480,7 @@ League Pulse › Now: `now_app.go` owns each opened week's NFL schedule, the sea
 - `facts_app.go`: compiles the published manifest (archive pins plus the curated `note_readings.csv`, pinned by its own sha256) with `internal/facts`, runs the nine checks against the identity-pinned exceptions (`internal/lab/testdata/check-exceptions.csv`), and records the attempt; the same manifest, compiler and rules never compile twice, and a failure keeps the last good snapshot, stale. Runs after an archive import and at launch.
 - `frontend/src/app/datasources`: lazy Control Room Data and sources, scope Acts, player crosswalk and engine parameter overrides.
 
-## League communications
+### League communications
 
 `internal/app/comms.API` directly binds TargetComms, TargetCommsRefresh and TargetOpenComms.
 It owns validation, wire declarations/conversion and report construction, depending only on its
@@ -488,7 +498,7 @@ Read/open goldens stay in testdata/wire/comms and are exercised with a fake Host
 the refresh composition golden. Core tests use coretest's isolated stores/fixture transport and
 race real board publication against detached reads. See the Feature API template for the next move.
 
-## Player photos (ring 3, p3k)
+### Player photos (ring 3, p3k)
 
 `internal/headshot` fetches a player's photo from ESPN's resizer (96×70), then Sleeper, keyed through the
 player directory's `espn` and `sleeper` ids (`history.Store.SourceID`). It paces requests at four a second,
@@ -500,7 +510,7 @@ archiving transport on purpose. The webview loads `/headshot/<mfl id>` through t
 (`settings.json` `photosOff`, `SetPhotos`). `cards/PlayerPhoto.tsx` reserves the box and shows the NFL team
 when there is no photo.
 
-## Trade Acts and acquisition costing (ring 3, p3t)
+### Trade Acts and acquisition costing (ring 3, p3t)
 
 Trade Acts and acquisition costing: `trade_builder_app.go` validates the IPC boundary and persists
 local proposals in `internal/store/state/trade_plans.go` on whatif.db. `trade_projection.go` projects
@@ -529,7 +539,7 @@ The snapshot's player directory now also includes named unrostered players for g
 private draft/watch lists; eligibility remains roster-only. `history.ReferenceBodies` admits imported
 league-archive responses on read-only surfaces; live fallbacks still exclude imports.
 
-## Player research
+### Player research
 
 `internal/ingestion/researchfeeds` validates display-only MFL playerScores (week and YTD,
 including team defenses), the five MFL-wide activity exports, pointsAllowed and playerProfile.
@@ -586,7 +596,7 @@ prove acceptance inside the proposal-to-first-miss interval. Other disappearance
 `internal/labcompile.OfferTiming` shares the archive's Eastern-date season/stretch rules. Open offers
 are excluded from ending rates. The lazy Offers surface reloads its selected scope on season events.
 
-## Native asset corrections
+### Native asset corrections
 
 `internal/commissioner/native_projector.go` replays active contract corrections, season-scoped cap
 adjustments and player cap relief in ledger order over cloned seed assets. Roster, reserve, cap and
@@ -596,7 +606,7 @@ permission; compensation uses the same replay. `PendingTradeCapCheck` is the fut
 seam, currently reporting no pending trades. Reserve exceptions match only their player and bucket,
 expire at the supplied instant and explain the commissioner reason; no MFL or what-if state changes.
 
-## Season rollover
+### Season rollover
 
 `season.rollover` (`internal/commissioner/rollover_command.go`, CM-027, G3, commissioner only) moves a
 native league to the next NFL season in one ledger entry. `Rollover` (`rollover.go`, `rollover_rules.go`,
@@ -614,7 +624,7 @@ from the plan's rules, and a compensating revert restores both. `CheckRolloverAp
 change the rollover captured, or a rollover with later changes. A league's first season is the NFL season its
 creation records (`firstSeason`); a ledger recorded before that existed names no season until it is seeded.
 
-## Native rookie draft
+### Native rookie draft
 
 `internal/commissioner/draft_commands.go` holds the CM-041/CM-042 commands (`draft.order.auto`, `.set`,
 `.pattern`, `.tiebreak` at G2, `draft.start` at G1) on the existing append path; setup (CM-040) is the
@@ -664,7 +674,7 @@ clock with a countdown and the pick's close in the viewer's own time (`DraftCloc
 `draftRoom` (`state.ts`) holds the reading; `draft.wire.testdata.json` is Go-written
 (`TestTheDraftRoomWireIsWhatGoSends`).
 
-## Native contract action settings
+### Native contract action settings
 
 `internal/commissioner/contract_actions.go` validates `contract.action.set` for the nine CM-009 actions.
 The commissioner-only named command replaces one action's parameters and enable switch. Its replay
@@ -674,7 +684,7 @@ parameters explicitly need a ruling, rather than borrowing preset numbers. The c
 next rollover and the binding competitive-rule G3 safeguard for apply-now changes. Existing MFL owner
 actions are unchanged.
 
-## Native contract pricing
+### Native contract pricing
 
 `internal/nativecheck/contract_*.go` is the pure price: `PriceContract(Input, ContractAction)` takes the rules
 in force, one recorded contract (flat salary through its last season), what the franchise and contract have
@@ -696,7 +706,7 @@ the ledger and held player facts and records nothing. Limits count only contract
 league; none is recorded yet (the owner action that records them comes later), so the used counts are empty
 and the quote says so.
 
-## Native fantasy scoring
+### Native fantasy scoring
 
 `internal/fantasyscore` is a pure leaf: exact ten-thousandths, commissioner catalogue values,
 true-position tackle/assist rates, per-play stacking bonuses, explicit unused stats and Needs a ruling.
@@ -732,7 +742,7 @@ rules have neither. Missing play-by-play stays explicit. The Go-written wire fix
 `internal/commissioner/testdata/player-score-wire.json`. Existing MFL owner readings and scouting
 positions are unchanged.
 
-## Native statistics queue
+### Native statistics queue
 
 CM-031. A native score never moves because the NFL feed changed: it counts the player's week at the
 league's *baseline*, the first version the held files gave, until the ledger approves a later one.
@@ -754,7 +764,7 @@ league does not score. Root `TargetStatQueue(league, season)` reads `history.Sto
 goes through `TargetNativeScorePreview`. A week the newest file drops makes no item and unscores nobody.
 Wire fixture: `internal/commissioner/testdata/stat-queue-wire.json`.
 
-## Native results and standings
+### Native results and standings
 
 `native_legality_app.go` exposes `TargetNativeResults(league, season, week)`,
 `TargetNativeStandings(league, season)` and read-only `TargetNativeScorePreview(body)`.
@@ -780,7 +790,7 @@ A result-flip warning names only the games of the franchises the change touches 
 the franchise that starts him), once each and by franchise name: "We can't tell yet whether this changes
 A v B: neither score is complete."
 
-## Native playoffs
+### Native playoffs
 
 `native_legality_app.go` adds `TargetNativeBracket(league, season)`, a read-only reading of a season's playoffs.
 `internal/commissioner/playoff_rules.go` resolves the playoff rules the season runs under
@@ -811,7 +821,7 @@ by hand replaces one and shows as set by the commissioner, and the bracket's cha
 bracket. The Go-written wire fixture is `internal/commissioner/testdata/native-bracket-wire.json`. No
 frontend screen reads it yet.
 
-## Native lineups
+### Native lineups
 
 `internal/commissioner/lineup_commands.go` adds `commish.lineup.set` (an owner, G2, private) and
 `commish.lineup.correct` (CM-029, co-commissioner or above, G3, typed reason, shown to the league). A lineup
@@ -896,7 +906,7 @@ shared side tray with Go's preview.
 
 and once-per-week counting. Eight source-credit differences remain explicitly unresolved. Neither package is connected to runtime score surfaces yet.
 
-## Native waiver wire
+### Native waiver wire
 
 `internal/commissioner/waiver_command.go` validates CM-035 commands and owner cut/claim arguments;
 `waiver_execute.go` computes decisions under the history append lock, using held player facts and the
@@ -916,7 +926,7 @@ background workers and resumes held windows after restart; no network feed is in
 `native_owner_app.go` exposes `TargetNativeWaiverAction(RawCommand)` and
 `TargetNativeWaivers(league, franchise, at)`. Neither port migrates the imported owner screens.
 
-## Native free-agent bids
+### Native free-agent bids
 
 `internal/nativecheck/bids.go` is the pure CM-013 policy: `NewBidPolicy` reads the resolved rules (modes, year
 multipliers, limits, tiers, steps, late-bid mark, phase weeks, point decimals, minimum salaries, money
@@ -947,7 +957,7 @@ blind auction counts or times. `native_owner_app.go` exposes `TargetNativeBidAct
 `TargetNativeBids(league, franchise)`, and registers all three owner actions with the native gate.
 Restricted free-agent bids wait for the tender step, which the app does not yet record.
 
-## Native roster and asset corrections
+### Native roster and asset corrections
 
 `internal/commissioner/correction_command.go` validates CM-028's `correct.roster`,
 `correct.transaction`, `correct.provenance` and `correct.pick`, and CM-039's `rule.exception`.
@@ -974,7 +984,7 @@ individual corrected players and picks also carry their reason. Go owns
 `internal/commissioner/testdata/corrections-wire.json`; Wails generates the binding.
 The rollover append lock resolves `NativeBracketReading` through history links before preparing its
 frozen plan, so the archived champion is the decided season winner, not an unset snapshot field.
-## Native trades
+### Native trades
 
 `native_owner_app.go` exposes `TargetNativeTradeAction` (offer, accept, decline, withdraw) through the native
 owner registry and calendar gate, and `TargetNativeTrades(league, viewer)` (viewer is the seated franchise).
@@ -990,7 +1000,7 @@ frozen offered contract details and viewer-local times; expiry lapses an unaccep
 The Go-written fixture is `internal/commissioner/testdata/native-trades-wire.json`. No imported MFL reading
 or frontend screen is migrated.
 
-## Commissioner act previews
+### Commissioner act previews
 
 `history.PreviewCommissionerWithFacts` uses the execute checks plus the shared
 `prepareCommissionerTrial` (waivers, bids, trades, draft and rollover), with the app's held player
@@ -1009,7 +1019,7 @@ retry identity. No new Wails binding or client-supplied starting assets are need
 uses the normal execute command body. Controls A–E and G (except CM-055), plus the built bracket and
 advance commands (CM-046/047), are marked built; the rest of F keeps its prior flags.
 
-## Commissioner market and competition pickers
+### Commissioner market and competition pickers
 
 `commissioner_app.go` exposes `TargetCommissionerMarket(league, command)` over held ledger
 records. `commissioner.MarketReading` uses the exact command permission and emits only named target
@@ -1021,7 +1031,7 @@ session identity for self-only people acts. The lazy commissioner tray uses thos
 existing `TargetNativeBracket`, for schedule and bracket acts with named game/round/seed/team pickers.
 Go-authored market and competition wire fixtures pin the frontend bodies and previews.
 
-## File migrations
+### File migrations
 
 `internal/db` owns the shared file runner and the complete main-file DDL. `user_version`
 steps and their markers commit together after `VACUUM INTO <file>.pre-v<N>.bak`.
@@ -1035,7 +1045,7 @@ Repeated initialization at the same file version reuses completed checks within 
 pool; `db.Check` is the explicit fresh-check path.
 Existing backup paths are never overwritten: a collision blocks the pending upgrade.
 
-### Control readings and root-owned refresh state
+#### Control readings and root-owned refresh state
 
 `internal/app/control` builds league settings, site news, accounting and bylaw readings,
 parameter labels, alert ordering/bye-alert wording, and week/window/gameday readings. Its
@@ -1051,7 +1061,7 @@ no lock or worker. Root tests retain binding goldens, populated wire-twin compar
 concurrent refresh/read coverage and nested-copy detachment checks; pure calculation tests
 live beside the service. See `feature-extraction.md`'s stateful-features recipe.
 
-### Hosted franchise workflows
+#### Hosted franchise workflows
 
 After account/seat admission, `NativeAccount` mounts fixed `shell/ThinHome.tsx` using only the
 admitted league; a card opens `commissioner/HostedLeague.tsx` at HQ, while shortcuts and actionable
@@ -1080,7 +1090,7 @@ retry, revocation) and `frontend/src/app/commissioner/hostedRoom.test.tsx` (real
 parsing, disconnected views, reconnect without replay). Graphical acceptance is separate;
 `tools/twr-practice/README.md` provides the disposable click walkthrough.
 
-### MFL reference and hosted-server screen boundary
+#### MFL reference and hosted-server screen boundary
 
 `control/NativeStartup.tsx` probes only the desktop startup route. A missing route (404)
 or the local development HTML fallback opens the local shell; other HTTP failures or
@@ -1099,7 +1109,7 @@ replacement cannot replace recorded native assets or cap. The fixture boundary t
 Christopher’s separate Block E acceptance walk are listed in `tools/twr-practice/README.md`.
 
 
-### Read-only MFL import port
+#### Read-only MFL import port
 
 `leaguemigration.Source.Read` returns a native-owned `Candidate`: source metadata, held-ID
 owners, a native `Plan`, and actionable preparation problems. `mflsource` owns the whole raw
@@ -1116,7 +1126,7 @@ only held franchise names and starter limits, implemented by the MFL config adap
 fetching. Composition wiring and its frozen fingerprints remain unchanged. Other reference
 views still carry explicit debt; this is a direct-import fence, not transitive isolation.
 
-## Desktop MFL move
+### Desktop MFL move
 
 Control Room's `TargetMFLMigration` forwards validated migration commands to the
 existing migration service. Credentials use the existing OS keyring provider,
@@ -1126,7 +1136,7 @@ are ordinary rule changes in the same creation transaction. A failed answer roll
 back the whole league. The new league is selected through the existing shared
 commissioner state. Details and verification limits: `docs/ui/move-mfl.md`.
 
-## Reference schedule refresh
+### Reference schedule refresh
 
 `internal/composition/migration_app.go` injects resources into
 `internal/app/mflref/migration.ScheduleSync`. The fenced reference service selects followed
@@ -1141,7 +1151,7 @@ validated depth/bye values, not acquisition packages. `internal/feedwire` owns s
 envelopes and API-error rejection shared by held decoding and ingestion. Acquisition wrappers
 retain their old public types as aliases. No feed selection or zero-admission policy changed.
 
-## Hosted member-safe NFL status
+### Hosted member-safe NFL status
 
 `cmd/twr-server/nfl_injuries.go` uses the existing validated `ingestion/injuries` MFL export and
 `archive.Transport` to hold fetches in the shared football reference file. The hosted server starts

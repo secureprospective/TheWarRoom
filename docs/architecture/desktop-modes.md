@@ -1,5 +1,7 @@
 # The desktop app has two modes. Read this before planning desktop, server or phone work.
 
+> **Historical (11-24).** The desktop app was removed in desktop-removal PR-D to PR-I. There is one interface: the PWA served by `twr-server`. Current architecture: `docs/architecture/system-narrative.md`.
+
 Checked against the thin Home and Bundle 7 browser-door code on 2026-11-18. Christopher's ruling is:
 **the usable product is the desktop app in thin mode.** Bundle 7 opens the browser door at `/app/` using
 the same hosted client and command routes; mobile-specific screens and polish remain out of scope.

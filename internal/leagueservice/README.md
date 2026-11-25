@@ -1,7 +1,7 @@
 # League service
 
-Transport-independent native league reads, previews and changes. Wails and hosted
-HTTP share this service; the history store owns atomic authorization and append.
+Transport-independent native league reads, previews and changes. Hosted HTTP
+uses this service; the history store owns atomic authorization and append.
 
 Release-blocker evidence and the current-role matrix are recorded in
 `docs/build-handoffs/Release_Blocker_Matrix_2026-10.md`. The `release_*_test.go`

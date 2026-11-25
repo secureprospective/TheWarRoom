@@ -108,8 +108,6 @@ linters:
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
               desc: "core cannot import features; compose feature ports in main"
-            - pkg: github.com/wailsapp/wails
-              desc: "core cannot import Wails; inject the runtime port"
 
         app-boundary-no-core-imports:
           list-mode: lax
@@ -128,14 +126,6 @@ linters:
           deny:
             - pkg: github.com/secureprospective/TheWarRoom/internal/app/
               desc: "non-app internals cannot import application services"
-
-        app-no-platform-imports:
-          list-mode: lax
-          files:
-            - "**/internal/app/**"
-          deny:
-            - pkg: github.com/wailsapp/wails
-              desc: "application services cannot import Wails; inject a callback at root"
 
         # Shared set: report and season. Unknown features default to shared-only imports;
         # declare their own subtree below when extracting a feature (including tests).
