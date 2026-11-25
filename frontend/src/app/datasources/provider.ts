@@ -48,20 +48,19 @@ export type DataProvider = {
   photos: (on: boolean) => Promise<Outcome>;
   parameter: (key: string, position: string, value: number | null) => Promise<void>;
 };
-function desktop() {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Data and sources needs the desktop app. No sample data is substituted.');
+function unavailable() {
+  throw new Error('Data and sources needs the desktop app. No sample data is substituted.');
 }
 export const dataProvider: DataProvider = {
   read: async () => { return parseSources(await sourcesAPI.read()); },
   crosswalk: async () => { return report(await sourcesAPI.crosswalk(), 'Crosswalk'); },
-  params: async () => { desktop(); const p = await getParams(); if (!p.ok) throw new Error(p.error);
+  params: async () => { unavailable(); const p = await getParams(); if (!p.ok) throw new Error(p.error);
     return p; },
   refresh: async scope => { return parseOutcome(await sourcesAPI.refresh(scope)); },
   folder: async path => { return parseOutcome(await sourcesAPI.folder(path)); },
-  photos: async on => { desktop(); return parseOutcome(await sourcesAPI.photos(on)); },
+  photos: async on => { unavailable(); return parseOutcome(await sourcesAPI.photos(on)); },
   parameter: async (key, position, value) => {
-    desktop(); const r = value === null ? await resetParam(key, position) : await setParam(key,
+    unavailable(); const r = value === null ? await resetParam(key, position) : await setParam(key,
       position, value);
     if (!r.ok) throw new Error(r.error);
   },

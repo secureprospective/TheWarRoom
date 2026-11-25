@@ -274,15 +274,18 @@ it.each(['Commissioner', 'Co-commissioner'])(
     const port = service();
     const admission: NativeView = { server: 'https://league.example', league, name: 'Test League', role,
       franchise: '', franchiseName: '', message: 'Connected', seed: '', connection: '', helperId: '',
-      confirmation: '', authGeneration: '1', seats: [] };
+      confirmation: '', authGeneration: '1', seats: [],
+      leagues: [{ id: league, name: 'Test League', role, franchise: '', franchiseName: '' }] };
     vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
-      if (url === '/desktop/changes') return new Promise(() => {});
-      if (url === '/desktop/workflow') {
-        const request = JSON.parse(String(init?.body)) as NativeRequest;
+      if (url === '/v1/native/invalidations') return new Promise(() => {});
+      if (url === '/v1/native/workflow') {
+        const request = JSON.parse(String(init?.body)).workflow as NativeRequest;
         return { ok: true, json: async () => await port(request) };
       }
       return { ok: true, headers: new Headers({ 'Content-Type': 'application/json' }),
-        json: async () => admission };
+        json: async () => ({ protocol: 1, leagues: admission.leagues, admission: {
+          league, name: admission.name, role, franchise: '', franchiseName: '', seats: [],
+        } }) };
     }));
     await act(async () => root.render(<NativeAccount initial={admission} />));
     await vi.waitFor(() => expect(buttons('Pick Test League')).toHaveLength(1), { timeout: 15_000 });

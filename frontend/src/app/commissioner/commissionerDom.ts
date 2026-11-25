@@ -22,14 +22,16 @@ const held = globals.map(key => ({ key, descriptor: Object.getOwnPropertyDescrip
 let root: Root | undefined;
 
 export const settle = () => act(async () => { await new Promise(resolve => setTimeout(resolve, 30)); });
-// features stubs the bound feature APIs (window.go.<pkg>.API) alongside the root App.
+// Optional feature fakes for legacy component tests.
 export async function mount(node: ReactElement, app: Partial<App> = {},
   features: Record<string, unknown> = {}) {
   const document = new KeyDocument();
   const host = document.createElement('div');
   vi.stubGlobal('document', document);
   const go = { commissioner: { API: app }, ...features };
-  vi.stubGlobal('window', { document, HTMLIFrameElement: class {}, go });
+  vi.stubGlobal('window', { document, HTMLIFrameElement: class {},
+    location: { origin: 'https://league.example' },
+    addEventListener: vi.fn(), removeEventListener: vi.fn(), go });
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   root = createRoot(host as unknown as HTMLElement);
   await act(async () => root?.render(node));

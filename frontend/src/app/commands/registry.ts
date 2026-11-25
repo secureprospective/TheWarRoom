@@ -394,8 +394,7 @@ export function createCommands(
       id: 'backup.now',
       run: (_args: BrowserArguments<'backup.now'>) => {
         state.navigate({ node: 'control', workspace: 'app' });
-        return import('../commissioner/backupState').then(m =>
-          completed(m.backupState.run(), () => m.backupState.peek().error));
+        throw new Error('Local backup is unavailable in the browser app.');
       },
     }),
     'commissioner.surface': command({

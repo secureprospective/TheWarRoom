@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, it, expect, vi } from 'vitest';
 import fixture from '../data/fixtures/clock.json';
 import { parseClock } from '../data/parse';
-import { FixtureProvider, LiveProvider } from '../data/provider';
+import { FixtureProvider } from '../data/provider';
 import { createCommands } from '../commands/registry';
 import { CalendarPanel } from './CalendarPanel';
 import { deadlineRoute } from './deadlineRoute';
@@ -101,18 +101,8 @@ describe('league window editing and destinations', () => {
     expect(changed).toHaveBeenCalledTimes(2);
     stop();
   });
-  it('live setWindow calls the Wails binding', async () => {
-    const save = vi.fn().mockResolvedValue(undefined);
-    const before = Object.getOwnPropertyDescriptor(globalThis, 'window');
-    vi.stubGlobal('window', { go: { control: { API: { TargetSetWindow: save } } } });
-    try {
-      await new LiveProvider().setWindow('trade_deadline', at);
-      expect(save).toHaveBeenCalledWith('trade_deadline', at);
-    } finally {
-      if (before) Object.defineProperty(globalThis, 'window', before);
-      else Reflect.deleteProperty(globalThis, 'window');
-    }
-  });
+
+
 });
 
 it('gives the Calendar date fields the shell dark face, overridable by any screen', () => {

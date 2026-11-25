@@ -7,7 +7,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import type { ResearchReader } from '../research/api';
 import { activeJobSnoozes, isJobSnoozed } from '../commissioner/jobs';
 import { subscribeSeason } from '../market/api';
-import { defaultResearch, mergeBrief, readHomeBrief, retryDelay, transientErrors,
+import { mergeBrief, readHomeBrief, retryDelay, transientErrors,
   type HomeBrief as Brief } from './homeReads';
 import { bump, current, defaultLayout, layoutKey, pack, place, remove, SPANS, swap,
   type Phase, type Span, type TileId } from './homeLayout';
@@ -119,7 +119,7 @@ export default function HomeBrief({ league, mine, port, initial, research, owner
     const first = scope.current !== `${league}|${mine}`;
     scope.current = `${league}|${mine}`;
     void readHomeBrief(league, mine, port, r => { if (live) setB(prev => first ? r : mergeBrief(prev, r)); },
-      research ?? defaultResearch(), owner, commissioner, syncLayout).finally(() => {
+      research, owner, commissioner, syncLayout).finally(() => {
       if (live) setDone(pass);
     });
     return () => { live = false; };

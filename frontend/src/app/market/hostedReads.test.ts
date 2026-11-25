@@ -36,15 +36,4 @@ describe('player hosted read adapters', () => {
       reason: 'input-not-held' });
   });
 
-  it('keeps local reads on their Wails bindings without hosted league context', async () => {
-    const ageArc = vi.fn(async () => ({ source: 'desktop-arc' }));
-    const usage = vi.fn(async () => ({ source: 'desktop-usage' }));
-    vi.stubGlobal('window', { go: { market: { API: { TargetAgeArc: ageArc } },
-      research: { API: { TargetPlayerUsage: usage } } } });
-    expect(await readAgeArc('0099')).toEqual({ source: 'desktop-arc' });
-    expect(await readPlayerUsage('0099')).toEqual({ source: 'desktop-usage' });
-    expect(ageArc).toHaveBeenCalledWith('0099');
-    expect(usage).toHaveBeenCalledWith('0099');
-    expect(hostedWorkflow).not.toHaveBeenCalled();
-  });
 });

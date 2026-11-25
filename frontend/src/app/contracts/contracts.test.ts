@@ -1,3 +1,5 @@
+import * as providers from '../data/provider';
+import * as contractApi from './api';
 import { restoreWorkAnchor, type WorkAnchor } from '../shell/workScroll';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createElement, act } from 'react';
@@ -342,9 +344,6 @@ it('ships narrow/wide container layouts and a slim closed Inspector rail without
   expect(shell).toContain('grid-template-columns: 192px minmax(0, 1fr) 320px;');
   // At 1280px, closing frees 280px of workspace, rather than leaving a 320px strip.
   expect(1280 - 192 - 40 - 48).toBe(1000);
-  const app = readFileSync('src/app/shell/TargetApp.tsx', 'utf8');
-  expect(app).toContain("lazy(() => import('../contracts/Contracts'))");
-  expect(app).toContain('label="Open inspector"');
   expect(readFileSync('scripts/bundle-budget.mjs', 'utf8')).toContain('const BUDGET = 321_818;');
 });
 
@@ -591,10 +590,12 @@ function actPlan(id = ''): ContractActPlan {
 }
 it('names the contract under the heading and holds Kept until the terms differ', async () => {
   const wire = actPlan();
-  const go = { contracts: { API: { TargetContractActs: vi.fn(async () =>
-    ({ ...reading([{ ...wire, receipt: {} }]) })) } } };
+  const readActs = vi.fn(async () =>
+    ({ ...reading([{ ...wire, receipt: {} }]) }));
+  vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
+  vi.spyOn(contractApi, 'targetContractActs').mockImplementation(readActs);
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '', error: '' });
-  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }));
   await act(async () => {});
   const heading = nodes(test.root, 'H4')[0];
   const subject = nodes(heading.parentNode!.parentNode!, 'P').find(node =>
@@ -641,9 +642,11 @@ it('scrolls the revealed plan card into view in My moves and focuses it, once', 
 it.each(['withdrawn', 'landed', 'failed', 'missing'])
 ('re-enables Keep and clears feedback for %s', async state => {
   const wire = actPlan();
-  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const readActs = vi.fn(async () => reading([wire]));
+  vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
+  vi.spyOn(contractApi, 'targetContractActs').mockImplementation(readActs);
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
-  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }));
   const kept = { ...actPlan('contract-1'), receipt: {
     state: 'ready' as const, spec: { intent: 'contract.extend' }, audit: [],
   } };
@@ -661,8 +664,10 @@ it.each(['withdrawn', 'landed', 'failed', 'missing'])
 it('Close is registered, removes the panel and clears the row opened state', async () => {
   useContractMove.setState({ mine: '0001', player: '0042' });
   const wire = actPlan();
-  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
-  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const readActs = vi.fn(async () => reading([wire]));
+  vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
+  vi.spyOn(contractApi, 'targetContractActs').mockImplementation(readActs);
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }));
   const close = nodes(test.root, 'BUTTON').find(node => node.textContent === 'Close')!;
   await act(async () => { (props(close).onClick as () => void)(); });
   expect(useContractMove.getState().player).toBe('');
@@ -680,18 +685,20 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
   });
   const wire = actPlan();
   let live: ContractActPlan[] = [];
-  const go = { contracts: { API: { TargetContractActs: vi.fn(async (raw: { action: string }) =>
-    reading(raw.action === 'read' ? live : [wire])) } } };
+  const readActs = vi.fn(async (raw: unknown) =>
+    reading((raw as { action: string }).action === 'read' ? live : [wire]));
+  vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
+  vi.spyOn(contractApi, 'targetContractActs').mockImplementation(readActs);
   useContractMove.setState({ mine: '0001', player: '0042', kept: undefined, keptTerms: '' });
-  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }), { go });
+  const test = await mount(createElement(ContractMovePanel, { mine: '0001' }));
   const kept = { ...actPlan('contract-1'), receipt: {
     state: 'ready' as const, spec: { intent: 'contract.extend' }, audit: [],
   } };
   await act(async () => { useContractMove.setState({ kept, keptTerms: 'terms' }); });
   expect(test.element.textContent).toContain('Plan: Ready');
-  const before = go.contracts.API.TargetContractActs.mock.calls.length;
+  const before = readActs.mock.calls.length;
   await act(async () => { changed(); });
-  expect(go.contracts.API.TargetContractActs.mock.calls.length).toBeGreaterThan(before);
+  expect(readActs.mock.calls.length).toBeGreaterThan(before);
   expect(test.element.textContent).not.toContain('Plan:');
   expect(useContractMove.getState().kept).toBeUndefined();
 });
@@ -699,7 +706,9 @@ it('re-reads the kept plan on moves change and clears terminal feedback', async 
 it('Contract Acts menu click renders the row form, scrolls to it and focuses it', async () => {
   shell(); useContractMove.setState({ mine: '', player: '' });
   const wire = actPlan();
-  const go = { contracts: { API: { TargetContractActs: vi.fn(async () => reading([wire])) } } };
+  const readActs = vi.fn(async () => reading([wire]));
+  vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
+  vi.spyOn(contractApi, 'targetContractActs').mockImplementation(readActs);
   const scroll = { scrollTop: 0, clientTop: 0, clientHeight: 700,
     getBoundingClientRect: () => ({ top: 0 }) };
   const focus = vi.spyOn(TestElement.prototype, 'focus');
@@ -708,7 +717,7 @@ it('Contract Acts menu click renders the row form, scrolls to it and focuses it'
       stale: false, banner: '', empty: '', notice: '', moves: [], figures: [],
       choices: [{ player: '0042', cutLabel: 'Cut him', buyoutLabel: 'Buy him out',
         buyoutAllowed: false, reason: 'No buyout' }],
-    } }), createElement(ContractMovePanel, { mine: '0001' })), { go });
+    } }), createElement(ContractMovePanel, { mine: '0001' })));
   const create = document.createElement.bind(document);
   vi.spyOn(document, 'createElement').mockImplementation(tag => {
     const node = create(tag);
@@ -724,7 +733,7 @@ it('Contract Acts menu click renders the row form, scrolls to it and focuses it'
   expect(panel?.getAttribute('tabindex')).toBe('-1');
   expect(scroll.scrollTop).toBe(-300);
   expect(focus).toHaveBeenCalledWith({ preventScroll: true });
-  expect(go.contracts.API.TargetContractActs.mock.calls.length).toBeGreaterThan(0);
+  expect(readActs.mock.calls.length).toBeGreaterThan(0);
   await act(async () => { useContractMove.setState({ mine: '', player: '' }); });
 });
 

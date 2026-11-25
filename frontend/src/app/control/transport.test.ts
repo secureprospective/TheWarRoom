@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { runInNewContext } from 'node:vm';
 import { afterEach, expect, it, vi } from 'vitest';
-import { nativeTransport, selectNativeTransport, webTransport, type NativeTransport } from './transport';
+import { nativeTransport, type NativeTransport } from './transport';
 import type { NativeRequest } from '../commands/native';
 
 const admission = { league: 'native.test', name: 'The League', franchise: 'franchise.01',
@@ -16,22 +16,16 @@ const jsonResponse = (body: unknown, status = 200) => new Response(JSON.stringif
 });
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-it('selects the Wails port only when window.go exists', async () => {
-  expect(selectNativeTransport(true).kind).toBe('wails');
-  expect(selectNativeTransport(false)).toBe(webTransport);
-  expect(nativeTransport.kind).toBe('wails');
-});
-
 it('restores, signs in and signs out through the cookie session without a bearer', async () => {
   const fetcher = vi.fn().mockResolvedValue(jsonResponse(sessionResponse));
   vi.stubGlobal('fetch', fetcher);
-  await webTransport.startup();
+  await nativeTransport.startup();
   expect(fetcher.mock.calls[0][0]).toBe('/app/session');
   expect(fetcher.mock.calls[0][1]).toMatchObject({
     method: 'GET', credentials: 'same-origin', cache: 'no-store',
   });
 
-  await webTransport.action({ action: 'login', username: 'owner', password: 'private-password',
+  await nativeTransport.action({ action: 'login', username: 'owner', password: 'private-password',
     code: '123456' });
   const [loginPath, loginInit] = fetcher.mock.calls[1];
   expect(loginPath).toBe('/app/session');
@@ -40,7 +34,7 @@ it('restores, signs in and signs out through the cookie session without a bearer
     code: '123456' });
   expect(loginInit.headers).toEqual({ 'Content-Type': 'application/json' });
 
-  await webTransport.action({ action: 'forget', username: '', password: '', code: '' });
+  await nativeTransport.action({ action: 'forget', username: '', password: '', code: '' });
   expect(fetcher.mock.calls[2][0]).toBe('/app/session');
   expect(fetcher.mock.calls[2][1]).toMatchObject({ method: 'DELETE', credentials: 'same-origin' });
   for (const [, init] of fetcher.mock.calls) {
@@ -105,7 +99,7 @@ it('sends the generated workflow on the Go client route and wire envelope', asyn
   vi.stubGlobal('fetch', fetcher);
   const request = { command: 'player.note.read', mode: 'read',
     arguments: { league: 'native.test', player: '001' } } as NativeRequest;
-  await webTransport.workflow(request, 'football-digest');
+  await nativeTransport.workflow(request, 'football-digest');
   const [path, init] = fetcher.mock.calls[0];
   expect(path).toBe('/v1/native/workflow');
   expect(init).toMatchObject({ method: 'POST', credentials: 'same-origin', cache: 'no-store' });
@@ -122,7 +116,7 @@ it('routes account layout workflows through the account preference endpoint', as
   const request = { command: 'home.layout.set', mode: 'execute', arguments: {
     layout: { mode: 'default', tiles: [], over: [], pins: {} }, expectedRevision: 3,
   } } as NativeRequest;
-  await webTransport.workflow(request, '');
+  await nativeTransport.workflow(request, '');
   const [path, init] = fetcher.mock.calls[0];
   expect(path).toBe('/v1/account/preferences');
   expect(JSON.parse(init.body)).toEqual({ protocol: 1, workflow: {
@@ -134,7 +128,7 @@ it('routes private job snooze workflows through the account preference endpoint'
   const fetcher = vi.fn().mockResolvedValue(jsonResponse({ protocol: 1 }));
   vi.stubGlobal('fetch', fetcher);
   const request = { command: 'job.snoozes.read', mode: 'read', arguments: {} } as NativeRequest;
-  await webTransport.workflow(request, '');
+  await nativeTransport.workflow(request, '');
   const [path, init] = fetcher.mock.calls[0];
   expect(path).toBe('/v1/account/preferences');
   expect(JSON.parse(init.body)).toMatchObject({ protocol: 1, workflow: {
@@ -149,9 +143,9 @@ it('opens the change stream with the session cookie and hands each event to the 
     start(c) { c.enqueue(new TextEncoder().encode(frames)); },
   }), { status: 200, headers: { 'Content-Type': 'text/event-stream' } }));
   vi.stubGlobal('fetch', fetcher);
-  webTransport.setIdentity('native.test', '4');
+  nativeTransport.setIdentity('native.test');
   const listener = vi.fn();
-  const close = webTransport.subscribeChanged(listener);
+  const close = nativeTransport.subscribeChanged(listener);
   await vi.waitFor(() => expect(listener).toHaveBeenCalledTimes(2));
   const [path, init] = fetcher.mock.calls[0];
   expect(path).toBe('/v1/native/invalidations');
@@ -164,8 +158,8 @@ it('opens the change stream with the session cookie and hands each event to the 
 it('refuses account operations that the browser-cookie contract does not admit', async () => {
   const fetcher = vi.fn();
   vi.stubGlobal('fetch', fetcher);
-  await expect(webTransport.action({ action: 'enroll' })).rejects.toThrow('not available');
-  await expect(webTransport.action({ action: 'revoke-all' })).rejects.toThrow('not available');
+  await expect(nativeTransport.action({ action: 'enroll' })).rejects.toThrow('not available');
+  await expect(nativeTransport.action({ action: 'revoke-all' })).rejects.toThrow('not available');
   expect(fetcher).not.toHaveBeenCalled();
 });
 
@@ -200,9 +194,9 @@ it('service worker handles only the precached shell and leaves JSON API routes o
 
 it('keeps the browser interface aligned with the transport contract', () => {
   const required: (keyof NativeTransport)[] = [
-    'kind', 'startup', 'action', 'helper', 'workflow', 'subscribeChanged', 'setIdentity',
+    'startup', 'action', 'workflow', 'subscribeChanged', 'setIdentity',
   ];
-  expect(Object.keys(webTransport).sort()).toEqual(required.sort());
+  expect(Object.keys(nativeTransport).sort()).toEqual(required.sort());
 });
 
 it('captures server X-TWR-Error-Code headers and mints client codes on network failures', async () => {

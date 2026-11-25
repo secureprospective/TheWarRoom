@@ -197,7 +197,7 @@ it('renders hosted HQ readings from one fake workflow without desktop data', asy
     'contract.decisions.read'])
     expect(port).toHaveBeenCalledWith(expect.objectContaining({ command }));
 });
-it('shares the app/mirror lineup read, fences scope and renders the inspector fit', async () => {
+it('reads hosted lineup fit, fences scope and renders the inspector fit', async () => {
   const port = vi.fn<HostedPort>(async r => {
     if (r.command !== 'value.read' && r.command !== 'lineupdelta.read') throw new Error('Not held');
     return { label: 'Local', writable: false, football: '', data: r.command === 'value.read' ? wire() :
@@ -207,14 +207,10 @@ it('shares the app/mirror lineup read, fences scope and renders the inspector fi
   expect(app.side.perWeek).toBe(2.4);
   expect(port).toHaveBeenCalledWith(expect.objectContaining({ command: 'lineupdelta.read',
     arguments: expect.objectContaining({ get: ['0042'], give: [], partner: 'other' }) }));
-  const mirror = vi.fn(async () => delta(''));
   const host = await mount(render(WarRoomInspector, { context: context(port), asset: {
-    token: '0042', name: 'Incoming receiver' } }), {}, { commissioner: { API: {
-      TargetNativeLineupDelta: mirror } } });
+    token: '0042', name: 'Incoming receiver' } }));
   await flush(); expect(host.textContent).toContain('Bench receiver');
   expect(host.textContent).toContain('Adds / week2.4'); expect(host.textContent).toContain('12.3');
-  expect((await readInspectorFit(context(), '0042')).side.perWeek).toBe(2.4);
-  expect(mirror).toHaveBeenCalledWith(expect.objectContaining({ league: '', get: ['0042'] }));
   port.mockResolvedValue({ label: 'Local', writable: false, football: '', data: delta('wrong') });
   await expect(readInspectorFit(context(port), '0042')).rejects.toThrow('another player context');
 });

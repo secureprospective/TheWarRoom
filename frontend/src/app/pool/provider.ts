@@ -1,7 +1,6 @@
 import { range } from '../reports/contract';
 import { parseRailReceipt } from '../shell/railReceipt';
 import { poolWire } from '../offers/api';
-export { rawBid } from '../offers/api';
 import { provenance } from '../data/parse';
 import { array, choice, integer, object, text } from '../data/parseValues';
 import type {

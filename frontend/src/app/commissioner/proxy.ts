@@ -1,4 +1,3 @@
-import { ledgerBindings as bindings } from './api';
 import { array, choice, integer, object, text, timestamp } from '../data/parseValues';
 import { parseControls, type Controls } from './controls';
 import { parseJobs, type Jobs } from './jobs';
@@ -33,17 +32,13 @@ export type Port = {
 };
 
 
+const unavailable = async (): Promise<never> => {
+  throw new Error('The league ledger requires the desktop app.');
+};
 const live: Port = {
-  execute: body => bindings().TargetCommissionerExecute(body),
-  preview: body => bindings().TargetCommissionerPreview(body),
-  ledger: league => bindings().TargetCommissionerLedger(league),
-  leagues: () => bindings().TargetCommissionerLeagues(),
-  rules: league => bindings().TargetCommissionerRules(league),
-  people: league => bindings().TargetCommissionerPeople(league),
-  jobs: league => bindings().TargetCommissionerJobs(league),
-  controls: async () => bindings().TargetCommissionerControls(),
-  notices: league => bindings().TargetCommissionerNotices(league),
-  digests: league => bindings().TargetCommissionerDigests(league),
+  execute: unavailable, preview: unavailable, ledger: unavailable, leagues: unavailable,
+  rules: unavailable, people: unavailable, jobs: unavailable, controls: unavailable,
+  notices: unavailable, digests: unavailable,
 };
 // A confirmed rollover receipt also carries the plan it applied, already reviewed in its preview.
 export function parseReceipt(v: unknown): Receipt {
@@ -244,11 +239,4 @@ export const leagueState = createLeagueState();
 export const execute = leagueState.execute;
 
 export type LedgerFilter = { person: string; kind: string; from: string; before: string };
-export async function readLedgerFiltered(league: string, filter: LedgerFilter): Promise<Ledger> {
-  return parseLedger(await bindings().TargetCommissionerLedgerFiltered(league, JSON.stringify(filter)));
-}
-
 export const readPreview = createProxy(live).preview;
-
-// A rollover dry run returns a plan, not a ledger receipt. It must never enter the receipt refresh path.
-export const nativeRolloverDryRun = (body: string) => live.execute(body);

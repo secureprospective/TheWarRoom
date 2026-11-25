@@ -3,9 +3,6 @@ import type {
   AlertReading, WindowKind, Provenance, Receipt, Snapshot, Sourced, TradeReading,
 } from './contract';
 import { ruleDatedWindows } from '../clock/labels';
-import { targetClock, targetDraftIR, targetDraftTaxi, targetMoves, targetSnapshot } from './api';
-import { deleteMFLKey, readMFLKey, setLeagueWindow, setMFLKey } from '../control/api';
-
 interface ReadingProvider {
   alerts(franchiseId: string): Promise<AlertReading>;
   trades(franchiseId: string): Promise<TradeReading>;
@@ -38,14 +35,6 @@ export interface DemoProvider {
 }
 export type Provider = ReadingProvider & (DraftingProvider | DemoProvider);
 
-// Wails injects window.go before the page script runs; a plain browser (dev, screenshots) has none.
-function hasWails(): boolean {
-  return typeof window !== 'undefined' && (window as { go?: unknown }).go !== undefined;
-}
-
-function lineupBindings() {
-  return import('./lineupProvider');
-}
 // League dates can be rehearsed in fixtures; remote acts still require the desktop app.
 const desktop = (what: string) => async (): Promise<never> => {
   throw new Error(`${what} the desktop app`);
@@ -132,7 +121,7 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
       if (!this.baseClock) this.baseClock = parseClock(fixture.default);
       return this.heldClock ?? this.baseClock;
     } catch (cause) {
-      return failedClock(cause, 'fixture');
+      return failedClock(cause);
     }
   }
 
@@ -144,153 +133,17 @@ export class FixtureProvider implements ReadingProvider, DemoProvider {
   }
 }
 
-function failedSnapshot(cause: unknown): Snapshot {
-  const provenance = (): Provenance => ({
-    source: 'mfl-mirror',
-    kind: 'live',
-    freshness: {
-      state: 'fail',
-      fetchedAt: '',
-      note: `TargetSnapshot failed: ${String(cause)}`,
-    },
-  });
-  const feeds = (): Record<'injuries' | 'players' | 'rosters', Provenance> => ({
-    injuries: provenance(),
-    players: provenance(),
-    rosters: provenance(),
-  });
-  return {
-    league: { value: { season: 0, franchiseCount: 0 }, provenance: provenance() },
-    franchises: { value: [], provenance: provenance() },
-    rosters: { value: [], provenance: provenance() },
-    players: { value: [], provenance: provenance() },
-    eligibility: { players: {}, feeds: feeds() },
-  };
-}
-
-function failedClock(cause: unknown, kind: Provenance['kind']): Sourced<ClockReading> {
-  const operation = kind === 'live' ? 'TargetClock' : 'Clock fixture';
+function failedClock(cause: unknown): Sourced<ClockReading> {
   return {
     value: { season: 0, phase: 'OFFSEASON', deadlines: [], windows: [] },
     provenance: {
-      source: 'phase-log+commissioner-calendar',
-      kind,
-      freshness: { state: 'fail', fetchedAt: '', note: `${operation} failed: ${String(cause)}` },
+      source: 'phase-log+commissioner-calendar', kind: 'fixture',
+      freshness: { state: 'fail', fetchedAt: '', note: `Clock fixture failed: ${String(cause)}` },
     },
   };
-}
-
-function onTargetChange(event: string, listener: () => void): () => void {
-  let active = true;
-  let unsubscribe: (() => void) | undefined;
-  void import('../../../wailsjs/runtime/runtime').then(({ EventsOn }) => {
-    if (!active) return;
-    unsubscribe = EventsOn(event, listener);
-    // An event emitted while the runtime chunk loaded was missed; catch up once.
-    listener();
-  }).catch(() => {
-    // No runtime chunk means no change events; the initial read still reports availability.
-  });
-  return () => {
-    active = false;
-    unsubscribe?.();
-  };
-}
-
-export class LiveProvider implements ReadingProvider, DraftingProvider {
-  readonly kind = 'live';
-  async alerts(franchiseId: string): Promise<AlertReading> {
-    return (await import('./pulseProvider')).alerts(franchiseId);
-  }
-  async trades(franchiseId: string): Promise<TradeReading> {
-    return (await import('./tradeProvider')).trades(franchiseId);
-  }
-  async draftTradeAccept(franchiseId: string, tradeId: string): Promise<Receipt> {
-    return (await import('./tradeProvider')).draftTradeAccept(franchiseId, tradeId);
-  }
-  async checkLineup(franchiseId: string, starters: string[]): Promise<LineupCheck> {
-    return (await lineupBindings()).checkLineup(franchiseId, starters);
-  }
-  async draftLineup(franchiseId: string, starters: string[]): Promise<Receipt> {
-    return (await lineupBindings()).draftLineup(franchiseId, starters);
-  }
-  async handOff(correlationId: string): Promise<Receipt> {
-    return (await lineupBindings()).handOff(correlationId);
-  }
-  onMovesChange(listener: () => void): () => void {
-    return onTargetChange('target:moves', listener);
-  }
-  async mflKey(): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), readMFLKey()]);
-    return parseMFLKeyStatus(status);
-  }
-  async connectMFL(key: string): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), setMFLKey(key)]);
-    return parseMFLKeyStatus(status);
-  }
-  async forgetMFL(): Promise<MFLKeyStatus> {
-    const [{ parseMFLKeyStatus }, status] = await Promise.all([import('./parse'), deleteMFLKey()]);
-    return parseMFLKeyStatus(status);
-  }
-  onClockChange(listener: () => void): () => void {
-    return onTargetChange('target:clock', listener);
-  }
-  onSeasonChange(listener: () => void): () => void {
-    return onTargetChange('target:season', listener);
-  }
-  async lineup(franchiseId: string): Promise<LineupReading> {
-    return (await lineupBindings()).lineup(franchiseId);
-  }
-  async draftIR(franchiseId: string, playerId: string): Promise<Receipt> {
-    const [{ parseReceipt }, receipt] = await Promise.all([
-      import('./parseEnvelope'), targetDraftIR(franchiseId, playerId),
-    ]);
-    return parseReceipt(receipt);
-  }
-  async draftTaxi(franchiseId: string, playerId: string): Promise<Receipt> {
-    const [{ parseReceipt }, receipt] = await Promise.all([
-      import('./parseEnvelope'), targetDraftTaxi(franchiseId, playerId),
-    ]);
-    return parseReceipt(receipt);
-  }
-  async moves(franchiseId: string): Promise<Receipt[]> {
-    const [{ parseReceipt }, receipts] = await Promise.all([
-      import('./parseEnvelope'), targetMoves(franchiseId),
-    ]);
-    if (!Array.isArray(receipts)) throw new Error('TargetMoves: expected array');
-    return receipts.map(parseReceipt);
-  }
-
-  async setWindow(kind: WindowKind, at: string): Promise<void> {
-    if (!hasWails()) throw new Error('League date changes need the desktop app');
-    await setLeagueWindow(kind, at);
-  }
-  async clock(): Promise<Sourced<ClockReading>> {
-    try {
-      if (!hasWails()) throw new Error('Wails runtime absent');
-        const [{ parseClock }, payload] = await Promise.all([
-        import('./parse'), targetClock(),
-      ]);
-      return parseClock(payload);
-    } catch (cause) {
-      return failedClock(cause, 'live');
-    }
-  }
-
-  async snapshot(): Promise<Snapshot> {
-    try {
-      if (!hasWails()) throw new Error('Wails runtime absent');
-        const [{ parseSnapshot }, payload] = await Promise.all([
-        import('./parse'), targetSnapshot(),
-      ]);
-      return parseSnapshot(payload);
-    } catch (cause) {
-      return failedSnapshot(cause);
-    }
-  }
 }
 
 const fixtureProvider = new FixtureProvider();
 export function selectProvider(): Provider {
-  return hasWails() ? new LiveProvider() : fixtureProvider;
+  return fixtureProvider;
 }

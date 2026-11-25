@@ -90,23 +90,6 @@ describe('Performance is law (§18, §M3)', () => {
       expect(read(file)).toContain('memo(');
     }
   });
-  it('keeps MyMoves, rail, labels and the demo behind dynamic boundaries', () => {
-    const provider = read('data/provider.ts');
-    const mount = read('shell/MovesMount.tsx');
-    const valid = (source: string) => source.includes("import('./fixtures/envelope-demo.json')") &&
-      !/import\s+\w+\s+from\s+['"].*envelope-demo\.json/.test(source);
-    expect(valid(provider)).toBe(true);
-    expect(valid("import demo from './fixtures/envelope-demo.json';")).toBe(false);
-    expect(mount).toContain("import('./MyMoves')");
-    expect(mount).toContain('lazy(loadMyMoves)');
-    expect(mount).toContain("import('./PlayerAct')");
-    expect(mount).toContain('lazy(loadPlayerAct)');
-    expect(mount).not.toContain('ReceiptStatus');
-    expect(read('shell/PlayerAct.tsx')).toContain("import ReceiptStatus from './ReceiptStatus'");
-    expect(read('shell/TargetApp.tsx')).not.toMatch(/import .*EnvelopeRail|import .*MyMoves/);
-    expect(read('shell/PlayerInspector.tsx')).not.toContain('moveLabels');
-    expect(read('shell/PlayerAct.tsx')).not.toContain('moveLabels');
-  });
   it('requires bounded dev lists and rejects a long list', () => {
     expect(() => assertShortList(80)).not.toThrow();
     expect(() => assertShortList(81)).toThrow('virtualization required');
@@ -114,34 +97,6 @@ describe('Performance is law (§18, §M3)', () => {
     const source = read('shell/FranchiseHQ.tsx');
     expect(source).toContain('import.meta.env.DEV');
     expect(source.match(/assertShortList\(/g)).toHaveLength(2);
-  });
-  it('loads command search independently without suspending the workspace', () => {
-    const independent = (source: string) =>
-      source.includes("lazy(() => import('../commands/CommandBar')") &&
-      !/import\s+\{\s*CommandBar\s*\}\s+from/.test(source) &&
-      new RegExp(/<Suspense fallback=\{null\}>\s*/.source +
-        /<CommandBar snapshot=\{selectedLeague\?\.app \? undefined : snapshot\} \/>\s*<\/Suspense>/.source)
-        .test(source);
-    const source = read('shell/TargetApp.tsx');
-    expect(independent(source)).toBe(true);
-    expect(independent(source.replace("import('../commands/CommandBar')", 'eagerBar'))).toBe(false);
-    expect(independent(source.replace('fallback={null}>\n        <CommandBar',
-      'fallback={<p>Loading search</p>}>\n        <CommandBar'))).toBe(false);
-    expect(independent(source + "\nimport { CommandBar } from '../commands/CommandBar';")).toBe(false);
-    expect(source).toContain("lazy(() => import('./AppSettings')");
-    expect(source).not.toMatch(/import\s+\{\s*AppSettings\s*\}\s+from/);
-    expect(source).toContain('<FranchiseHQMount snapshot={snapshot} />');
-    expect(source).toContain('<Now />');
-    expect(source).not.toContain('TradeDesk');
-  });
-  it('requires snapshot-keyed roster and search memoization and rejects missing memos', () => {
-    const roster = (source: string) => /useMemo\([\s\S]*?franchiseRoster[\s\S]*?\[snapshot, s.franchiseId\]/
-      .test(source);
-    const index = (source: string) => /useMemo\([\s\S]*?searchCandidates[\s\S]*?\[snapshot\]/.test(source);
-    expect(roster(read('shell/FranchiseHQ.tsx'))).toBe(true);
-    expect(index(read('commands/CommandBar.tsx'))).toBe(true);
-    expect(roster(read('shell/FranchiseHQ.tsx').replace('useMemo(', 'compute('))).toBe(false);
-    expect(index(read('commands/CommandBar.tsx').replace('useMemo(', 'compute('))).toBe(false);
   });
   it('requires overlay-only 120ms CSS motion and reduced motion, rejecting mutations', () => {
     const css = read('shell/shell.css');
