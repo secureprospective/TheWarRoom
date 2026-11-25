@@ -3,7 +3,12 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"crypto/x509"
+	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,15 +16,47 @@ import (
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/serverclient"
+	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 	"github.com/secureprospective/TheWarRoom/tools/hostedfixture"
 )
 
-type memoryCredentials struct{ secret string }
+type practiceClient struct {
+	address string
+	http    *http.Client
+	bearer  string
+	proof   string
+}
 
-func (s *memoryCredentials) Get() (string, error)    { return s.secret, nil }
-func (s *memoryCredentials) Set(secret string) error { s.secret = secret; return nil }
-func (s *memoryCredentials) Delete() error           { s.secret = ""; return nil }
+func (c *practiceClient) post(ctx context.Context, path string, payload any) ([]byte, error) {
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.address+path, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if c.bearer != "" {
+		req.Header.Set("Authorization", "Bearer "+c.bearer)
+	}
+	if c.proof != "" {
+		req.Header.Set("X-TWR-Recent-Auth", c.proof)
+	}
+	resp, err := c.http.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%s: HTTP %d: %s", path, resp.StatusCode, strings.TrimSpace(string(data)))
+	}
+	return data, nil
+}
 
 func TestPracticeUsage(t *testing.T) {
 	err := run(t.Context(), nil, &bytes.Buffer{})
@@ -77,26 +114,54 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	if !roots.AppendCertsFromPEM(pem) {
 		t.Fatal("invalid certificate")
 	}
-	desktop, err := serverclient.NewDesktop(state.Address, "native.hosted", roots, &memoryCredentials{})
-	if err != nil {
-		t.Fatal(err)
+	client := &practiceClient{
+		address: state.Address,
+		http:    &http.Client{Timeout: 10 * time.Second, Transport: &http.Transport{TLSClientConfig: &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}}},
 	}
-	defer desktop.Close()
-	raw := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: state.Password}
-	if _, err := desktop.Act(ctx, raw); err != nil {
+	defer client.http.CloseIdleConnections()
+	loginBody, err := client.post(ctx, serverhttp.LoginPath, serverhttp.RawLogin{
+		Protocol: 1, Username: "commissioner", Password: state.Password, Device: "practice test",
+	})
+	if err != nil {
 		t.Fatalf("HTTPS login: %v", err)
 	}
-	raw.Action = "totp-step-up"
-	raw.Code, err = hostedfixture.Code(state.Seed, time.Now())
+	var login struct {
+		Bearer string `json:"bearer"`
+	}
+	if err := json.Unmarshal(loginBody, &login); err != nil || login.Bearer == "" {
+		t.Fatalf("HTTPS login reply: %s %v", loginBody, err)
+	}
+	client.bearer = login.Bearer
+	code, err := hostedfixture.Code(state.Seed, time.Now())
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := desktop.Act(ctx, raw); err != nil {
+	authBody, err := client.post(ctx, serverhttp.TOTPStepUpPath, serverhttp.RawAuthenticator{
+		Protocol: 1, Username: "commissioner", Password: state.Password, Code: code,
+	})
+	if err != nil {
 		t.Fatalf("HTTPS authenticator: %v", err)
 	}
-	view, err := desktop.Act(ctx, serverclient.RawDesktop{Action: "enter"})
-	if err != nil || view.Name != "Practice league" {
-		t.Fatalf("enter hosted league: %+v %v", view, err)
+	var auth serverhttp.AuthenticatorResponse
+	if err := json.Unmarshal(authBody, &auth); err != nil || auth.RecentAuth == "" {
+		t.Fatalf("HTTPS authenticator reply: %s %v", authBody, err)
+	}
+	client.proof = auth.RecentAuth
+	enter := func() (string, error) {
+		body, err := client.post(ctx, serverhttp.PeoplePath, serverhttp.RawNativeRequest{Protocol: 1, League: "native.hosted"})
+		if err != nil {
+			return "", err
+		}
+		var view struct {
+			Name string `json:"name"`
+		}
+		if err := json.Unmarshal(body, &view); err != nil {
+			return "", err
+		}
+		return view.Name, nil
+	}
+	if name, err := enter(); err != nil || name != "Practice league" {
+		t.Fatalf("enter hosted league: %q %v", name, err)
 	}
 	if err := run(ctx, []string{"code", dir}, &output); err != nil {
 		t.Fatal(err)
@@ -104,7 +169,7 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	if err := run(ctx, args, &output); err == nil {
 		t.Fatal("accepted nonempty directory")
 	}
-	if _, err := desktop.Act(ctx, serverclient.RawDesktop{Action: "enter"}); err != nil {
+	if _, err := enter(); err != nil {
 		t.Fatalf("refusal damaged running sandbox: %v", err)
 	}
 	if err := run(ctx, []string{"down", dir}, &output); err != nil {
@@ -113,7 +178,7 @@ func sandboxHTTPSLifecycle(t *testing.T, bin string) {
 	if _, err := os.Stat(dir); !os.IsNotExist(err) {
 		t.Fatalf("directory retained: %v", err)
 	}
-	if _, err := desktop.Act(ctx, serverclient.RawDesktop{Action: "enter"}); err == nil {
+	if _, err := enter(); err == nil {
 		t.Fatal("server still serving after down")
 	}
 }

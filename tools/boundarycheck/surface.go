@@ -18,7 +18,7 @@ func mflCommandSurface() []string {
 		}
 	}
 	add("mfl", append(catalog.MFLCommands(catalog.MFLShapes{}), catalog.MFLPlanCommands()...))
-	for _, feature := range []string{"contracts", "trades", "platform"} {
+	for _, feature := range []string{"contracts", "trades"} {
 		add(feature, catalog.DesktopCommands(feature, nil))
 	}
 	for _, entry := range catalog.MigrationEntries(catalog.MigrationInputs{}) {

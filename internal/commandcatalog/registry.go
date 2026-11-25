@@ -16,14 +16,12 @@ type Door string
 const (
 	NativeDoor   Door = "native"
 	MFLDoor      Door = "mfl"
-	WailsDoor    Door = "wails"
 	WorkflowDoor Door = "workflow"
 	BrowserDoor  Door = "browser"
 	ConsoleDoor  Door = "operator-console"
 )
 
 // Entry owns one operation and its explicit transport exposure. Display roles never replace admission.
-// A local desktop adapter with no logical ID has a desktop.* ID, not invented remote authority.
 type Entry struct {
 	ID, Label  string
 	Definition Command
@@ -32,15 +30,8 @@ type Entry struct {
 	MFL        map[Mode]Handler
 	Console    map[Mode]Handler
 	Assist     map[Mode]Handler
-	Desktop    []DesktopExposure
 	Browser    *BrowserCommand
 	Workflow   *WorkflowCommand
-}
-
-type DesktopExposure struct {
-	Feature string
-	Command Command
-	Binding Binding
 }
 
 type Registry struct {
@@ -51,7 +42,6 @@ type Registry struct {
 type RegistryInputs struct {
 	Seed    Schema
 	MFL     MFLShapes
-	Desktop map[string]map[string]Binding
 	Service *leagueservice.Service
 	// Migration adds the move from MFL; nil leaves it out.
 	Migration *MigrationInputs
@@ -65,16 +55,9 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	r := &Registry{entries: operatorEntries(), service: in.Service}
 	native := NativeCommands(in.Seed)
 	mfl := append(MFLCommands(in.MFL), MFLPlanCommands()...)
-	if err := r.addNativeCommands(in, native); err != nil {
-		return nil, err
-	}
+	r.addNativeCommands(in, native)
 	r.entries = append(r.entries, serverWorkflowEntries()...)
-	if err := r.addMFLCommands(in, mfl); err != nil {
-		return nil, err
-	}
-	if err := r.addDesktop(in.Desktop, native, mfl); err != nil {
-		return nil, err
-	}
+	r.addMFLCommands(mfl)
 	for id, w := range WorkflowCommands() {
 		entry := r.find(id)
 		if entry == nil || (entry.Native == nil && entry.Definition.Availability != "server") {
@@ -96,29 +79,19 @@ func NewRegistry(in RegistryInputs) (*Registry, error) {
 	return r, nil
 }
 
-func (r *Registry) addNativeCommands(in RegistryInputs, commands []Command) error {
+func (r *Registry) addNativeCommands(in RegistryInputs, commands []Command) {
 	for _, command := range commands {
-		handlers, err := nativeHandlers(command, in)
-		if err != nil {
-			return err
-		}
+		handlers := nativeHandlers(command, in)
 		r.entries = append(r.entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command,
 			CLI: strings.HasPrefix(command.Arguments.Validator, "RawCommand.Validate/ValidatePreview:"), Native: handlers})
 	}
-	return nil
 }
 
-func (r *Registry) addMFLCommands(in RegistryInputs, commands []Command) error {
+func (r *Registry) addMFLCommands(commands []Command) {
 	for _, command := range commands {
-		feature := mflFeature(command)
-		binding, ok := in.Desktop[feature][command.Method]
-		if !ok || binding.Handler == nil {
-			return fmt.Errorf("MFL command %s has no handler", command.ID)
-		}
 		r.entries = append(r.entries, Entry{ID: command.ID, Label: commandLabel(command.ID), Definition: command,
-			MFL: map[Mode]Handler{command.Modes[0]: mflHandler(command, binding)}})
+			MFL: map[Mode]Handler{command.Modes[0]: nonExecutableHandler}})
 	}
-	return nil
 }
 
 func (r *Registry) addBrowser(command BrowserCommand) error {
@@ -146,46 +119,6 @@ func serverWorkflowEntries() []Entry {
 	return entries
 }
 
-func (r *Registry) addDesktop(bindings map[string]map[string]Binding, native, mfl []Command) error {
-	features := strings.Fields("commissioner contracts control draft market now offers platform race research sources trades")
-	for _, feature := range features {
-		related := native
-		if feature == "offers" {
-			related = nil
-			for _, c := range mfl {
-				if mflFeature(c) == feature {
-					related = append(related, c)
-				}
-			}
-		}
-		declarations := DesktopCommands(feature, related)
-		if len(bindings[feature]) != len(declarations) {
-			return fmt.Errorf("%s desktop declaration/handler count differs", feature)
-		}
-		for _, c := range declarations {
-			b, ok := bindings[feature][c.Method]
-			if !ok || b.Handler == nil {
-				return fmt.Errorf("desktop %s.%s has no typed handler", feature, c.Method)
-			}
-			r.addDesktopEntry(feature, c, b)
-		}
-	}
-	if len(bindings) != len(features) {
-		return fmt.Errorf("undeclared desktop feature")
-	}
-	return nil
-}
-
-func (r *Registry) addDesktopEntry(feature string, c Command, b Binding) {
-	entry := r.find(c.ID)
-	// Only complete shared definitions identify a native/MFL operation. Old display IDs alone do not.
-	if c.Version != "1" || entry == nil {
-		r.entries = append(r.entries, Entry{ID: "desktop." + feature + "." + c.Method, Label: commandLabel(c.Method), Definition: c})
-		entry = &r.entries[len(r.entries)-1]
-	}
-	entry.Desktop = append(entry.Desktop, DesktopExposure{Feature: feature, Command: c, Binding: b})
-}
-
 func (r *Registry) find(id string) *Entry {
 	for i := range r.entries {
 		if r.entries[i].ID == id {
@@ -197,7 +130,6 @@ func (r *Registry) find(id string) *Entry {
 
 func (r *Registry) Validate() error {
 	seen := map[string]bool{}
-	desktop := map[string]bool{}
 	for _, entry := range r.entries {
 		if entry.ID == "" || entry.Label == "" || seen[entry.ID] {
 			return fmt.Errorf("missing or duplicate registry entry %s", entry.ID)
@@ -208,13 +140,6 @@ func (r *Registry) Validate() error {
 		}
 		if err := entry.validate(); err != nil {
 			return fmt.Errorf("registry %s: %w", entry.ID, err)
-		}
-		for _, d := range entry.Desktop {
-			key := d.Feature + "." + d.Command.Method
-			if desktop[key] {
-				return fmt.Errorf("duplicate desktop handler %s", key)
-			}
-			desktop[key] = true
 		}
 	}
 	return nil
@@ -231,14 +156,6 @@ func (e Entry) validate() error {
 			}
 		}
 	}
-	for _, d := range e.Desktop {
-		if d.Binding.Handler == nil {
-			return fmt.Errorf("missing desktop handler")
-		}
-		if err := d.Binding.Arguments.Validate(); err != nil {
-			return err
-		}
-	}
 	if e.Workflow != nil && (e.Workflow.Run == nil || e.Workflow.Validate == nil) {
 		return fmt.Errorf("missing workflow handler")
 	}
@@ -251,15 +168,7 @@ func (e Entry) validate() error {
 func (r *Registry) Entries() []Entry { return slices.Clone(r.entries) }
 
 func (r *Registry) Invoke(ctx context.Context, door Door, id string, mode Mode, body json.RawMessage) (json.RawMessage, error) {
-	if door == WailsDoor && mode == "" {
-		for _, e := range r.entries {
-			for _, d := range e.Desktop {
-				if d.Feature+"."+d.Command.Method == id {
-					return d.Binding.Handler(ctx, body)
-				}
-			}
-		}
-	} else if entry := r.find(id); entry != nil {
+	if entry := r.find(id); entry != nil {
 		if door == WorkflowDoor && entry.Workflow != nil {
 			raw := RawWorkflow{Command: id, Version: "1", Mode: string(mode), Arguments: body}
 			if err := entry.Workflow.Validate(raw); err != nil {
@@ -285,7 +194,7 @@ func (e *Entry) handlers(door Door) map[Mode]Handler {
 		return e.MFL
 	case NativeDoor:
 		return e.Native
-	case WailsDoor, WorkflowDoor, BrowserDoor:
+	case WorkflowDoor, BrowserDoor:
 		return nil
 	}
 	return nil
@@ -321,10 +230,10 @@ func commandLabel(id string) string {
 		}
 		return strings.Join(words, " ")
 	}
-	return desktopLabel(strings.TrimPrefix(id, "Target"))
+	return camelLabel(strings.TrimPrefix(id, "Target"))
 }
 
-func desktopLabel(id string) string {
+func camelLabel(id string) string {
 	letters := []rune(id)
 	var out strings.Builder
 	for i, c := range letters {
@@ -353,7 +262,7 @@ func validateHandlers(c Command, handlers map[Mode]Handler) error {
 }
 
 func (e Entry) hasDoor() bool {
-	return e.Native != nil || e.MFL != nil || e.Console != nil || e.Assist != nil || len(e.Desktop) > 0 || e.Browser != nil || e.Workflow != nil
+	return e.Native != nil || e.MFL != nil || e.Console != nil || e.Assist != nil || e.Browser != nil || e.Workflow != nil
 }
 
 func (e Entry) validateGeneratedDoors() error {
@@ -373,15 +282,4 @@ func NewOperatorRegistry() (*Registry, error) {
 		return nil, err
 	}
 	return registry, nil
-}
-
-func mflFeature(c Command) string {
-	switch c.Method {
-	case "TargetDraftLineup":
-		return "contracts"
-	case "TargetDraftTradeAccept":
-		return "trades"
-	default:
-		return "offers"
-	}
 }

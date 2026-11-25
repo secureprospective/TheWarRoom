@@ -1,21 +1,53 @@
 package catalog
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 
-	"github.com/secureprospective/TheWarRoom/internal/leaguerecovery"
-
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
+	"github.com/secureprospective/TheWarRoom/internal/leaguerecovery"
 	"github.com/secureprospective/TheWarRoom/internal/leagueservice"
 )
 
-func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
-	// Server-only workflow commands do not create a NativeDoor or local desktop route.
+// Handler receives a transport-decoded body; the bound API retains Raw validation and admission.
+type Handler func(context.Context, json.RawMessage) (json.RawMessage, error)
+
+func nonExecutableHandler(context.Context, json.RawMessage) (json.RawMessage, error) {
+	return nil, fmt.Errorf("generation registry cannot execute unbound handlers")
+}
+
+func decodeJSON[T any](body []byte, out *T) error {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(out); err != nil {
+		return fmt.Errorf("read command arguments: %w", err)
+	}
+	var trailing json.RawMessage
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return fmt.Errorf("send one command argument value")
+	}
+	return nil
+}
+
+func result[T any](value T, err error) (json.RawMessage, error) {
+	if err != nil {
+		return nil, fmt.Errorf("command: %w", err)
+	}
+	body, err := json.Marshal(value)
+	if err != nil {
+		return nil, fmt.Errorf("encode command result: %w", err)
+	}
+	return body, nil
+}
+
+func nativeHandlers(c Command, in RegistryInputs) map[Mode]Handler {
+	// Server-only workflow commands do not create a NativeDoor route.
 	if c.Availability == "server" {
-		return nil, nil
+		return nil
 	}
 	out := map[Mode]Handler{}
 	for _, mode := range c.Modes {
@@ -24,27 +56,13 @@ func nativeHandlers(c Command, in RegistryInputs) (map[Mode]Handler, error) {
 			c.ID == leagueservice.PlayerWatchRead || c.ID == leagueservice.PlayerWatchSet ||
 			c.ID == leagueservice.PlayerWatchOrder:
 			out[mode] = nativePlayerPrivateHandler(c.ID, in.Service)
-		case mode == Read:
-			b, ok := in.Desktop["commissioner"][c.Method]
-			if !ok || b.Handler == nil {
-				return nil, fmt.Errorf("native reading %s has no typed handler", c.ID)
-			}
-			out[mode] = readHandler(c, b)
-		case c.ID == commissioner.NativeSeed:
-			method := c.Method
-			if mode == Preview {
-				method = "TargetCommissionerPreview"
-			}
-			b, ok := in.Desktop["commissioner"][method]
-			if !ok || b.Handler == nil {
-				return nil, fmt.Errorf("seed %s has no typed handler", mode)
-			}
-			out[mode] = seedHandler(mode, b)
+		case mode == Read || c.ID == commissioner.NativeSeed:
+			out[mode] = nonExecutableHandler
 		default:
 			out[mode] = nativeChangeHandler(c.ID, mode, in)
 		}
 	}
-	return out, nil
+	return out
 }
 
 func nativePlayerPrivateHandler(id string, service *leagueservice.Service) Handler {
@@ -111,112 +129,6 @@ func nativeChangeHandler(id string, mode Mode, in RegistryInputs) Handler {
 		}
 		return result(in.Service.Execute(ctx, raw))
 	}
-}
-
-func seedHandler(mode Mode, b Binding) Handler {
-	return func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
-		argument := body
-		if mode == Preview {
-			var err error
-			argument, err = json.Marshal(string(body))
-			if err != nil {
-				return nil, fmt.Errorf("encode seed preview: %w", err)
-			}
-		}
-		return callBinding(ctx, b, []json.RawMessage{argument})
-	}
-}
-
-func readHandler(c Command, b Binding) Handler {
-	return func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
-		fields, err := argumentFields(body, c.Arguments)
-		if err != nil {
-			return nil, err
-		}
-		if len(b.Arguments.Fields) == 1 && b.Arguments.Fields[0].Schema.Type == "object" {
-			return callBinding(ctx, b, []json.RawMessage{body})
-		}
-		args := make([]json.RawMessage, 0, len(c.Arguments.Fields))
-		for _, field := range c.Arguments.Fields {
-			value, ok := fields[field.Name]
-			if !ok {
-				return nil, fmt.Errorf("provide %s", field.Name)
-			}
-			if c.Method == "TargetCommissionerLedgerFiltered" && field.Name == "filter" {
-				value, err = json.Marshal(string(value))
-				if err != nil {
-					return nil, fmt.Errorf("encode ledger filter: %w", err)
-				}
-			}
-			args = append(args, value)
-		}
-		return callBinding(ctx, b, args)
-	}
-}
-
-func mflHandler(c Command, b Binding) Handler {
-	return func(ctx context.Context, body json.RawMessage) (json.RawMessage, error) {
-		fields, err := argumentFields(body, c.Arguments)
-		if err != nil {
-			return nil, err
-		}
-		switch c.ID {
-		case "mfl.pool.read", "mfl.bid.preview", "mfl.bid.submit":
-			return callBinding(ctx, b, []json.RawMessage{body})
-		case "mfl.bid.revise":
-			id := fields["id"]
-			delete(fields, "id")
-			bid, err := json.Marshal(fields)
-			if err != nil {
-				return nil, fmt.Errorf("encode bid revision: %w", err)
-			}
-			return callBinding(ctx, b, []json.RawMessage{id, bid})
-		default:
-			args := make([]json.RawMessage, 0, len(c.Arguments.Fields))
-			for _, field := range c.Arguments.Fields {
-				args = append(args, fields[field.Name])
-			}
-			return callBinding(ctx, b, args)
-		}
-	}
-}
-
-// RawArguments is a named-field transport adapter, not domain state. Existing Raw validators own values.
-type RawArguments map[string]json.RawMessage
-
-func (r RawArguments) Validate(schema Schema) error {
-	if r == nil {
-		return fmt.Errorf("provide command arguments as an object")
-	}
-	allowed := map[string]bool{}
-	for _, field := range schema.Fields {
-		allowed[field.Name] = true
-	}
-	for name := range r {
-		if !allowed[name] {
-			return fmt.Errorf("unexpected argument %s", name)
-		}
-	}
-	return nil
-}
-
-func argumentFields(body json.RawMessage, schema Schema) (RawArguments, error) {
-	var fields RawArguments
-	if err := decodeJSON(body, &fields); err != nil {
-		return nil, err
-	}
-	if err := fields.Validate(schema); err != nil {
-		return nil, err
-	}
-	return fields, nil
-}
-
-func callBinding(ctx context.Context, b Binding, args []json.RawMessage) (json.RawMessage, error) {
-	body, err := json.Marshal(args)
-	if err != nil {
-		return nil, fmt.Errorf("encode desktop arguments: %w", err)
-	}
-	return b.Handler(ctx, body)
 }
 
 func operatorEntries() []Entry {

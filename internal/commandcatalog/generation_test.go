@@ -6,12 +6,12 @@ import (
 	"testing"
 )
 
-func TestGenerationRegistryBuildsAndRefusesDesktopExecution(t *testing.T) {
+func TestGenerationRegistryBuildsAndRefusesUnboundExecution(t *testing.T) {
 	registry, err := GenerationRegistry()
 	if err != nil {
 		t.Fatal(err)
 	}
-	var nativeCount, mflCount, browserCount, desktopCount, cliCount int
+	var nativeCount, mflCount, browserCount, cliCount int
 	for _, entry := range registry.Entries() {
 		if entry.Native != nil {
 			nativeCount++
@@ -25,13 +25,12 @@ func TestGenerationRegistryBuildsAndRefusesDesktopExecution(t *testing.T) {
 		if entry.CLI {
 			cliCount++
 		}
-		desktopCount += len(entry.Desktop)
 	}
-	if nativeCount == 0 || mflCount == 0 || browserCount == 0 || desktopCount == 0 || cliCount == 0 {
-		t.Fatalf("empty surface counts: native=%d mfl=%d browser=%d desktop=%d cli=%d",
-			nativeCount, mflCount, browserCount, desktopCount, cliCount)
+	if nativeCount == 0 || mflCount == 0 || browserCount == 0 || cliCount == 0 {
+		t.Fatalf("empty surface counts: native=%d mfl=%d browser=%d cli=%d",
+			nativeCount, mflCount, browserCount, cliCount)
 	}
-	if _, err := registry.Invoke(t.Context(), WailsDoor, "commissioner.TargetCommissionerLeagues", "", json.RawMessage(`[]`)); err == nil || !strings.Contains(err.Error(), "cannot execute") {
-		t.Fatalf("generation desktop binding executed: err=%v", err)
+	if _, err := registry.Invoke(t.Context(), NativeDoor, "commish.leagues.read", Read, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "cannot execute") {
+		t.Fatalf("generation unbound handler executed: err=%v", err)
 	}
 }

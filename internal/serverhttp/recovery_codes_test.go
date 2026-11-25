@@ -3,11 +3,9 @@ package serverhttp_test
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
-	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -37,40 +35,4 @@ func TestRecoveryCodesRefuseWrongPasswordForgedOrExpiredProof(t *testing.T) {
 	f.post(t, serverhttp.RecoveryCodesPath, body, "", "not-a-proof", 403)
 	f.advanceTime(6 * time.Minute)
 	f.post(t, serverhttp.RecoveryCodesPath, body, "", proof, 403)
-}
-
-func TestDesktopPrintsRecoveryCodesAfterAuthenticatorCheck(t *testing.T) {
-	f := newHostedFixture(t)
-	desktop := desktopFor(t, f)
-	credentials := serverclient.RawDesktop{Action: "login", Username: "commissioner", Password: "private-password"}
-	if _, err := desktop.Act(t.Context(), credentials); err != nil {
-		t.Fatal(err)
-	}
-	credentials.Action = "recovery-codes"
-	if _, err := desktop.Act(t.Context(), credentials); err == nil || !strings.Contains(err.Error(), "authenticator") {
-		t.Fatalf("codes without a check: %v", err)
-	}
-	credentials.Action = "totp-begin"
-	setup, err := desktop.Act(t.Context(), credentials)
-	if err != nil {
-		t.Fatal(err)
-	}
-	credentials.Action, credentials.Code = "totp-confirm", testTOTP(t, setup.Seed, f.clockTime())
-	if _, err := desktop.Act(t.Context(), credentials); err != nil {
-		t.Fatal(err)
-	}
-	f.advanceTime(30 * time.Second)
-	credentials.Action, credentials.Code = "totp-step-up", testTOTP(t, setup.Seed, f.clockTime())
-	if _, err := desktop.Act(t.Context(), credentials); err != nil {
-		t.Fatal(err)
-	}
-	credentials.Action, credentials.Code = "recovery-codes", ""
-	view, err := desktop.Act(t.Context(), credentials)
-	if err != nil || len(view.RecoveryCodes) != 8 || !strings.Contains(view.Message, "will not be shown again") {
-		t.Fatalf("codes: %d %v", len(view.RecoveryCodes), err)
-	}
-	reset := serverclient.RawDesktop{Action: "recover", Username: "commissioner", Code: view.RecoveryCodes[0], Password: "replacement-password"}
-	if _, err := desktop.Act(t.Context(), reset); err != nil {
-		t.Fatalf("printed code did not recover: %v", err)
-	}
 }

@@ -17,7 +17,6 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/governance"
 	"github.com/secureprospective/TheWarRoom/internal/leaguerules"
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
-	"github.com/secureprospective/TheWarRoom/internal/serverclient"
 	"github.com/secureprospective/TheWarRoom/internal/serverhttp"
 )
 
@@ -176,46 +175,6 @@ func TestSSERejectsMissingCredentialsAndPrivileges(t *testing.T) {
 		t.Fatal(err)
 	}
 	f.revision(t, 1)
-}
-
-func TestSSEDesktopRereadsAfterDroppedConnection(t *testing.T) {
-	f := newHostedFixture(t)
-	streamOwner(t, f)
-	desktop := desktopFor(t, f)
-	if _, err := desktop.Act(t.Context(), serverclient.RawDesktop{Action: "login", Username: "stream.owner", Password: "stream-owner-password"}); err != nil {
-		t.Fatal(err)
-	}
-	ctx, cancel := context.WithCancel(t.Context())
-	defer cancel()
-	reads := make(chan struct{}, 4)
-	done := make(chan error, 1)
-	go func() {
-		done <- desktop.WatchInvalidations(ctx, func(ctx context.Context) error {
-			if _, err := desktop.Act(ctx, serverclient.RawDesktop{Action: "enter"}); err != nil {
-				return err
-			}
-			reads <- struct{}{}
-			return nil
-		})
-	}()
-	select {
-	case <-reads:
-	case <-time.After(2 * time.Second):
-		t.Fatal("initial reread missing")
-	}
-	f.server.CloseClientConnections()
-	appendStreamNote(t, f, "league")
-	select {
-	case <-reads:
-	case <-time.After(3 * time.Second):
-		t.Fatal("reconnect reread missing")
-	}
-	cancel()
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Fatal("watch did not stop")
-	}
 }
 
 type streamBidEnvironment struct{}
