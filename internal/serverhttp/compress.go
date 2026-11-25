@@ -2,9 +2,11 @@ package serverhttp
 
 import (
 	"compress/gzip"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // gzipMinimum is the smallest reply worth compressing; below it the header costs more than it saves.
@@ -13,7 +15,7 @@ const gzipMinimum = 1024
 // writeReading writes a league reading, gzipped when the client accepts it. Only readings use it:
 // they carry league data and never a secret, so compression cannot leak one (BREACH). The fastest
 // level keeps the server's CPU for the readings themselves.
-func writeReading(w http.ResponseWriter, r *http.Request, encoded []byte) {
+func (h Hosted) writeReading(w http.ResponseWriter, r *http.Request, encoded []byte) {
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Add("Vary", "Accept-Encoding")
 	if len(encoded) < gzipMinimum || !acceptsGzip(r.Header.Values("Accept-Encoding")) {
@@ -21,10 +23,22 @@ func writeReading(w http.ResponseWriter, r *http.Request, encoded []byte) {
 		return
 	}
 	w.Header().Set("Content-Encoding", "gzip")
-	zw, err := gzip.NewWriterLevel(w, gzip.BestSpeed)
-	if err != nil {
-		return
+	pool := h.gzipWriters
+	if pool == nil {
+		// A Hosted not built by Handler (a test helper) has no pool; compress without one.
+		pool = &sync.Pool{}
 	}
+	zw, ok := pool.Get().(*gzip.Writer)
+	if !ok {
+		zw, _ = gzip.NewWriterLevel(w, gzip.BestSpeed)
+	} else {
+		zw.Reset(w)
+	}
+	defer func() {
+		// Discard compression history and detach the request before sharing the writer again.
+		zw.Reset(io.Discard)
+		pool.Put(zw)
+	}()
 	if _, err := zw.Write(encoded); err != nil {
 		return
 	}

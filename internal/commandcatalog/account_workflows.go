@@ -177,10 +177,15 @@ func IsAccountWorkflow(command string) bool {
 // server; no account identity is decoded from workflow arguments.
 func RunAccountWorkflow(ctx context.Context, repository accounts.PreferenceRepository, accountID string,
 	raw RawWorkflow) (json.RawMessage, error) {
-	if err := raw.Validate(); err != nil {
+	return (WorkflowCatalog{}).RunAccountWorkflow(ctx, repository, accountID, raw)
+}
+
+func (c WorkflowCatalog) RunAccountWorkflow(ctx context.Context, repository accounts.PreferenceRepository, accountID string,
+	raw RawWorkflow) (json.RawMessage, error) {
+	command, err := c.validatedCommand(raw)
+	if err != nil {
 		return nil, err
 	}
-	command := WorkflowCommands()[raw.Command]
 	if command.RunAccount == nil {
 		return nil, fmt.Errorf("workflow %s is not account-scoped", raw.Command)
 	}

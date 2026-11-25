@@ -206,14 +206,19 @@ func workflowPlayers(raw string) (string, error) {
 }
 
 func (r RawWorkflow) Validate() error {
+	_, err := (WorkflowCatalog{}).validatedCommand(r)
+	return err
+}
+
+func (c WorkflowCatalog) validatedCommand(r RawWorkflow) (WorkflowCommand, error) {
 	if r.Version != "1" {
-		return fmt.Errorf("update the app before using this league action")
+		return WorkflowCommand{}, fmt.Errorf("update the app before using this league action")
 	}
-	entry, ok := WorkflowCommands()[r.Command]
+	entry, ok := c.lookup(r.Command)
 	if !ok {
-		return fmt.Errorf("this league action is not available here")
+		return WorkflowCommand{}, fmt.Errorf("this league action is not available here")
 	}
-	return entry.Validate(r)
+	return entry, entry.Validate(r)
 }
 
 type workflowInput interface {
@@ -248,7 +253,11 @@ func decodeWorkflow[T workflowInput](body []byte, raw T) error {
 // League is the league a valid workflow names. Each command's own input has already been decoded
 // strictly by Validate; every input carries the league under the same key.
 func (r RawWorkflow) League() (string, error) {
-	if err := r.Validate(); err != nil {
+	return (WorkflowCatalog{}).League(r)
+}
+
+func (c WorkflowCatalog) League(r RawWorkflow) (string, error) {
+	if _, err := c.validatedCommand(r); err != nil {
 		return "", err
 	}
 	if IsAccountWorkflow(r.Command) {
@@ -303,13 +312,18 @@ func workflowJSON[T workflowOutput](value T, err error) (json.RawMessage, error)
 }
 
 func RunWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
-	if err := raw.Validate(); err != nil {
+	return (WorkflowCatalog{}).RunWorkflow(ctx, service, raw)
+}
+
+func (c WorkflowCatalog) RunWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+	command, err := c.validatedCommand(raw)
+	if err != nil {
 		return nil, err
 	}
 	if IsAccountWorkflow(raw.Command) {
 		return nil, fmt.Errorf("this preference requires a signed-in account")
 	}
-	return WorkflowCommands()[raw.Command].Run(ctx, service, raw)
+	return command.Run(ctx, service, raw)
 }
 
 func validateWorkflowPlayer(command, player string) error {

@@ -88,7 +88,7 @@ func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *league
 		return
 	}
 	if raw.Mode == "read" {
-		writeHostedReading(w, r, response)
+		h.writeHostedReading(w, r, response)
 		return
 	}
 	writeHosted(w, response)
@@ -196,19 +196,19 @@ func workflowFootballRefusal(raw RawWorkflow, pin LeaguePin) string {
 func (h Hosted) workflowData(ctx context.Context, service *leagueservice.Service, raw RawWorkflow, league string) (json.RawMessage, error) {
 	if raw.Mode != "read" || raw.Command == "draft.queue.read" || raw.Command == leagueservice.TradeDraftRead ||
 		raw.Command == commissioner.ProblemReportsRead || privateMflMovesOperation(raw.Command) {
-		return runWorkflow(ctx, service, raw)
+		return h.runWorkflow(ctx, service, raw)
 	}
 	scope, err := h.replyScope(ctx, service, raw.Command, league, raw.Arguments, h.pinFor(ctx, league).cacheKey()+"|"+raw.Football)
 	if err != nil {
 		return nil, err
 	}
 	scope.tally, scope.command, scope.mode = h.Requests, raw.Command, raw.Mode
-	return scope.reply(func() ([]byte, error) { return runWorkflow(ctx, service, raw) })
+	return scope.reply(func() ([]byte, error) { return h.runWorkflow(ctx, service, raw) })
 }
 
-func runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
+func (h Hosted) runWorkflow(ctx context.Context, service *leagueservice.Service, raw RawWorkflow) (json.RawMessage, error) {
 	//nolint:wrapcheck // Preserve the existing workflow result and refusal text.
-	return catalog.RunWorkflow(ctx, service, raw)
+	return h.workflows.RunWorkflow(ctx, service, raw)
 }
 
 // missingFootball is what an owner or commissioner is told when their league's football data is not

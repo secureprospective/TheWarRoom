@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 
-	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/serverversion"
 )
 
@@ -15,7 +14,7 @@ func (h Hosted) accountWorkflow(w http.ResponseWriter, r *http.Request, accountI
 		writeUnavailable(w, "Account preferences are unavailable.")
 		return
 	}
-	data, err := catalog.RunAccountWorkflow(r.Context(), h.AccountPreferences, accountID, raw)
+	data, err := h.workflows.RunAccountWorkflow(r.Context(), h.AccountPreferences, accountID, raw)
 	if err != nil {
 		log.Printf("hosted account preference %s %s refused (%T)", raw.Command, raw.Mode, err)
 		h.Requests.add(raw.Command, raw.Mode, 1, 0)
@@ -31,7 +30,7 @@ func (h Hosted) accountWorkflow(w http.ResponseWriter, r *http.Request, accountI
 	response := WorkflowResponse{Label: label, Writable: true,
 		AppRelease: serverversion.Current().Release, Data: data}
 	if raw.Mode == "read" {
-		writeHostedReading(w, r, response)
+		h.writeHostedReading(w, r, response)
 		return
 	}
 	writeHosted(w, response)
