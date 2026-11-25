@@ -46,14 +46,8 @@ func (r WorkflowResponse) Validate() error {
 	return nil
 }
 
-func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow) {
+func (h Hosted) workflow(w http.ResponseWriter, r *http.Request, service *leagueservice.Service, raw RawWorkflow, league string) {
 	h.Requests.add(raw.Command, raw.Mode, 0, 0)
-	league, err := raw.League()
-	if err != nil {
-		h.Requests.add(raw.Command, raw.Mode, 1, 0)
-		http.Error(w, "invalid league action", http.StatusBadRequest)
-		return
-	}
 	//nolint:contextcheck // The service host carries this request's context and admission.
 	location, err := service.Location(league)
 	if err != nil {
