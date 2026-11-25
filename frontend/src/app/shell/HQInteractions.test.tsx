@@ -1,3 +1,4 @@
+import * as offersApi from '../offers/api';
 import { afterEach, expect, it, vi } from 'vitest';
 import { act } from 'react';
 import { all, button, click, flush, mount, render, rerender, type, unmount }
@@ -23,13 +24,11 @@ it('adds and removes dated notes through the existing backend, then re-reads the
       at: '2026-10-31T10:00:00Z', order: 1 }];
     else notes = notes.filter(n => n.at !== raw.at);
   });
-  const host = await mount(render(HQInspector, { snapshot, mine: '0025', id }), {}, {
-    offers: { API: { TargetPersonalNotes: read, TargetPersonalChange: change } },
-    market: { API: { TargetAgeArc: async () => arc, TargetAssetBoard: async () => ({ values: [],
-      nowSource: '', dynastySource: '', how: '' }) } },
-    research: { API: { TargetPlayerUsage: async () => usage } },
-    contracts: { API: { TargetPlayerContract: async () => { throw new Error('Not held'); } } },
+  vi.spyOn(offersApi, 'readPersonalNotes').mockImplementation(read);
+  vi.spyOn(offersApi.personalWire, 'change').mockImplementation(async (mine, kind, input) => {
+    await change({ mine, kind, ...input } as never);
   });
+  const host = await mount(render(HQInspector, { snapshot, mine: '0025', id }));
   await flush();
   await type(all(host, 'textarea')[0], 'Keep through deadline');
   await act(async () => { const submit = all(host, 'form')[0].props().onSubmit;

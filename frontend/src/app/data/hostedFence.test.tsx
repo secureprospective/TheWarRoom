@@ -9,8 +9,20 @@ function deferred<T>() {
 const view: NativeView = { authGeneration: '1', server: 'https://league.example', league: 'native.test',
   name: 'League', message: '', role: 'Owner', franchise: 'one', franchiseName: 'One', seed: '',
   connection: '', helperId: '', confirmation: '', seats: [] };
-const response = (value: unknown) => ({ ok: true, json: async () => value });
-let stream = deferred<ReturnType<typeof response>>();
+const response = ({ league, name, role, franchise, franchiseName, seats }: NativeView) => ({
+  ok: true, status: 200, headers: new Headers({ 'Content-Type': 'application/json' }),
+  json: async () => ({ protocol: 1,
+    admission: { league, name, role, franchise, franchiseName, seats },
+    leagues: [{ id: league, name, role, franchise, franchiseName }],
+  }),
+});
+let stream: ReadableStreamDefaultController<Uint8Array>;
+function streamResponse() {
+  return new Response(new ReadableStream<Uint8Array>({ start: controller => { stream = controller; } }));
+}
+function send(change: unknown) {
+  stream.enqueue(new TextEncoder().encode(`event: invalidate\ndata: ${JSON.stringify(change)}\n\n`));
+}
 let status = deferred<ReturnType<typeof response>>();
 let statuses = 0;
 let seq = 0;
@@ -21,10 +33,11 @@ let host: Awaited<ReturnType<typeof dom.mount>>;
 let endSession = vi.fn<() => void>();
 beforeEach(async () => {
   vi.resetModules();
+  vi.stubGlobal('window', { location: { origin: 'https://league.example' } });
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-  stream = deferred(); status = deferred(); statuses = 0; seq = 0;
+  status = deferred(); statuses = 0; seq = 0;
   vi.stubGlobal('fetch', vi.fn((url: string) => {
-    if (url === '/desktop/changes') return stream.promise;
+    if (url === '/v1/native/invalidations') return streamResponse();
     statuses++;
     return status.promise;
   }));
@@ -35,7 +48,8 @@ beforeEach(async () => {
   const HostedLeague = (await import('../commissioner/HostedLeague')).default;
   // A joined private query observes actual session ends, including setIdentity's internal reset.
   endSession = vi.fn();
-  owner.observeView(view);
+  vi.mocked(fetch).mockResolvedValueOnce(response(view) as unknown as Response);
+  await (await import('../control/nativeApi')).nativeStartup();
   owner.hostedReads.join({ invalidate: () => undefined, reset: endSession }, 'private');
   const port = async () => { throw new Error('Offline workflow'); };
   function LeagueFence() {
@@ -55,11 +69,9 @@ afterEach(async () => {
   vi.clearAllTimers(); vi.useRealTimers(); vi.unstubAllGlobals();
 });
 async function change(state: NativeChanges['state'], league = false, serverEpoch = '') {
-  const previous = stream;
-  stream = deferred();
   await act(async () => {
-    previous.resolve(response({ seq: ++seq, authGeneration: '1', state, serverEpoch, league: view.league,
-      topics: league ? [{ kind: 'league', version: String(seq) }] : [] }));
+    send({ seq: ++seq, authGeneration: '1', state, serverEpoch, league: view.league,
+      topics: league ? [{ kind: 'league', version: String(seq) }] : [] });
     await vi.advanceTimersByTimeAsync(0);
   });
 }
@@ -83,7 +95,7 @@ it('keeps HostedLeague local state through five league hints and reconnect resyn
 });
 it('keeps HostedLeague local state when an ordinary league status refresh fails', async () => {
   await change('connected', true);
-  await answer({ ok: false, json: async () => undefined });
+  await answer({ ...response(view), ok: false, status: 503 });
   expect(owner.hostedSnapshot().blocked).toBe(false);
   expect(endSession).not.toHaveBeenCalled();
   expect(dom.button(host, 'Roster and reserves').getAttribute('aria-current')).toBe('true');
@@ -103,7 +115,7 @@ it('keeps a known epoch change hidden when its admission refresh fails', async (
   await change('connected', false, 'second');
   expect(owner.hostedSnapshot().blocked).toBe(true);
   expect(endSession).toHaveBeenCalledOnce();
-  await answer({ ok: false, json: async () => undefined });
+  await answer({ ...response(view), ok: false, status: 503 });
   expect(owner.hostedSnapshot().blocked).toBe(true);
   expect(host.textContent).toBe('');
 });

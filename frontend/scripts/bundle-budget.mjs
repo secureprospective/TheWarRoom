@@ -30,8 +30,10 @@ const names = fixture.players.value.map((player) => player.name).filter(Boolean)
 // (p2c, +1,000). 321,818 is their sum, not a loosening: new surfaces must load lazily.
 const BUDGET = 321_818;
 // Words only the commissioner forms and screens carry: they must live in lazy chunks.
-const commissionerForms = ['Start an app league', 'Give or take a role', 'Change a rule',
-  'Press and hold to confirm', 'Undo this change'];
+// 11-24 (PR-H): the desktop forms ('Start an app league', 'Give or take a role', 'Change a rule', 'Undo this
+// change') left with the local shell; the hosted Control Room's own words replace them, so the guard still bites.
+const commissionerForms = ['Press and hold to confirm', 'Select an eligible ledger entry',
+  'League people from the server'];
 
 function check(entry, budget = BUDGET, source = readFileSync(entry, 'utf8')) {
   const size = Buffer.byteLength(source);

@@ -76,74 +76,11 @@ it('renders the Home choices as visible actions', async () => {
   expect(html).not.toContain('<select');
 });
 
-it('uses the authorizer’s writable status rather than inferring rights from a franchise choice', async () => {
-  const { vi } = await import('vitest');
-  const api = await import('../commissioner/api');
-  const { localWorkflow } = await import('./localWorkflow');
-  vi.stubGlobal('window', { go: {} });
-  const authority = vi.fn().mockResolvedValue({ label: 'Local league', writable: false,
-    football: '', data: {} });
-  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetWorkflow: authority } as never);
-  const request = { command: 'native.assets.read', mode: 'read',
-    arguments: { league: 'native.one' } } as const;
-  try {
-    expect((await localWorkflow(request)).writable).toBe(false);
-    authority.mockResolvedValue({ label: 'Local league', writable: true, football: '', data: {} });
-    expect((await localWorkflow(request)).writable).toBe(true);
-    authority.mockRejectedValue(new Error('Not authorized'));
-    await expect(localWorkflow(request)).rejects.toThrow('Not authorized');
-  } finally {
-    spy.mockRestore();
-    vi.unstubAllGlobals();
-  }
-});
 
-it('uses only the signed-in person’s franchise, including an empty seat', async () => {
-  const { vi } = await import('vitest');
-  const api = await import('../commissioner/api');
-  const { readAppLeaguePeople } = await import('./leaguePicker');
-  const people = {
-    league: 'native.one', name: 'One', revision: 1,
-    seats: [{ franchise: 'other', name: 'Other', abbreviation: 'O', owner: 'someone' }],
-    roles: [], invites: [], dotCount: 0, dotStatus: '', votes: [], succession: '',
-    actors: [], yourPermissions: [],
-    yourRole: 'Commissioner', yourFranchise: '', mayChangeRules: true, mayGrantRoles: true,
-    mayPostNotices: true,
-  };
-  vi.stubGlobal('window', { go: {} });
-  const read = vi.fn().mockResolvedValue(people);
-  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetCommissionerPeople: read } as never);
-  try {
-    expect((await readAppLeaguePeople('native.one')).yourFranchise).toBe('');
-    read.mockResolvedValue({ ...people, yourFranchise: 'mine' });
-    expect((await readAppLeaguePeople('native.one')).yourFranchise).toBe('mine');
-  } finally {
-    spy.mockRestore();
-    vi.unstubAllGlobals();
-  }
-});
 
-it('uses desktop native reads with league authority for regions outside the workflow catalog', async () => {
-  const { vi } = await import('vitest');
-  const api = await import('../commissioner/api');
-  const { localWorkflow } = await import('./localWorkflow');
-  vi.stubGlobal('window', { go: {} });
-  const cap = vi.fn().mockResolvedValue({ league: 'native.one' });
-  const authority = vi.fn().mockResolvedValue({ label: 'Local league', writable: true,
-    football: '', data: {} });
-  const spy = vi.spyOn(api, 'nativeBindings').mockReturnValue({ TargetNativeCapCheck: cap,
-    TargetWorkflow: authority } as never);
-  try {
-    const result = await localWorkflow({ command: 'native.cap.check', mode: 'read',
-      arguments: { league: 'native.one', viewerZone: 'UTC' } });
-    expect(cap).toHaveBeenCalledWith('native.one', 'UTC');
-    expect(JSON.parse(authority.mock.calls[0][0]).arguments.league).toBe('native.one');
-    expect(result.data).toEqual({ league: 'native.one' });
-  } finally {
-    spy.mockRestore();
-    vi.unstubAllGlobals();
-  }
-});
+
+
+
 
 it('uses the selected league as the rail header without a static source label', async () => {
   const { renderToStaticMarkup } = await import('react-dom/server');

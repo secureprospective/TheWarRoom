@@ -1,3 +1,4 @@
+import * as contractApi from './api';
 import { ReleaseCard } from './ReleasePlans';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, createElement } from 'react';
@@ -113,7 +114,7 @@ describe('Release plans', () => {
     }
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire(p));
-    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
+    vi.spyOn(contractApi, 'targetReleasePlans').mockImplementation(call);
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'withdraw', id: p.id } });
     expect(call).toHaveBeenCalledWith({
       mine: '0001', action: 'withdraw', id: p.id, move: '', confirmed: false,
@@ -128,7 +129,7 @@ describe('Release plans', () => {
     expect(() => parseReleases(bad)).toThrow('expected boolean');
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire());
-    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
+    vi.spyOn(contractApi, 'targetReleasePlans').mockImplementation(call);
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'draft', move: 'move-1' } });
     expect(call).toHaveBeenCalledWith({
       mine: '0001', action: 'draft', move: 'move-1', id: '', confirmed: false,
@@ -141,13 +142,13 @@ describe('Release plans', () => {
     const p = plan(); p.cut = false; p.label = 'Buy out Example'; p.receipt.spec.intent = 'roster.buyout';
     vi.spyOn(providers, 'selectProvider').mockReturnValue({ kind: 'live' } as never);
     const call = vi.fn().mockResolvedValue(wire(p));
-    vi.stubGlobal('window', { go: { contracts: { API: { TargetReleasePlans: call } } } });
-    const writeText = vi.fn().mockResolvedValue(true);
-    Object.assign(window, { runtime: { ClipboardSetText: writeText } });
+    vi.spyOn(contractApi, 'targetReleasePlans').mockImplementation(call);
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
     await runContractsAction({ field: 'release', value: { mine: '0001', action: 'handoff', id: p.id } });
     expect(writeText).toHaveBeenCalledWith(p.post);
     expect(call.mock.calls.map(c => c[0].action)).toEqual(['read', 'handoff']);
-    writeText.mockResolvedValueOnce(false);
+    writeText.mockRejectedValueOnce(new Error('Clipboard denied'));
     await expect(runContractsAction({ field: 'release', value: {
       mine: '0001', action: 'handoff', id: p.id,
     } })).rejects.toThrow('Clipboard unavailable');

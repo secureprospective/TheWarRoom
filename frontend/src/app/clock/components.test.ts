@@ -137,40 +137,8 @@ describe('honest clock surfaces', () => {
       dateStyle: 'medium', timeStyle: 'short',
     }).format(new Date('2026-10-06T13:00:00Z')));
   });
-  it('mounts both surfaces while snapshot stays pending and cleans up on unmount', async () => {
-    const { root, element, document } = clockDom([]);
-    vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    const snapshot = vi.fn().mockImplementation(() => new Promise(() => undefined));
-    const clock = vi.fn().mockResolvedValue({
-      ...fixture, provenance: { ...fixture.provenance, kind: 'live' },
-    });
-    vi.stubGlobal('document', document);
-    vi.stubGlobal('window', {
-      document, HTMLIFrameElement: class {},
-      runtime: { EventsOnMultiple: vi.fn(() => () => {}) },
-      go: { platform: { API: { TargetSnapshot: snapshot, TargetClock: clock } } },
-    });
-    function Harness() {
-      const ref = useRef<HTMLDivElement>(null);
-      const clockReading = useLeagueClock(ref);
-      useEffect(() => { void selectProvider().snapshot(); }, []);
-      return createElement('div', { ref },
-        createElement(ClockStrip, { reading: clockReading }),
-        createElement(CalendarPanel, { reading: clockReading }),
-      );
-    }
-    const mounted = createRoot(element);
-    await act(async () => { mounted.render(createElement(Harness)); });
-    await act(async () => { await import('../../../wailsjs/runtime/runtime'); });
-    expect(snapshot).toHaveBeenCalledTimes(1);
-    // The mount read, then one catch-up read once the live event subscription is in place.
-    expect(clock).toHaveBeenCalledTimes(2);
-    expect(root.textContent).toContain('Offseason · no deadlines');
-    expect(root.textContent.match(/ · No date/g)).toHaveLength(9);
-    expect(document.listeners.size).toBe(1);
-    await act(async () => { mounted.unmount(); });
-    expect(document.listeners.size).toBe(0);
-  });
+
+
   it('keeps a mounted React render-count probe at one across ten actual DOM ticks', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-10-06T12:00:00Z'));

@@ -12,7 +12,6 @@ import type { ReadTags } from '../data/session';
 import { nativeTransport } from './transport';
 export type NativeAction = 'update' | 'retry' | 'status' | 'recover' | 'enroll' | 'login' | 'enter' | 'forget'
   | 'revoke-device' | 'revoke-all' | 'totp-begin' | 'totp-confirm' | 'totp-step-up' | 'recovery-codes';
-export type HelperAction = 'helper-issue' | 'helper-revoke' | 'helper-check' | 'helper-confirm';
 export type NativeSeat = { franchise: string; name: string };
 export type NativeLeagueMembership = { id: string; name: string; role: string;
   franchise: string; franchiseName: string };
@@ -95,7 +94,7 @@ function createBrowserView(selected: NativeLeagueMembership | undefined, leagues
     franchise: selected?.franchise ?? '', franchiseName: selected?.franchiseName ?? '',
     seats, leagues, seed: '', connection: '', helperId: '', confirmation: '',
   });
-  nativeTransport.setIdentity(view.league, view.authGeneration);
+  nativeTransport.setIdentity(view.league);
   browserCurrent = view;
   return view;
 }
@@ -124,7 +123,7 @@ function browserView(raw?: unknown, message = '', forceGeneration = false): Nati
     selected.id === admission.league ? admission.seats as NativeSeat[] : [], message, forceGeneration);
 }
 export function selectBrowserLeague(league: string): NativeView {
-  if (nativeTransport.kind !== 'web' || !browserCurrent?.leagues)
+  if (!browserCurrent?.leagues)
     throw new Error('Browser league selection is unavailable.');
   const selected = browserCurrent.leagues.find(item => item.id === league);
   if (!selected) throw new Error('This account is not admitted to that league.');
@@ -153,33 +152,27 @@ function responseMessage(response: Response, fallback: string): Promise<string> 
 }
 const noSeatMessage = 'This account has no team in a league on this server yet. '
   + 'Sign in with another account, or ask your commissioner for a join link.';
-export async function nativeStartup(): Promise<NativeView | null> {
+export async function nativeStartup(): Promise<NativeView> {
   let response: Response;
   try {
     response = await nativeTransport.startup();
   } catch (cause) {
     throw withClientCode(cause);
   }
-  if (response.status === 404 && nativeTransport.kind === 'wails') return null;
-  if (nativeTransport.kind === 'web' && response.status === 401) {
+  if (response.status === 401) {
     const view = browserView(); observeView(view); return view;
   }
   // Signed in, but the account holds no seat in any league here: offer sign-in with another account.
-  if (nativeTransport.kind === 'web' && response.status === 403) {
+  if (response.status === 403) {
     const view = browserView(undefined, noSeatMessage); observeView(view); return view;
   }
   if (!response.ok) {
-    throw createFailureError('Desktop startup unavailable.', responseErrorCode(response));
+    throw createFailureError('League startup unavailable.', responseErrorCode(response));
   }
-  // Vite's local development fallback serves index.html for unknown desktop routes.
   if (response.headers.get('Content-Type')?.startsWith('text/html')) {
-    if (nativeTransport.kind === 'web') {
-      throw createFailureError('The browser session endpoint is unavailable.');
-    }
-    return null;
+    throw createFailureError('The browser session endpoint is unavailable.');
   }
-  const view = nativeTransport.kind === 'web'
-    ? browserView(await response.json()) : parseNativeView(await response.json());
+  const view = browserView(await response.json());
   observeView(view);
   return view;
 }
@@ -203,13 +196,13 @@ async function post(body: Record<string, string>): Promise<NativeView> {
     updateListeners.forEach(listener => listener(view));
     return view;
   }
-  if (nativeTransport.kind === 'web' && response.status === 401
+  if (response.status === 401
     && ['status', 'enter'].includes(body.action)) {
     const view = browserView(undefined, 'Your sign-in expired. Sign in again.');
     observeView(view);
     return view;
   }
-  if (nativeTransport.kind === 'web' && response.status === 403 && body.action === 'enter') {
+  if (response.status === 403 && body.action === 'enter') {
     const view = browserView(undefined, noSeatMessage); observeView(view); return view;
   }
   if (!response.ok) {
@@ -218,13 +211,12 @@ async function post(body: Record<string, string>): Promise<NativeView> {
       responseErrorCode(response),
     );
   }
-  if (nativeTransport.kind === 'web' && body.action === 'forget') {
+  if (body.action === 'forget') {
     const view = browserView(undefined, 'Signed out on this browser.');
     observeView(view);
     return view;
   }
-  const view = nativeTransport.kind === 'web'
-    ? await browserActionResult(body.action, response) : parseNativeView(await response.json());
+  const view = await browserActionResult(body.action, response);
   observeView(view);
   return view;
 }
@@ -232,35 +224,6 @@ export function nativeAction(
   action: NativeAction, username = '', password = '', code = '',
 ): Promise<NativeView> {
   return post({ action, username, password, code });
-}
-export async function helperAction(
-  action: HelperAction, fields: { helper?: string; franchise?: string; code?: string; change?: string },
-): Promise<NativeView> {
-  let response: Response;
-  try {
-    response = await nativeTransport.helper({ action, ...fields });
-  } catch (cause) {
-    throw withClientCode(cause);
-  }
-  if (!response.ok) {
-    throw createFailureError(
-      await responseMessage(response, 'The helper action was refused.'),
-      responseErrorCode(response),
-    );
-  }
-  const view = parseNativeView(await response.json());
-  observeView(view);
-  return view;
-}
-// Only recognize the envelope here; Go validates the change and the league describes it.
-export function readConfirmRequest(text: string): boolean {
-  const trimmed = text.trim();
-  if (!trimmed.startsWith('twrc1.')) return false;
-  try {
-    const json = atob(trimmed.slice(6).replace(/-/g, '+').replace(/_/g, '/'));
-    const request = JSON.parse(json) as { tokenId?: unknown; change?: { command?: unknown } };
-    return typeof request.tokenId === 'string' && typeof request.change?.command === 'string';
-  } catch { return false; }
 }
 export type HostedResponse = {
   label: string; writable: boolean; football: string; appRelease?: number; data: unknown; tags?: ReadTags;

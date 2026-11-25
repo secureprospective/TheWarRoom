@@ -12,39 +12,18 @@ import {
 import { researchState } from './state';
 import type { Research as ResearchBoard } from './contract';
 import './research.css';
-import { readPlayerUsage, researchAPI, researchAvailable, subscribeResearchPlayer } from './api';
+import { readPlayerUsage } from './api';
 
 export default function ResearchPlayerInspector({
-  id, identity = true, league, port, position, usage: suppliedUsage, usageDone,
+  id, league, port, position, usage: suppliedUsage, usageDone,
   news: suppliedNews, newsDone,
 }: {
   id: string; identity?: boolean; league?: string; port?: HostedPort; position?: string;
   usage?: Usage; usageDone?: boolean; news?: PlayerNews; newsDone?: boolean;
 }) {
-  const [player, setPlayer] = useState<PlayerReading>();
-  const [error, setError] = useState('');
   const [fetchedUsage, setFetchedUsage] = useState<{ ready: boolean; value?: Usage }>({ ready: false });
   const [fetchedNews, setFetchedNews] = useState<{ ready: boolean; value?: PlayerNews }>({ ready: false });
-  const hostedOnly = Boolean(league) && !researchAvailable();
-  useEffect(() => {
-    let disposed = false;
-    setPlayer(undefined);
-    setError('');
-    if (!researchAvailable()) {
-      if (!league) setError('Player research requires the desktop app.');
-      return;
-    }
-    let revision = 0;
-    const read = () => {
-      const request = ++revision;
-      void researchAPI.player!(id).then(value => {
-        if (!disposed && request === revision) setPlayer(value);
-      }).catch(cause => { if (!disposed && request === revision) setError(String(cause)); });
-    };
-    read();
-    const stop = subscribeResearchPlayer(read);
-    return () => { disposed = true; stop(); };
-  }, [id, league]);
+  const hostedOnly = Boolean(league);
   useEffect(() => {
     if (!hostedOnly || usageDone !== undefined) return;
     let disposed = false;
@@ -76,9 +55,7 @@ export default function ResearchPlayerInspector({
     </section>;
   }
   return <section aria-label="Research player Inspector">
-    {error && <p role="alert">{error}</p>}
-    {!player && !error && <p role="status">Reading held player reports…</p>}
-    {player && <PlayerResearchView player={player} identity={identity} />}
+    <p role="alert">Player research requires the desktop app.</p>
   </section>;
 }
 

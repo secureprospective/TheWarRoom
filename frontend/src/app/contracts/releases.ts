@@ -54,9 +54,9 @@ export function confirmRelease(token: string) { confirmation.setState({ token })
 export function useReleaseConfirmation() { return useStore(confirmation, state => state.token); }
 
 export async function copyReleaseText(text: string): Promise<boolean> {
-  const runtime = (window as unknown as {
-    runtime: { ClipboardSetText(text: string): Promise<boolean> };
-  }).runtime;
-  return runtime.ClipboardSetText(text);
+  try {
+    if (!navigator.clipboard) return false;
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch { return false; }
 }
-

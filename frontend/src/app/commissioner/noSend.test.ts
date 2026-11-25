@@ -22,7 +22,7 @@ describe('No path on the commissioner screens sends a message out of the app', (
   it('has no mail link, network call, socket or navigation in any commissioner source', () => {
     const files = sources();
     expect(files.length).toBeGreaterThan(40);
-    expect(files.some(f => f.endsWith('NoteForm.tsx'))).toBe(true);
+    expect(files.some(f => f.endsWith('HostedControlRoomLeague.tsx'))).toBe(true);
     expect(violations(files)).toEqual([]);
   });
   it('would catch each way of sending, so the scan is not decoration', () => {
@@ -30,9 +30,5 @@ describe('No path on the commissioner screens sends a message out of the app', (
       'navigator.sendBeacon(u)', 'new WebSocket(u)', 'window.open(u)', 'location.href = u', '<a href="x">']) {
       expect(forbidden.some(p => p.test(sample)), sample).toBe(true);
     }
-  });
-  it('shows the posting forms only inside the app: they say nothing is emailed', () => {
-    const form = readFileSync(resolve('src/app/commissioner/NoteForm.tsx'), 'utf8');
-    expect(form.match(/sends no email and no messages/g)).toHaveLength(2);
   });
 });

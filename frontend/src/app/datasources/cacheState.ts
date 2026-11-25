@@ -15,13 +15,12 @@ export function parseCacheScopes(v: unknown): Scope[] {
       progress: text(o.progress, p) };
   });
 }
-function desktop() {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('Reading data again needs the desktop app. No sample data is substituted.');
+function unavailable() {
+  throw new Error('Reading data again needs the desktop app. No sample data is substituted.');
 }
 const cacheProvider: CacheProvider = {
-  scopes: async () => { desktop(); return parseCacheScopes(await sourcesAPI.cacheScopes()); },
-  clear: async scope => { desktop(); return parseOutcome(await sourcesAPI.cacheClear(scope)); },
+  scopes: async () => { unavailable(); return parseCacheScopes(await sourcesAPI.cacheScopes()); },
+  clear: async scope => { unavailable(); return parseOutcome(await sourcesAPI.cacheClear(scope)); },
 };
 
 function createCacheState(provider: CacheProvider) {

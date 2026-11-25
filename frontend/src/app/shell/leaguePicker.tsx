@@ -1,6 +1,6 @@
+import type { People } from '../commissioner/people';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { array, integer, object, text } from '../data/parseValues';
-import { parsePeople } from '../commissioner/people';
 import { HQAct } from './HQAct';
 import { browserStorage, type SettingsStorage } from './franchise';
 
@@ -41,10 +41,7 @@ export function chooseLeague(
 }
 
 export async function readLeagues(): Promise<LeagueChoice[]> {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('The league list requires the desktop app.');
-  const { targetLeagues } = await import('../data/api');
-  return parseLeagues(await targetLeagues());
+  throw new Error('The league list requires the desktop app.');
 }
 
 export type LeagueState = {
@@ -115,15 +112,6 @@ export function RailLeaguePicker() {
   if (!state) return null;
   return <div className="twr-app"><LeaguePicker leagues={state.leagues} selected={state.selected}
     onSelect={state.select} loading={state.loading} error={state.error} /></div>;
-}
-
-export async function readAppLeaguePeople(league: string) {
-  if (typeof window === 'undefined' || !(window as { go?: unknown }).go)
-    throw new Error('This league requires the desktop app.');
-  const { nativeBindings } = await import('../commissioner/api');
-  const people = parsePeople(await nativeBindings().TargetCommissionerPeople(league));
-  if (people.league !== league) throw new Error('People belong to another league');
-  return people;
 }
 
 export function leagueInitials(name: string): string {
@@ -204,4 +192,8 @@ export function LeagueChoices({
       )}
     </section>
   );
+}
+
+export async function readAppLeaguePeople(_league: string): Promise<People> {
+  throw new Error('This league requires the desktop app.');
 }
