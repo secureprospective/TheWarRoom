@@ -115,12 +115,11 @@ Finished 11-25 afternoon:
 
 ## 7. Open findings that need action (ordered)
 
-1. **Tuesday report covers the wrong leagues.** Hermes `~/fleet/twr-reportcard/run.sh` checks only
-   `native.tomtest-default/twin`. The rehearsal leagues are `native.rehearsal-default/twin` (real) and
-   `native.rehtest-default/twin` (practice copies); confirm their exact ids. None has a read token. To fix: mint a
-   read-only helper token per league (Lab kit, `labcommish.py helper`, scopes `native.directory.read results.read
-   standings.read nfl.games.read lineup.read`), put each in Hermes as `token-<league>`, and change `run.sh`'s league list
-   (exact line in `pulse-astra1c2/RESULT.md`). Due before Tue 12-8.
+1. **Tuesday report readiness.** Hermes checks the two `native.tomtest-*` leagues, skips Dec 8, and can post green for
+   AMBER or UNKNOWN checks. The offline proposal fixes all three and passed 11 fixtures. Before Tue 12-8, the authorized
+   operator confirms the four real/practice IDs, uses `python3 labcommish.py reader "$LEAGUE"` for each, installs the scoped
+   reads as `token-<league>` on Hermes, and applies and verifies the reviewed proposal. Exact procedure and patch are in
+   `~/fleet/runs/astra-exec-1125/1C-REPORTCARD-1125.md`.
 2. **Writes pause after every Lab restart** until the off-site backup is verified ("changes are paused because the
    off-site backup is not current"; `internal/offsite/manager.go` CheckWrite; "Restart starts closed"). This also
    blocks **sign-ins**. #528 stops computer picks being lost. Human turns still lose clock time, so during drafts: no
@@ -159,6 +158,7 @@ Christopher's 11-25 workflow update applies to this workstream. Finish existing 
 - **BUILD-PLAN Stage 3 step 1 (T631) — 32-team load proof.** Christopher approves a separate quiet window outside games with all Lab drafts closed and designates the Lab operator. The v93 evidence passed latency and errors with 31 owners and 62 devices. The operator prepares 32 eligible seats, pauses releases, runs `gameday.py` with `--teams 32 --devices-per-team 2`, and captures `stresscheck` integrity and final health. Exact work order and evidence: `~/fleet/runs/twr-t631-1125/RESULT.md`.
 - **T640 — Week 10 comparison.** Designate a read-authorized CT 257 operator. Verify the native official-statistics pin includes Week 10, then rerun `NativeResults` / `NativeResultsReading` for all 32 franchises using the read-only procedure in `~/fleet/runs/pulse-wk10/RESULT.md`. Require 32 final `points` values before comparing to a fresh public MFL export. Five public MFL team totals changed since the saved comparison. The older native capture was provisional.
 - **Stage 3 step 4 — security actions.** Christopher owns T621 and T632. On the tracker, T621 is the CT 257 TLS origin and authenticator key rotation. T632 is the Cloudflare transport rule, specified in §11 of `/root/TheWarRoom-RESUME.md` on CT105. T649 was the weekly audit only.
+- **1C — Tuesday report and canary.** Designate Lab and Hermes operators to verify IDs and provision each reader with `python3 labcommish.py reader "$LEAGUE"` before the Dec 8 rollout. Issue T708 separately for the allowlisted disposable canary league. The wrapper patch and operator steps are in §7.1.
 - **8A — owner correction explanation.** After Dec 6, Christopher approves a spec for showing the previous and corrected official figures and the reason. The headbrain owns the spec. The scoring/read owner then needs to expose the prior official version and an owner-readable correction event. Until that contract exists, leave the display blocked. To reproduce the evidence, use a disposable checkout at `e85334123`, run `git apply ~/fleet/runs/pulse-astra8b/capture.patch`, then `go test -race ./cmd/twr -run '^TestPulse8ACapture$' -count=1 -v`. The capture confirms changed totals and the missing explanation.
 
 ## Hourly progress (Central)
@@ -171,6 +171,8 @@ Christopher's 11-25 workflow update applies to this workstream. Finish existing 
 - 11-25 08:54 — Stage 4: #478 and the recorded Nov 23 rulings are on main. Stages 5–6 await the full 32-team proof or Christopher's acceptance of the existing 62-device evidence.
 - 11-25 08:57 — T640: saved native Week 10 results are provisional. A fresh public MFL read returned all 32 team scores, with five changes since the saved export. Await the authorized operator's official native read.
 - 11-25 09:00 — No new merges. #527–#533 open; #533 is green. Repeated the T649 audit successfully after resuming. Stages 5–6 still await the T631 load gate; T621 and T632 await Christopher.
+- 11-25 09:43 — Stage 2 evidence reconciled. #468 shipped T668/T677/T679; phone update and refresh captures and first-open timing still need an authorized observation. See `~/fleet/runs/astra-exec-1125/STAGE2-EVIDENCE-1125.md`.
+- 11-25 09:45 — Rehearsal 1C: Tuesday report patch and 11 offline checks filed. Live rollout awaits the four verified leagues, scoped read tokens, and the Lab and Hermes operators.
 
 ## 9. Lessons from 11-25 — do not repeat
 
