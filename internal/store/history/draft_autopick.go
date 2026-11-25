@@ -118,22 +118,25 @@ func (s *Store) projectionWeek(ctx context.Context, league string, at time.Time)
 }
 
 // autoPickDraftAuthorizer is deliberately narrower than any human role: the app itself may only
-// pick for a vacant franchise on the clock.
+// pick for a vacant franchise or an expired human autopick turn.
 type autoPickDraftAuthorizer struct {
 	records   []commissioner.Record
 	franchise string
+	key       commissioner.DraftKey
+	at        time.Time
+	standings commissioner.DraftStandings
 }
 
 func (a autoPickDraftAuthorizer) Allow(_ string, principal, command string) (string, error) {
 	if principal != commissioner.DraftAutoPickPrincipal || command != commissioner.DraftPick {
 		return "", errors.New("automatic draft pick can only record draft picks")
 	}
-	auto, err := commissioner.AutomaticFranchise(a.records, a.franchise)
+	auto, err := commissioner.AutomaticDraftTurn(a.records, a.key, a.franchise, a.at, a.standings)
 	if err != nil {
 		return "", fmt.Errorf("check franchise seat: %w", err)
 	}
 	if !auto {
-		return "", errors.New("automatic draft pick cannot pick for a seated franchise")
+		return "", errors.New("this turn is not eligible for an automatic pick")
 	}
 	return "automatic", nil
 }
@@ -147,12 +150,16 @@ func authorizeAutoPickDraft(raw commissioner.RawCommand, principal string,
 	if raw.Args.Draft == nil || raw.Args.Draft.Pick == nil {
 		return "", errors.New("automatic draft pick requires a draft selection")
 	}
-	auto, err := commissioner.AutomaticFranchise(records, raw.Args.Draft.Pick.Franchise)
+	a, ok := auth.(autoPickDraftAuthorizer)
+	if !ok {
+		return "", errors.New("automatic draft authorizer required")
+	}
+	auto, err := commissioner.AutomaticDraftTurn(records, a.key, raw.Args.Draft.Pick.Franchise, a.at, a.standings)
 	if err != nil {
 		return "", fmt.Errorf("check franchise seat: %w", err)
 	}
 	if !auto {
-		return "", errors.New("automatic draft pick cannot pick for a seated franchise")
+		return "", errors.New("this turn is not eligible for an automatic pick")
 	}
 	return role, nil
 }
@@ -280,7 +287,7 @@ func (s *Store) pickMatching(ctx context.Context, league string, at time.Time,
 			}
 			return false, fmt.Errorf("plan automatic draft pick: %w", err)
 		}
-		auth := autoPickDraftAuthorizer{records: records, franchise: turn.Franchise}
+		auth := autoPickDraftAuthorizer{records: records, franchise: turn.Franchise, key: turn.Key, at: at, standings: standings}
 		if _, err := s.ExecuteCommissionerWithFacts(ctx, raw, commissioner.DraftAutoPickPrincipal,
 			auth, facts, time.UTC); err != nil {
 			return false, fmt.Errorf("record automatic draft pick: %w", err)

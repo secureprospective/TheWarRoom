@@ -10,7 +10,7 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// AutoPickTurn is one open, unpaused draft whose current pick belongs to a vacant franchise.
+// AutoPickTurn is one open, unpaused draft with a pick eligible for computer selection.
 type AutoPickTurn struct {
 	Key       DraftKey
 	Franchise string
@@ -34,7 +34,7 @@ func AutomaticFranchise(records []Record, franchise string) (bool, error) {
 }
 
 // DueAutoPick returns the first open, unpaused draft (excluding skip keys) whose franchise on the
-// clock has no seated owner, along with its available player pool IDs.
+// clock is vacant or due for human timeout autopick, with its available player pool IDs.
 func DueAutoPick(records []Record, at time.Time, facts nativecheck.Facts,
 	standings DraftStandings, skip map[DraftKey]bool) (AutoPickTurn, bool, error) {
 	state, err := GovernanceState(records)
@@ -52,7 +52,7 @@ func DueAutoPick(records []Record, at time.Time, facts nativecheck.Facts,
 		}
 		clock := basis.draft.OnClock
 		f, ok := state.Franchise(governance.FranchiseID(clock.Owner))
-		if !ok || f.Seat != "" {
+		if !ok || (f.Seat != "" && !humanAutoPickDue(basis, at)) {
 			continue
 		}
 		pool, held, err := turnPoolAndHeld(basis, records, at, clock.Owner, facts)
@@ -139,7 +139,7 @@ func draftTakenSet(basis draftBasis, assets NativeAssets) map[string]bool {
 }
 
 // CheckAutoDraftPickAppend verifies an automatic draft.pick inside the write transaction: the
-// franchise must be vacant and on the clock, and PlanDraftPick must produce the same selection.
+// franchise must qualify for computer selection, and planning must produce the same selection.
 func CheckAutoDraftPickAppend(raw RawCommand, records []Record, at time.Time,
 	facts nativecheck.Facts, standings DraftStandings) error {
 	if raw.Command != DraftPick || raw.Args.Draft == nil || raw.Args.Draft.Pick == nil {
@@ -147,12 +147,12 @@ func CheckAutoDraftPickAppend(raw RawCommand, records []Record, at time.Time,
 	}
 	d := raw.Args.Draft
 	pick := d.Pick
-	auto, err := AutomaticFranchise(records, pick.Franchise)
+	auto, err := AutomaticDraftTurn(records, DraftKey{Season: d.Season, Startup: d.Startup, Side: d.Side}, pick.Franchise, at, standings)
 	if err != nil {
 		return err
 	}
 	if !auto {
-		return Refused(errors.New("automatic picks apply only to vacant franchises"))
+		return Refused(errors.New("this turn is not eligible for an automatic pick"))
 	}
 	planned, err := PlanDraftPick(DraftPickInput{League: raw.League, Season: d.Season,
 		Franchise: pick.Franchise, Player: pick.Player, Request: raw.Request,
@@ -173,4 +173,22 @@ func holdVacantDraftTurn(records []Record) func(string, time.Time) (bool, error)
 	return func(owner string, deadline time.Time) (bool, error) {
 		return AutomaticFranchise(RecordsThrough(records, deadline), owner)
 	}
+}
+
+// AutomaticDraftTurn restricts computer selections to vacant seats or a timed-out human autopick turn.
+func AutomaticDraftTurn(records []Record, key DraftKey, owner string, at time.Time, standings DraftStandings) (bool, error) {
+	vacant, err := AutomaticFranchise(records, owner)
+	if err != nil || vacant {
+		return vacant, err
+	}
+	basis, err := readDraft(records, key, at, standings)
+	if err != nil {
+		return false, err
+	}
+	clock := basis.draft.OnClock
+	return basis.closed == nil && basis.started && clock != nil && !clock.Paused && clock.Owner == owner && basis.rules.Draft.OnExpire.Value == leaguerules.AutoPick && !at.Before(clock.Deadline), nil
+}
+
+func humanAutoPickDue(basis draftBasis, at time.Time) bool {
+	return basis.rules.Draft.OnExpire.Value == leaguerules.AutoPick && !at.Before(basis.draft.OnClock.Deadline)
 }

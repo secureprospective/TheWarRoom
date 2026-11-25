@@ -223,6 +223,8 @@ func draftStatusWords(basis draftBasis) string {
 	switch {
 	case basis.closed != nil:
 		return "The " + kind + " draft is closed."
+	case basis.draft.Exhausted && basis.draft.Owed():
+		return "All turns have ended; missed picks may still be made until the draft closes."
 	case basis.draft.Exhausted:
 		return "Every pick has been used; the draft has not been closed."
 	case basis.draft.OnClock != nil && basis.draft.OnClock.Paused:

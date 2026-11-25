@@ -47,7 +47,8 @@ type SelectionPreview struct {
 // This pure check does not authorize an owner; the native gate remains the writer's responsibility.
 func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Candidate,
 	basis SelectionBasis) (SelectionPreview, error) {
-	if d.OnClock == nil || d.OnClock.Owner != owner {
+	pick, ok := d.SelectionPick(owner)
+	if !ok {
 		return SelectionPreview{}, fmt.Errorf("it is not your turn to pick")
 	}
 	if err := admits(basis.Pool, basis.Season, candidate); err != nil {
@@ -57,7 +58,7 @@ func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Ca
 		slices.ContainsFunc(d.Picks, func(p Result) bool { return p.Player == candidate.ID }) {
 		return SelectionPreview{}, fmt.Errorf("this player already belongs to a team")
 	}
-	terms, err := SlotTerms(r.Draft, d.OnClock.Round, d.OnClock.Slot)
+	terms, err := SlotTerms(r.Draft, pick.Round, pick.Slot)
 	if err != nil {
 		return SelectionPreview{}, err
 	}

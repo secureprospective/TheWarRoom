@@ -70,7 +70,7 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err != nil {
 		return RawCommand{}, Refused(err)
 	}
-	clock := basis.draft.OnClock
+	clock, _ := basis.draft.SelectionPick(in.Franchise)
 	selection := RawDraftSelection{Franchise: in.Franchise, Player: in.Player, EntrySeason: in.Season,
 		Round: clock.Round, Slot: clock.Slot, Original: clock.Original, Terms: preview.Terms}
 	return RawCommand{League: in.League, Command: DraftPick, Expected: in.Expected, Request: in.Request,

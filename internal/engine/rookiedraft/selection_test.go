@@ -94,17 +94,15 @@ func TestOrderRejectsUnknownDuplicateAndMissingOwnership(t *testing.T) {
 	}
 }
 
-func TestReplayRejectsExpiredForeignDuplicateAndOutOfOrderSelections(t *testing.T) {
+func TestReplayRejectsForeignDuplicateAndOutOfOrderSelections(t *testing.T) {
 	r := testRules().Draft
 	order := testOrder(t, r)
 	start := fixedStart()
 	good := Selection{Round: 1, Original: "a", Owner: "b", Player: "0001", At: start.Add(time.Hour)}
 	second := Selection{Round: 1, Original: "b", Owner: "b", Player: "0001", At: start.Add(2 * time.Hour)}
-	late := good
-	late.At = start.Add(6 * time.Hour)
 	foreign := good
 	foreign.Original = "b"
-	for _, selections := range [][]Selection{{late}, {foreign}, {good, second}, {second, good}} {
+	for _, selections := range [][]Selection{{foreign}, {good, second}, {second, good}} {
 		if _, err := Replay(r, order, start, start.Add(12*time.Hour), selections); err == nil {
 			t.Fatalf("bad selection history accepted: %+v", selections)
 		}
