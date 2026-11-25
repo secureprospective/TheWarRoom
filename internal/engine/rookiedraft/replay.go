@@ -104,6 +104,7 @@ func replayActs(r leaguerules.DraftRules, order []RoundOrder, start, at time.Tim
 		return out, nil
 	}
 	line := newTimeline(out.Picks, start, setup.Clock)
+	line.policy = setup.OnExpire
 	if len(hold) > 0 {
 		line.hold = hold[0]
 	}
@@ -185,6 +186,29 @@ func (d Draft) NextPick(franchise string) (Pick, bool) {
 		if result.Owner == franchise && result.Player == "" && !result.Skipped && !result.Forfeited {
 			return result.Pick, true
 		}
+	}
+	return Pick{}, false
+}
+
+// Owed reports an expired slot still available for an owner to make up.
+func (d Draft) Owed() bool {
+	for _, p := range d.Picks {
+		if p.Skipped && p.How == HowExpired && p.Player == "" {
+			return true
+		}
+	}
+	return false
+}
+
+// SelectionPick chooses the oldest owed slot before the owner's live turn.
+func (d Draft) SelectionPick(owner string) (Pick, bool) {
+	for _, p := range d.Picks {
+		if p.Owner == owner && p.Skipped && p.How == HowExpired && p.Player == "" {
+			return p.Pick, true
+		}
+	}
+	if d.OnClock != nil && d.OnClock.Owner == owner {
+		return d.OnClock.Pick, true
 	}
 	return Pick{}, false
 }

@@ -117,6 +117,10 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 	if err != nil {
 		return draftBasis{}, err
 	}
+	rules, closed, err := closedDraftRules(records, key, rules)
+	if err != nil {
+		return draftBasis{}, err
+	}
 	basis := draftBasis{key: key, rules: rules, owners: draftOwners(records)}
 	open, ok := startupOpened(records, key)
 	if !ok {
@@ -143,9 +147,7 @@ func readStartupDraft(records []Record, key DraftKey, at time.Time) (draftBasis,
 	if err != nil {
 		return basis, fmt.Errorf("replay the startup draft: %w", err)
 	}
-	if closed, ok := closeRecord(records, key); ok {
-		basis.closed = &closed
-	}
+	basis.closed = closed
 	return basis, nil
 }
 

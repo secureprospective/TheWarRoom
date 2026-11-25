@@ -38,6 +38,7 @@ type SelectionBasis struct {
 }
 
 type SelectionPreview struct {
+	Pick Pick
 	Terms
 	CapWords string `json:"capWords"`
 }
@@ -47,9 +48,24 @@ type SelectionPreview struct {
 // This pure check does not authorize an owner; the native gate remains the writer's responsibility.
 func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Candidate,
 	basis SelectionBasis) (SelectionPreview, error) {
+	pick, ok := d.SelectionPick(owner)
+	if !ok {
+		return SelectionPreview{}, fmt.Errorf("it is not your turn to pick")
+	}
+	return previewSelection(r, d, owner, pick, candidate, basis)
+}
+
+// PreviewLiveSelection checks the current clock slot even when the owner has an older owed pick.
+func PreviewLiveSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Candidate,
+	basis SelectionBasis) (SelectionPreview, error) {
 	if d.OnClock == nil || d.OnClock.Owner != owner {
 		return SelectionPreview{}, fmt.Errorf("it is not your turn to pick")
 	}
+	return previewSelection(r, d, owner, d.OnClock.Pick, candidate, basis)
+}
+
+func previewSelection(r leaguerules.RuleSet, d Draft, owner string, pick Pick, candidate Candidate,
+	basis SelectionBasis) (SelectionPreview, error) {
 	if err := admits(basis.Pool, basis.Season, candidate); err != nil {
 		return SelectionPreview{}, err
 	}
@@ -57,7 +73,7 @@ func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Ca
 		slices.ContainsFunc(d.Picks, func(p Result) bool { return p.Player == candidate.ID }) {
 		return SelectionPreview{}, fmt.Errorf("this player already belongs to a team")
 	}
-	terms, err := SlotTerms(r.Draft, d.OnClock.Round, d.OnClock.Slot)
+	terms, err := SlotTerms(r.Draft, pick.Round, pick.Slot)
 	if err != nil {
 		return SelectionPreview{}, err
 	}
@@ -77,7 +93,7 @@ func PreviewSelection(r leaguerules.RuleSet, d Draft, owner string, candidate Ca
 	if !allowed {
 		return SelectionPreview{}, fmt.Errorf("this pick cannot fit under your salary cap: %s", words)
 	}
-	return SelectionPreview{Terms: terms, CapWords: words}, nil
+	return SelectionPreview{Pick: pick, Terms: terms, CapWords: words}, nil
 }
 
 func ownerPlayers(owner string, players []PlayerContract) ([]nativecheck.RosterPlayer, []nativecheck.CapPlayer) {
