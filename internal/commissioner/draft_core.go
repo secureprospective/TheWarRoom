@@ -1,6 +1,7 @@
 package commissioner
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"time"
@@ -78,6 +79,21 @@ func closeRecord(records []Record, key DraftKey) (Record, bool) {
 		}
 	}
 	return Record{}, false
+}
+
+func closedDraftRules(records []Record, key DraftKey,
+	rules leaguerules.RuleSet) (leaguerules.RuleSet, *Record, error) {
+	closed, ok := closeRecord(records, key)
+	if !ok {
+		return rules, nil, nil
+	}
+	at := closed.Receipt.RecordedAt
+	closedRules, err := RulesNow(RecordsThrough(records, at), at)
+	if err != nil {
+		return leaguerules.RuleSet{}, nil, fmt.Errorf("read draft expiry policy at close: %w", err)
+	}
+	rules.Draft.OnExpire = closedRules.Draft.OnExpire
+	return rules, &closed, nil
 }
 
 // projectStartupCalendar opens owners' picks while the startup draft runs, from its opening until it closes,

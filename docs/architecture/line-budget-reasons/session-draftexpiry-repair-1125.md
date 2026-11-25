@@ -1,0 +1,1 @@
+Server expiry policies reuse the existing ledger selection and automatic ranking paths. Added owed-slot resolution and close finalization plus policy regression tests. Catalogue remains one responsibility; its wait choice adds no new module.

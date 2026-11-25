@@ -42,6 +42,7 @@ const (
 	HowExpired      = "expired"
 	HowSkipped      = "skipped"
 	HowOverrode     = "overrode"
+	HowUnmade       = "Not made before the draft closed"
 )
 
 // PickRef names one pick of a draft: its round, the franchise it began with and, for an extra pick a person
@@ -71,6 +72,8 @@ type Act struct {
 // timeline is the clock of a draft being replayed. remaining is only read while the clock is paused.
 type timeline struct {
 	hold      HoldExpired
+	policy    leaguerules.ExpiryAction
+	closed    bool
 	picks     []Result
 	cursor    int
 	deadline  time.Time
@@ -114,6 +117,9 @@ func (t *timeline) advance(until time.Time) error {
 			if hold {
 				return nil
 			}
+		}
+		if t.policy != leaguerules.SkipPick {
+			return nil
 		}
 		deadline := t.deadline
 		pick := &t.picks[t.cursor]
@@ -175,10 +181,10 @@ func (t *timeline) apply(r leaguerules.DraftRules, a Act) error {
 // Preserve those recorded skips rather than moving an accepted selection to another slot.
 func (t *timeline) advanceForAct(until time.Time, a Act) error {
 	hold := t.hold
-	if hold != nil && a.Kind == Select {
+	i, _ := t.find(a.Pick)
+	if hold != nil && a.Kind == Select && i >= t.cursor {
 		t.hold = func(owner string, deadline time.Time) (bool, error) {
-			pick := t.picks[t.cursor]
-			if pick.Round != a.Pick.Round || pick.Original != a.Pick.Original || pick.Extra != a.Pick.Extra {
+			if t.cursor < i {
 				return false, nil
 			}
 			return hold(owner, deadline)
@@ -190,8 +196,8 @@ func (t *timeline) advanceForAct(until time.Time, a Act) error {
 }
 
 func (t *timeline) choose(r leaguerules.DraftRules, a Act) error {
-	if !t.onClock() {
-		return fmt.Errorf("there is no pick on the clock for this selection")
+	if t.closed {
+		return fmt.Errorf("the draft is closed")
 	}
 	i, err := t.find(a.Pick)
 	if err != nil {
@@ -211,6 +217,9 @@ func (t *timeline) choose(r leaguerules.DraftRules, a Act) error {
 		}
 		t.open(a.At)
 		return nil
+	}
+	if t.canMakeUp(*pick, a) {
+		return t.fill(r, pick, a, HowOwner)
 	}
 	if a.Kind == Assign && pick.Skipped && pick.Player == "" {
 		return t.fill(r, pick, a, HowOverrode)
@@ -257,12 +266,15 @@ func (t *timeline) rookie(player string) error {
 
 // seal skips what is left of the draft at once. Picks already used stay as they are.
 func (t *timeline) seal(at time.Time) {
-	for ; t.cursor < len(t.picks); t.cursor++ {
-		if pick := &t.picks[t.cursor]; !pick.Forfeited && pick.Extra == 0 {
+	t.closed = true
+	for i := range t.picks {
+		pick := &t.picks[i]
+		if pick.Player == "" && !pick.Forfeited && pick.Extra == 0 {
 			closedAt := at
-			pick.Skipped, pick.MadeAt, pick.How = true, &closedAt, HowSkipped
+			pick.Skipped, pick.MadeAt, pick.How = true, &closedAt, HowUnmade
 		}
 	}
+	t.cursor = len(t.picks)
 }
 
 func (t *timeline) skip(a Act) error {
@@ -365,4 +377,8 @@ func (t *timeline) clockAt(r leaguerules.DraftRules, at time.Time) (*Clock, erro
 	}
 	return &Clock{Pick: t.picks[t.cursor].Pick, OpenedAt: t.opened, Deadline: t.deadline, Contract: terms,
 		Paused: t.paused, Remaining: remaining}, nil
+}
+
+func (t *timeline) canMakeUp(pick Result, a Act) bool {
+	return a.Kind == Select && pick.Skipped && pick.How == HowExpired && pick.Owner == a.Owner && !t.paused
 }

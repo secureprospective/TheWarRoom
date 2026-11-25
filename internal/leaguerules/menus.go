@@ -108,6 +108,7 @@ const (
 	LiveDraft            DraftMode       = "live"
 	SkipPick             ExpiryAction    = "skip"
 	AutoPick             ExpiryAction    = "autopick"
+	WaitPick             ExpiryAction    = "wait"
 	WorstStandingsFirst  OrderSource     = "standings"
 	Linear               OrderPattern    = "linear"
 	Snake                OrderPattern    = "snake"

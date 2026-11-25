@@ -36,6 +36,17 @@ func (i DraftPickInput) Validate() error {
 // returns the command to record, carrying the slot and the contract fixed now. Every refusal is in words.
 func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts, at time.Time,
 	local *time.Location, standings DraftStandings) (RawCommand, error) {
+	return planDraftPick(in, records, facts, at, local, standings, false)
+}
+
+// PlanDraftPickOnClock plans for the live slot, leaving earlier expired picks owed to the owner.
+func PlanDraftPickOnClock(in DraftPickInput, records []Record, facts nativecheck.Facts, at time.Time,
+	local *time.Location, standings DraftStandings) (RawCommand, error) {
+	return planDraftPick(in, records, facts, at, local, standings, true)
+}
+
+func planDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts, at time.Time,
+	local *time.Location, standings DraftStandings, liveOnly bool) (RawCommand, error) {
 	if err := in.Validate(); err != nil {
 		return RawCommand{}, Refused(err)
 	}
@@ -65,14 +76,20 @@ func PlanDraftPick(in DraftPickInput, records []Record, facts nativecheck.Facts,
 	if err := assets.CheckContracts(in.Franchise); err != nil {
 		return RawCommand{}, Refused(err)
 	}
-	preview, err := rookiedraft.PreviewSelection(basis.rules, basis.draft, in.Franchise, candidateFrom(facts, in),
+	previewSelection := rookiedraft.PreviewSelection
+	if liveOnly {
+		previewSelection = rookiedraft.PreviewLiveSelection
+	}
+	preview, err := previewSelection(basis.rules, basis.draft, in.Franchise, candidateFrom(facts, in),
 		pickBasis(assets, basis, in, facts, local, records, at))
 	if err != nil {
 		return RawCommand{}, Refused(err)
 	}
-	clock := basis.draft.OnClock
-	selection := RawDraftSelection{Franchise: in.Franchise, Player: in.Player, EntrySeason: in.Season,
-		Round: clock.Round, Slot: clock.Slot, Original: clock.Original, Terms: preview.Terms}
+	selection := RawDraftSelection{
+		Franchise: in.Franchise, Player: in.Player, EntrySeason: in.Season,
+		Round: preview.Pick.Round, Slot: preview.Pick.Slot,
+		Original: preview.Pick.Original, Terms: preview.Terms,
+	}
 	return RawCommand{League: in.League, Command: DraftPick, Expected: in.Expected, Request: in.Request,
 		Args: RawArgs{Draft: &RawDraftArgs{Season: in.Season, Startup: in.Startup, Side: key.Side, Pick: &selection}}, Effective: "now",
 		Visibility: "league"}, nil

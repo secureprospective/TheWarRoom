@@ -4,6 +4,7 @@ package rookiedraft
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/domain"
@@ -33,8 +34,10 @@ func ResolveSetup(r leaguerules.DraftRules) (Setup, error) {
 		r.Clock.Value <= 0 || r.Rounds.Value < 1 || r.MaximumPicks.Value < 1 {
 		return Setup{}, fmt.Errorf("set a draft pace, positive pick clock, round count and pick limit")
 	}
-	if r.OnExpire.Value != leaguerules.SkipPick {
-		return Setup{}, fmt.Errorf("automatic player selection is not built yet; choose skip on expiry")
+	if !slices.Contains([]leaguerules.ExpiryAction{
+		leaguerules.SkipPick, leaguerules.AutoPick, leaguerules.WaitPick,
+	}, r.OnExpire.Value) {
+		return Setup{}, fmt.Errorf("choose skip, autopick or wait on expiry")
 	}
 	policy, err := timeoutPolicy(r.Timeouts)
 	if err != nil {
