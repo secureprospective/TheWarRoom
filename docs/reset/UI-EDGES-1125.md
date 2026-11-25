@@ -280,8 +280,8 @@ What has changed since 11-17:
 | Edge | Gap | State | Note |
 |---|---|---|---|
 | E5.1 | **Phone alerts (push)** | None in the code. No web push | "Sleeper-speed scores + alerts" is a must-match before the campaign. On iPhone, push works only for an installed PWA. Size L. Design first |
-| E5.2 | **Chat** (owner↔owner, league board, draft-room chat) | **None.** No command, table, handler or screen. Retired 11-04 (`docs/research/owner-chat-check-1124.md`) | Christopher is discussing chat with Tom now. **Plan a slot but don't design it.** Tom will hand you the decision |
-| E5.3 | Ask is canned | `shell/phoneAsk.ts` answers from data already on the phone | An AI helper door already exists (`twr`/MCP, with token). Connecting Ask to a real helper is a product decision tied to E5.2 |
+| E5.2 | **Chat** (owner↔owner, league board, draft-room chat) | **None.** Never built (the 11-04 retire removed a planned row) | **Ruled 11-25 (`docs/reset/RULINGS-1125.md`):** rehearsal = link out (`league.chatLink`, being built now, not yours to plan); native chat = one store with rooms (league first, then draft room, trade-offer threads, notice replies), designed with the post-Dec 6 phone study; alerts mentions-only, designed with E5.1. Plan the native build after the study |
+| E5.3 | Ask is canned | `shell/phoneAsk.ts` answers from data already on the phone | **Ruled 11-25:** stays canned now; later it connects to the owner's own AI helper (sees and does only what that owner may, confirms before changes). Not before the phone study |
 | E5.4 | **Projections not shown** | Sleeper forecasts are collected and scored by league rules on the Lab (#497). The accuracy report exists (#506) | Run it on week 12 before Dec 3; if it holds up, show forecasts on lineup screens (phone Team, HQ lineup) |
 | E5.5 | Stat corrections: "what changed" for owners | Engine and season test cover corrections; the owner-visible change is **unverified** | Must-match item |
 | E5.6 | Recap share, awards, trophy plates, mini-games | Recap reading exists; the voice and one-tap share do not; awards none; mini-games a catalogue only | Fun layer, no dates. Recommended: Tuesday recap + power-rank arrows into the rehearsal |
@@ -310,7 +310,7 @@ What has changed since 11-17:
 6. **10/12/16-team one-season leagues exist only as settings.** Tom is standing them up on the Lab **now**
    (GATE part 2); treat as in progress, not yours to plan.
 7. History in and out: nothing built (GATE part 4). Spec `docs/specs/history-in-out-1124.md` awaits OK.
-8. No owner chat → E5.2 (in discussion now).
+8. No owner chat → E5.2 (ruled 11-25: link out now, native rooms after the phone study).
 9. Football evidence split (GATE part 3 #3): design written (`docs/specs/football-evidence-split-1124.md`), not built; the 32-team load test reruns after it.
 
 ---
@@ -377,7 +377,6 @@ What has changed since 11-17:
 
 - PR-F (what remains of the solo-owner tools).
 - Claim reordering (are waiver claims reorderable?).
-- Chat (being discussed now).
 - Push alerts (design and iPhone install path).
 - Commissioner self-serve league creation (E1.2): when, and for whom before March, given ruling 4.
 - Which E4.1 commands are helper-only versus wanted on a screen.
