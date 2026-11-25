@@ -1,0 +1,1 @@
+A regression test for a guard no test covered: a planted constant ledger mark passed the whole history package (found 11-24 while speeding up results.read). 63 test lines to protect results and standings from serving a reading taken before a write.

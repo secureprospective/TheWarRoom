@@ -64,6 +64,6 @@ go-prod/internal/tradelens	559
 go-prod/internal/transactions	2046
 go-prod/scripts	56
 go-prod/tools	1772
-go-test	105256
+go-test	105319
 go-testdata	40906
 other	37405
