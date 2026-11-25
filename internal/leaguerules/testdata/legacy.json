@@ -2,6 +2,11 @@
   "LeagueID": "",
   "Season": 0,
   "League": {
+    "ChatLink": {
+      "State": 1,
+      "Value": "",
+      "Citation": "League chat stays outside TheWarRoom"
+    },
     "StartingAssets": {
       "State": 1,
       "Value": "empty",

@@ -287,3 +287,13 @@ describe('LeagueTab', () => {
     expect(css).toMatch(/\.lg5-cr span em \{[^}]*text-transform: uppercase/);
   });
 });
+
+it.each(['https://discord.com/invite/league', ''])('shows league chat only when set: %s', async link => {
+  await show(owner, async () => ({ ...loaded(), chatLink: { value: link } }));
+  const a = host!.querySelector('a[target="_blank"]');
+  if (!link) { expect(a).toBeNull(); return; }
+  expect(a?.getAttribute('href')).toBe(link);
+  expect(a?.getAttribute('rel')).toBe('noopener noreferrer');
+  expect(a?.textContent).toContain('League chat');
+  expect(a?.textContent).toContain('opens outside TheWarRoom');
+});

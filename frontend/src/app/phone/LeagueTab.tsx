@@ -1,3 +1,4 @@
+import { LeagueChat, readChatLink } from '../shell/LeagueChat';
 import { useEffect, useMemo, useState } from 'react';
 import { hostedWorkflow } from '../commissioner/api';
 import { parseHostedRoster } from '../commissioner/hostedReadings';
@@ -18,7 +19,7 @@ export type LeagueView = 'st' | 'mu' | 'sc' | 'ac';
 type Part<T> = { value?: T; error?: string };
 export type LeagueJobs = { open: number; now: number };
 export type LeagueReading = { pulse: Part<NativePulse>; season: Part<PulseSeason>;
-  activity: Part<PulseActivity>; jobs?: Part<LeagueJobs>; status?: Part<LeagueStatus> };
+  activity: Part<PulseActivity>; chatLink?: Part<string>; jobs?: Part<LeagueJobs>; status?: Part<LeagueStatus> };
 /** LeagueStatus is the NFL player status read narrowed to players on this league's rosters. */
 export type LeagueStatus = { read: PlayerStatus; names: Map<string, string> };
 export type LeagueRosterPlayer = { id: string; name: string; position: string };
@@ -35,7 +36,7 @@ export async function readLeague(league: string, mine: string, commissioner: boo
   const pulse = await part(() => readNativePulse(league, mine, port, undefined, true, false));
   const p = pulse.value;
   const through = Math.max(p?.standings?.through ?? 0, (p?.week ?? 1) - 1);
-  const [season, activity, jobs, status] = await Promise.all([
+  const [season, activity, jobs, status, chatLink] = await Promise.all([
     p ? part(() => readPulseSeason(league, p.season, through, port))
       : Promise.resolve({ error: pulse.error }),
     part(() => readPulseActivity(league, port)),
@@ -50,8 +51,9 @@ export async function readLeague(league: string, mine: string, commissioner: boo
       const names = new Map(parseHostedRoster(assets.data).players.map(p => [p.id, p.name]));
       return { read, names };
     }),
+    part(() => readChatLink(league, port)),
   ]);
-  return { pulse, season, activity, status, ...(jobs ? { jobs } : {}) };
+  return { pulse, season, activity, status, chatLink, ...(jobs ? { jobs } : {}) };
 }
 
 /** readTeamRoster lists one franchise's players from the existing native.assets.read. */
@@ -99,6 +101,7 @@ export function LeagueTab({ league, port = hostedWorkflow, read, readWeek, readR
   const pulse = reading.pulse.value;
   const jobs = reading.jobs;
   return <div className="lg5">
+    <LeagueChat link={reading.chatLink?.value} />
     {commissioner && <HQAct className={`lg5-cr${jobs?.value?.now ? ' hot' : ''}`}
       onAction={onControlRoom} label="Control Room">
       <span><b>Control Room</b><em>{jobs?.value ? jobs.value.open

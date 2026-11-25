@@ -75,13 +75,14 @@ func withoutPools(records []Record, rules *leaguerules.RuleSet, reading *Rules) 
 	f8 := func(field string) bool {
 		return field == poolsField || field == sidesField || field == "scoring.rules" ||
 			field == "draft.startupRookies" || field == "schedule.follow" ||
-			field == "lineup.lock" || field == "league.startingAssets" || field == "draft.autopickRanking" || field == "mfl.league"
+			field == "lineup.lock" || field == "league.startingAssets" || field == "draft.autopickRanking" || field == "mfl.league" || field == "league.chatLink"
 	}
 	records[0].Command.Args.Seed = slices.DeleteFunc(slices.Clone(records[0].Command.Args.Seed),
 		func(s SeedValue) bool { return f8(s.Field) })
 	rules.League.Pools, rules.League.Sides = leaguerules.Value[leaguerules.PlayerPools]{}, leaguerules.Value[map[string]string]{}
 	rules.Scoring.Rules = leaguerules.Value[map[leaguerules.StatID][]leaguerules.RangeRule]{}
 	rules.Draft.StartupRookies = leaguerules.Value[bool]{}
+	rules.League.ChatLink = leaguerules.Value[string]{}
 	rules.MFL = leaguerules.MFLRules{}
 	rules.Draft.AutoPickRanking = leaguerules.Value[leaguerules.AutoPickRanking]{}
 	rules.Schedule.Follow = leaguerules.Value[leaguerules.ScheduleFollow]{}
