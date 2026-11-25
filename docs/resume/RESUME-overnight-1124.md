@@ -1,3 +1,8 @@
+> **CLOSED 2026-11-25 02:45 CT.** Morning report: `~/fleet/runs/overnight-gaps-1124/REPORT.md` (Needs Christopher on top).
+> Merged overnight: #508 #510-#522. Lab v93 = 5068968af. GATE 3 32-team load PASSES (0 errors, 436 MB, p95 193 ms vs 200; run 4 in load/REPORT.md).
+> Open: Needs Christopher list in REPORT.md (CT 260 4 CPUs, canary token, PR-F ruling, 3 specs, owner chat, MFL import screen, clock-expiry auto-pick, line-budget merge idea).
+> Next build after his rulings: PR-F; GATE 4 history in/out; GATE 2 10/12/16-team leagues (week of Dec 7). Evidence split is not needed for memory.
+
 # RESUME — overnight-gaps-1124 (Tom head brain), written ~7:50 PM CT 11-24
 First action after compaction: `~/fleet/bin/run-watch.sh status ~/fleet/runs/overnight-gaps-1124`, then re-arm
 `run-watch.sh wait ~/fleet/runs/overnight-gaps-1124 50` (background) if `pgrep -f "run-watch.sh wait"` is empty.
