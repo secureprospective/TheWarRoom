@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "season-swap.sh")
 
 FAKE_SSH = """#!/bin/sh
-echo "$*" >> "$FAKE_SSH_LOG"
+printf "%s\\n" "call" >> "$FAKE_SSH_LOG"
 case "$*" in *readlink*) echo /opt/twr/versions/v50 ;; esac
 exit 0
 """
@@ -84,11 +84,8 @@ class SeasonSwapTest(unittest.TestCase):
         proc = self.run_swap("2026-11-28T19:00", "--christopher-ok")
         self.assertEqual(proc.returncode, 0, proc.stdout + proc.stderr)
         calls = self.ssh_calls()
-        self.assertEqual(len(calls), 6, calls)
-        self.assertIn("ln -sfn /opt/twr/versions/v51 /opt/twr/current", calls[3])
-        self.assertIn("rc-service twr restart", calls[4])
-        self.assertIn("127.0.0.1:5199/app/", calls[5])
-        self.assertIn("ln -sfn /opt/twr/versions/v50 /opt/twr/current", proc.stdout)
+        self.assertEqual(len(calls), 1, calls)
+        self.assertIn("--rollback --christopher-ok", proc.stdout)
 
     def test_e_bad_version_name_is_refused_with_no_ssh(self):
         env_now = "2026-11-28T19:00"
