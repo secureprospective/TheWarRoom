@@ -10,7 +10,7 @@ and runs the phone Live tab reads (`nfl.games.read`, `nfl.game.read`,
 app's cadence plus bursts when a score changes.
 
 Credentials are stored in `/dev/shm` (`0600`) and deleted when the run ends. Logs hold
-only franchise IDs, device indices, HTTP status codes, and timings.
+only franchise IDs, device indices, HTTP status codes, and timings. Total request time minus `server_ms` is network and tunnel time.
 
 ## Running against the lab (after v51, outside game hours)
 

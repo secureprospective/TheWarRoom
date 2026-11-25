@@ -5,8 +5,10 @@ import (
 	"crypto/rand"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 const (
@@ -145,11 +147,17 @@ func (h Hosted) withErrorCodes(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		meta := &failureMeta{}
 		ctx := context.WithValue(r.Context(), failureMetaKey{}, meta)
+		now := h.now
+		if now == nil {
+			now = time.Now
+		}
 		wrapped := &errorCodeWriter{
 			ResponseWriter: w,
 			req:            r.WithContext(ctx),
 			meta:           meta,
 			logger:         logger,
+			start:          now(),
+			now:            now,
 		}
 		next.ServeHTTP(wrapped, wrapped.req)
 	})
@@ -160,6 +168,8 @@ type errorCodeWriter struct {
 	req    *http.Request
 	meta   *failureMeta
 	logger *slog.Logger
+	start  time.Time
+	now    func() time.Time
 	wrote  bool
 }
 
@@ -170,6 +180,19 @@ func (w *errorCodeWriter) Unwrap() http.ResponseWriter {
 func (w *errorCodeWriter) WriteHeader(status int) {
 	if !w.wrote {
 		w.wrote = true
+		elapsed := w.now().Sub(w.start)
+		w.Header().Set("Server-Timing", serverTimingValue(elapsed))
+		// Only league commands: sign-in is slow on purpose (password hashing) and would flood the log.
+		if command, league, _ := w.meta.snapshot(); command != "" && elapsed >= 250*time.Millisecond {
+			w.logger.WarnContext(
+				w.req.Context(), "slow request",
+				slog.Int("status", status),
+				slog.String("route", safeErrorRoute(w.req.URL.Path)),
+				slog.String("command", command),
+				slog.String("league", league),
+				slog.Float64("ms", float64(elapsed)/float64(time.Millisecond)),
+			)
+		}
 		if status >= http.StatusBadRequest {
 			code := w.Header().Get(ErrorCodeHeader)
 			if !ValidErrorCode(code) {
@@ -200,6 +223,10 @@ func (w *errorCodeWriter) Write(p []byte) (int, error) {
 		return n, err //nolint:wrapcheck // Preserve http.ResponseWriter write error.
 	}
 	return n, nil
+}
+
+func serverTimingValue(d time.Duration) string {
+	return "app;dur=" + strconv.FormatFloat(float64(d)/float64(time.Millisecond), 'f', 1, 64)
 }
 
 func safeErrorRoute(path string) string {
