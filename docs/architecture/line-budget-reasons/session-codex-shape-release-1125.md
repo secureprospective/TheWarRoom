@@ -1,0 +1,1 @@
+RULINGS-1122 item 9 calls for test leagues with agent-played owners. The offline regression checks that finishing a shape-league run revokes its helpers, preserves the last commissioner, and leaves the Lab service running.
