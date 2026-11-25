@@ -83,15 +83,28 @@ context."
 conflicts), waits for CI and squash-merges if all checks pass. **First thing to do: `cat ~/fleet/runs/astra-exec-1125/merge-chain.log`.**
 Any line saying "NOT GREEN" or "FAILED" is yours to fix. Then re-run the chain with the remaining `pr:worktree` pairs.
 
-## 5. Running when this was written
+## 5. Running when this was written (final update, 11-25 ~12:40 UTC)
 
-| Lane | What | On done |
+No GPT lane is running. Two background merge jobs are:
+
+| Job | What | Check |
 |---|---|---|
-| `astra8b` (Sol) | 8A: can an owner tell what changed after a stat correction? Isolated local run; no code in tree (`capture.patch`) | Read RESULT.md. If data exists but no screen shows it, brief the follow-on display PR **for after Dec 6** |
-| `draftexpirea` (Sol, base `session/pulse-draftpause`) | **Server half** of Christopher's draft-expiry ruling (§6.2): `autopick`, `skip` keeping an owed pick, `wait`. Told not to run git; cap 600 lines | Review the diff and plant a break (e.g. make the owed pick lose its original slot). Commit, PR, merge when green **before Sun 11-29**. Then launch the **frontend half** (§8 step 4) |
+| `merge-chain.sh` | #526 (merged), then #523, #527, #528 | `cat ~/fleet/runs/astra-exec-1125/merge-chain.log` |
+| `merge-chain2.sh` | After #528: #529 (this handoff), then #530 (draft-expiry server half) | `cat ~/fleet/runs/astra-exec-1125/merge-chain2.log` |
 
-The design for the expiry setting is in `~/fleet/runs/pulse-draftexpire/RESULT.md`. A key point from it: `DueDrafts`
-must not auto-close a draft while owed picks remain.
+The logs say "#N MERGED", "#N NOT GREEN: <checks>" or "remerge FAILED". For anything not merged, open the PR checks,
+fix the failure, push with `remerge.sh <worktree>`, then squash-merge (`~/.local/bin/gh pr merge N --squash`). Merge
+authority covers #523–#530 (§6.1).
+
+Finished 11-25 afternoon:
+- **8A (`astra8b`):** owner correction explanation is **BLOCKED**. After a correction the totals and the player's stats
+  change, but no owner-readable read carries the reason or the previous official figure
+  (`~/fleet/runs/pulse-astra8b/RESULT.md`, `capture.patch`). Per the plan this is a missing capability, not a
+  display PR: write a short spec ("what changed, from what to what, why") for Christopher **after Dec 6**.
+- **Draft-expiry server half: PR #530** (planted break caught). Its design: `~/fleet/runs/pulse-draftexpire/RESULT.md`.
+  **Operator note:** under the default `skip`, a draft with an unmade owed pick **stays open** until the commissioner
+  closes it, and closing finalizes the owed picks as not made. Tell Christopher before Tue 12-1.
+- The frontend half (the "You missed round R pick P. Pick any time." line) is **not started**. See §8 step 4.
 
 ## 6. Christopher's decisions — do not reopen
 
@@ -132,7 +145,7 @@ must not auto-close a draft while owed picks remain.
 1. Read `merge-chain.log`. Fix anything that isn't merged, and re-run `merge-chain.sh` for the rest. Confirm the Lab
    picked up the new main: `~/fleet/runs/twr-lab-autorelease/state`, and the Lab version on the health page.
 2. `run-watch.sh status ~/fleet/runs/astra-exec-1125`; re-arm `wait`.
-3. On `draftexpirea` done: review it, plant a break, commit with `git commit -F`, PR and merge when green.
+3. Confirm #530 merged (merge-chain2.log). Then check the Lab got it before Sun 11-29.
 4. Launch the frontend half: brief `sol-draftexpire-b` (base main after merge). The draft room shows "You missed round R
    pick P. Pick any time." on desktop and phone (shared component), and the late pick uses the existing `draft.pick`.
    Include vitest; the line rules (`controls.test.ts`: no raw `<a>`/`<button>` outside Act/HQAct, lines ≤110 chars); and
