@@ -19,3 +19,4 @@ Dormant (history / reference; current work is in `RESUME-build-plan.md`):
   debloat rulings, cut counts & follow-ups.
 - **server-lab** ([RESUME-server-lab.md](RESUME-server-lab.md), DORMANT since 11-09) — Lab server
   load testing, cache tier, tunnel & backup status.
+- `RESUME-edges-1125.md` — 11-25: UI edges brief for Astra, GATE 2 shape leagues on the Lab, chat link-out; Astra plan review next.
