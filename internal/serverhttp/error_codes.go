@@ -182,8 +182,8 @@ func (w *errorCodeWriter) WriteHeader(status int) {
 		w.wrote = true
 		elapsed := w.now().Sub(w.start)
 		w.Header().Set("Server-Timing", serverTimingValue(elapsed))
-		if elapsed >= 250*time.Millisecond {
-			command, league, _ := w.meta.snapshot()
+		// Only league commands: sign-in is slow on purpose (password hashing) and would flood the log.
+		if command, league, _ := w.meta.snapshot(); command != "" && elapsed >= 250*time.Millisecond {
 			w.logger.WarnContext(
 				w.req.Context(), "slow request",
 				slog.Int("status", status),
