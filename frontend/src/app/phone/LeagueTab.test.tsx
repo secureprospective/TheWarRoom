@@ -290,10 +290,11 @@ describe('LeagueTab', () => {
 
 it.each(['https://discord.com/invite/league', ''])('shows league chat only when set: %s', async link => {
   await show(owner, async () => ({ ...loaded(), chatLink: { value: link } }));
-  const a = host!.querySelector('a[target="_blank"]');
-  if (!link) { expect(a).toBeNull(); return; }
-  expect(a?.getAttribute('href')).toBe(link);
-  expect(a?.getAttribute('rel')).toBe('noopener noreferrer');
-  expect(a?.textContent).toContain('League chat');
-  expect(a?.textContent).toContain('opens outside TheWarRoom');
+  const chat = [...host!.querySelectorAll('button')].find(b => b.textContent?.includes('League chat'));
+  if (!link) { expect(chat).toBeUndefined(); return; }
+  expect(chat?.textContent).toContain('opens outside TheWarRoom');
+  const open = vi.spyOn(window, 'open').mockReturnValue(null);
+  await act(async () => { chat!.click(); });
+  expect(open).toHaveBeenCalledWith(link, '_blank', 'noopener,noreferrer');
+  open.mockRestore();
 });

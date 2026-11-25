@@ -19,7 +19,8 @@ export type LeagueView = 'st' | 'mu' | 'sc' | 'ac';
 type Part<T> = { value?: T; error?: string };
 export type LeagueJobs = { open: number; now: number };
 export type LeagueReading = { pulse: Part<NativePulse>; season: Part<PulseSeason>;
-  activity: Part<PulseActivity>; chatLink?: Part<string>; jobs?: Part<LeagueJobs>; status?: Part<LeagueStatus> };
+  activity: Part<PulseActivity>; chatLink?: Part<string>; jobs?: Part<LeagueJobs>;
+  status?: Part<LeagueStatus> };
 /** LeagueStatus is the NFL player status read narrowed to players on this league's rosters. */
 export type LeagueStatus = { read: PlayerStatus; names: Map<string, string> };
 export type LeagueRosterPlayer = { id: string; name: string; position: string };
