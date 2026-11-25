@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
+	catalog "github.com/secureprospective/TheWarRoom/internal/commandcatalog"
 	"github.com/secureprospective/TheWarRoom/internal/commissioner"
 )
 
@@ -60,7 +61,7 @@ func TestWorkflowModesAndUnknownCommand(t *testing.T) {
 	if err := (RawWorkflow{Command: "unregistered", Version: "1", Mode: "execute"}).Validate(); err == nil || err.Error() != "this league action is not available here" {
 		t.Fatal("unknown command admitted")
 	}
-	if _, err := runWorkflow(t.Context(), nil, RawWorkflow{Command: "unregistered", Version: "1"}); err == nil {
+	if _, err := (Hosted{workflows: catalog.NewWorkflowCatalog()}).runWorkflow(t.Context(), nil, RawWorkflow{Command: "unregistered", Version: "1"}); err == nil {
 		t.Fatal("dispatch bypassed validation")
 	}
 }

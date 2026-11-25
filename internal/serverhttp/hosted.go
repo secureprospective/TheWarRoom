@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/netip"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/secureprospective/TheWarRoom/internal/accounts"
@@ -88,11 +89,15 @@ type Hosted struct {
 	// PublicHost is the one configured external HTTPS hostname allowed to use the browser app.
 	PublicHost string
 	// ErrorLog records one structured slog line per server error code; nil uses slog.Default().
-	ErrorLog *slog.Logger
-	appAuth  *browserSessionAuth
+	ErrorLog    *slog.Logger
+	appAuth     *browserSessionAuth
+	workflows   catalog.WorkflowCatalog
+	gzipWriters *sync.Pool
 }
 
 func (h Hosted) Handler() http.Handler {
+	h.workflows = catalog.NewWorkflowCatalog()
+	h.gzipWriters = &sync.Pool{}
 	// Tests may omit the publisher; production supplies the shared instance.
 	if h.Publisher == nil {
 		h.Publisher = NewPublisher()
@@ -237,11 +242,11 @@ type RawNativeRequest struct {
 }
 
 func (r RawNativeRequest) Validate() error {
-	_, err := r.validatedLeague()
+	_, err := r.validatedLeague(catalog.WorkflowCatalog{})
 	return err
 }
 
-func (r RawNativeRequest) validatedLeague() (string, error) {
+func (r RawNativeRequest) validatedLeague(workflows catalog.WorkflowCatalog) (string, error) {
 	if r.Protocol != 1 {
 		return "", fmt.Errorf("unsupported protocol")
 	}
@@ -250,7 +255,7 @@ func (r RawNativeRequest) validatedLeague() (string, error) {
 			return "", fmt.Errorf("send only a workflow")
 		}
 		//nolint:wrapcheck // Preserve the catalog-owned workflow refusal text.
-		return r.Workflow.League()
+		return workflows.League(*r.Workflow)
 	}
 	if r.Pick != nil {
 		return r.Pick.League, r.validatePick()
@@ -287,7 +292,7 @@ func (h Hosted) native(w http.ResponseWriter, r *http.Request) {
 	}
 	rawSession, account, authenticationErr := auth.raw, auth.account, auth.agent
 	var raw RawNativeRequest
-	league, ok := decodeNative(w, r, &raw)
+	league, ok := h.decodeNative(w, r, &raw)
 	if !ok {
 		http.Error(w, "invalid native request", http.StatusBadRequest)
 		return
@@ -424,7 +429,7 @@ func (h Hosted) admitLeague(ctx context.Context, w http.ResponseWriter, league s
 
 // decodeNative logs why a request was refused (never its body): an old app copy sending a shape
 // this server no longer reads otherwise shows only "400, no command" in the error log.
-func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) (string, bool) {
+func (h Hosted) decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest) (string, bool) {
 	if r.Method != http.MethodPost {
 		return "", false
 	}
@@ -432,7 +437,7 @@ func decodeNative(w http.ResponseWriter, r *http.Request, raw *RawNativeRequest)
 		log.Printf("native request refused: %v", err)
 		return "", false
 	}
-	league, err := raw.validatedLeague()
+	league, err := raw.validatedLeague(h.workflows)
 	if err != nil {
 		log.Printf("native request refused: %v", err)
 		return "", false
@@ -576,7 +581,7 @@ func (h Hosted) cachedReading(w http.ResponseWriter, r *http.Request, service *l
 		http.Error(w, "native read refused", http.StatusForbidden)
 		return
 	}
-	writeReading(w, r, body)
+	h.writeReading(w, r, body)
 }
 
 type accountAdmission struct {
@@ -751,13 +756,13 @@ func writeHosted[T hostedBody](w http.ResponseWriter, body T) {
 }
 
 // writeHostedReading is writeHosted for league readings, which may be compressed (writeReading).
-func writeHostedReading[T commissioner.People | commissioner.Ledger | WorkflowResponse](w http.ResponseWriter, r *http.Request, body T) {
+func (h Hosted) writeHostedReading(w http.ResponseWriter, r *http.Request, body WorkflowResponse) {
 	encoded, err := json.Marshal(body)
 	if err != nil {
 		http.Error(w, "response unavailable", http.StatusInternalServerError)
 		return
 	}
-	writeReading(w, r, encoded)
+	h.writeReading(w, r, encoded)
 }
 
 // ServeHosted never registers fixture routes or manufactures a principal.

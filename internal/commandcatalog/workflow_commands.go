@@ -18,6 +18,23 @@ type WorkflowCommand struct {
 	RunAccount func(context.Context, accounts.PreferenceRepository, string, RawWorkflow) (json.RawMessage, error)
 }
 
+// WorkflowCatalog holds the command definitions for a hosted handler. Its entries are immutable.
+type WorkflowCatalog struct {
+	commands map[string]WorkflowCommand
+}
+
+func NewWorkflowCatalog() WorkflowCatalog {
+	return WorkflowCatalog{commands: WorkflowCommands()}
+}
+
+func (c WorkflowCatalog) lookup(id string) (WorkflowCommand, bool) {
+	if c.commands == nil {
+		c = NewWorkflowCatalog()
+	}
+	command, ok := c.commands[id]
+	return command, ok
+}
+
 // Membership is executable: the same entry validates and runs a workflow. The changes are exactly
 // what an agent token can carry (accounts.DelegableCommand) less the desktop-only held-data seed; the service keeps each command's gates.
 // FUTURE-SEAM(commands): new actions (moments, invites, chat) arrive as commissioner definitions and
