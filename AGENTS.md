@@ -6,7 +6,7 @@
 
 - **Project name:** TheWarRoom
 - **Primary language(s):** Go 1.26 (backend, scoring engine), TypeScript + React (frontend)
-- **Public exposure:** Preproduction hosted league server (PWA, desktop, CLI/MCP); real owners join after the client/server plan's gates close
+- **Public exposure:** Preproduction hosted league server (PWA, CLI/MCP); real owners join after the client/server plan's gates close
 - **Standards version:** christopher-coding-standards Go overlay (Phase 2)
 - **Environments:** Dev, Lab and Season server. Rules: `CLAUDE.md` → "Environments" (not copied here).
 
@@ -16,7 +16,7 @@
 - **`docs/agent-codex.md`** is reference only. Where it disagrees with the two above, they win.
 - **`CLAUDE.md` → Hard Constraints** — the never-route-around rules. Locked decisions are not reopened silently; flag conflicts to Christopher.
 - **`North_Star.md`** — purpose and scope: AI and CLI first, PWA-centric, one build for every league, small on purpose.
-- **`docs/architecture/desktop-modes.md`** — what the thin (hosted) desktop and the legacy local desktop each do today. Read it and run its checks before planning desktop, server or phone work; never assume which mode is meant.
+- **`docs/architecture/system-narrative.md`** — current hosted architecture and historical background.
 - **`docs/reset/BUILD-PLAN.md`** — the live plan. Current state: `README.md` -> `docs/resume/`.
 - **`docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`** — history / reference, not governing.
   `docs/build-handoffs/Hardening_Plan_2026-10.md` is the earlier plan; its Method section still applies.
@@ -32,7 +32,7 @@
 
 ## Security mandates
 
-- All external input (MFL API responses, CSV ingest, IPC payloads) decoded into a `Raw*` type and checked by its hand-written `Validate()` before business logic. No ad-hoc parsing, no `interface{}`/`any` escapes (`ifaceguard` enforces).
+- All external input (MFL API responses, CSV ingest, HTTP payloads) decoded into a `Raw*` type and checked by its hand-written `Validate()` before business logic. No ad-hoc parsing, no `interface{}`/`any` escapes (`ifaceguard` enforces).
 - Parameterized SQL only. No string concatenation into queries (`gosec` enforces). Raw `database/sql` is confined to `internal/db` and `internal/store` (`depguard` enforces).
 - No hardcoded secrets, tokens, or hosts. The MFL host is discovered at runtime, never hardcoded.
 - Errors wrapped with context (`%w`), never silently dropped (`errcheck` + `wrapcheck`).
@@ -57,7 +57,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 - **Format:** `make fmt`
 - **Test:** `make test` (`go test -race ./...`)
 - **Type check (frontend):** `cd frontend && pnpm tsc --noEmit`
-- **Build:** `wails build` (desktop binary) / `go build ./...` (engine-only)
+- **Build:** `make build` (hosted server and CLI) / `go build ./...` (all Go packages)
 
 ## Commit and PR conventions
 
@@ -66,7 +66,7 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 ## What not to do
 
-- Do not edit `.git/`, `node_modules/`, `frontend/dist/`, `build/bin/`, or `frontend/wailsjs/` (generated bindings — regenerate with `wails generate module`).
+- Do not edit `.git/`, `node_modules/`, `frontend/dist/`, or `build/bin/`.
 - Do not pin third-party CI actions or pre-commit hooks to mutable tags. Pin to commit SHAs (the trivy-action lesson).
 - Do not introduce a new top-level directory or `internal/` package without updating `SYSTEM_MAP.md` and adding its row to `docs/architecture/placement.tsv` (`make lint` checks).
 - Do not add a package-level `var`. The only sanctioned globals: sentinel errors (`var ErrFoo = errors.New(...)` with `//nolint:gochecknoglobals` + explanation — `nolintlint` requires it) and `//go:embed` vars (auto-exempt, no nolint). Everything else is the failure mode the linter exists to stop. `nolintlint` rejects any unused or unexplained `//nolint`.
@@ -76,7 +76,6 @@ If a locked decision creates a constraint that feels wrong, **flag it to Christo
 
 - `SYSTEM_MAP.md` — the feature directory: where each feature lives and where new code goes. Check before writing.
 - Product terms: GLOSSARY.md. Decisions: docs/adr/.
-- `docs/architecture/system-narrative.md` — what exists at length: layers, IPC, data, services.
 - `docs/reset/BUILD-PLAN.md` — the live plan; `README.md` -> `docs/resume/` — latest state.
 - `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md` — history / reference, not governing.
 - `docs/` — engine spec, rubrics, data layer, UI, backend architecture.

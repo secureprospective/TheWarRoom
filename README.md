@@ -5,8 +5,7 @@ stock platforms and fragile spreadsheets. Your league, every roster, every contr
 cap dollar, and every rule live in one ledger exact to the penny.
 
 TheWarRoom is AI-first and CLI-first: every move is a typed command in one catalogue, and the
-phone app, browser PWA, desktop window, and MCP server all run through the same rules and the
-same server-owned clock.
+browser PWA (on phones and computers), CLI, and MCP all use the same rules and server-owned clock.
 
 See the full feature tour, architecture diagrams, 32-team default scoring study, and
 downloadable browser mocks in [docs/product-tour.md](docs/product-tour.md).
@@ -78,7 +77,7 @@ Task numbers (T###) are on the one task list, on Hermes: `/home/hermes/work/comm
 
 ## How to run it
 
-Toolchain environment (Go 1.26.11, Node/pnpm, Wails v2 CLI matching `go.mod`):
+Toolchain environment (Go 1.26.11 and Node/pnpm):
 
 ```sh
 export PATH=/usr/local/go/bin:$HOME/go/bin:$HOME/.local/bin:$PATH GOTOOLCHAIN=go1.26.11
@@ -92,7 +91,7 @@ Setup, checks, and headless startup probe (always pass `VERSION=dev COMMIT=<ring
 make setup                                 # once per clone: commit and push hooks
 make lint                                  # ifaceguard, filelen, bloat, golangci-lint
 make test                                  # go test -race ./...
-timeout 600 nice -n 10 make verify         # lint, race tests, vuln/bindings, frontend
+timeout 600 nice -n 10 make verify         # lint, race tests, vulnerability checks, frontend
 go build -o /tmp/twr . && /tmp/twr -probe  # headless probe (uses thewarroom-dev.db)
 ```
 
