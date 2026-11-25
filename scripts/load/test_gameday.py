@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
-"""Unit tests for scripts/load/gameday.py connection timing."""
+"""Offline tests for game-day load coverage and connection timing."""
 import http.client
 import http.server
+import io
 import json
 import os
+import sys
 import tempfile
 import threading
 import time
 import types
 import unittest
+from contextlib import redirect_stdout
+from unittest.mock import Mock, patch
 
 import gameday
 
@@ -128,6 +132,98 @@ class TestConnectTiming(unittest.TestCase):
         self.assertIn("connect_ms", records[0])
         self.assertGreater(records[0]["connect_ms"], 0.0)
         self.assertNotIn("connect_ms", records[1])
+
+
+class TestLoadCoverage(unittest.TestCase):
+    def _run_main(self, teams, devices_per_team, state):
+        runner = Mock()
+        runner.summary_line.return_value = "PASS: load completed"
+        output = io.StringIO()
+        args = [
+            "gameday.py",
+            "--join-file",
+            "unused",
+            "--teams",
+            str(teams),
+            "--devices-per-team",
+            str(devices_per_team),
+            "--state-file",
+            "/dev/shm/twr-gameday-test.json",
+        ]
+        with (
+            patch.object(sys, "argv", args),
+            patch.object(gameday, "make_ssl_context", return_value=None),
+            patch.object(gameday, "onboard", return_value=state),
+            patch.object(gameday, "LoadRunner", return_value=runner) as load_runner,
+            patch.object(gameday.os.path, "exists", return_value=True),
+            patch.object(gameday.os, "remove") as remove,
+            redirect_stdout(output),
+        ):
+            with self.assertRaises(SystemExit) as exit_error:
+                gameday.main()
+        remove.assert_called_once_with("/dev/shm/twr-gameday-test.json")
+        return exit_error.exception.code, output.getvalue(), runner, load_runner
+
+    def test_main_rejects_fewer_owners_before_starting_workers(self):
+        state = {
+            "league": "L",
+            "owners": [{"franchise": "f1", "bearers": ["secret-bearer"]}],
+        }
+        code, output, runner, load_runner = self._run_main(2, 1, state)
+
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL: owners actual=1 expected=2", output)
+        self.assertNotIn("secret-bearer", output)
+        load_runner.assert_not_called()
+        runner.run.assert_not_called()
+
+    def test_main_rejects_too_few_devices_per_team_before_workers(self):
+        state = {
+            "league": "L",
+            "owners": [
+                {"franchise": "f1", "bearers": ["secret-bearer-1", "secret-bearer-2"]},
+                {"franchise": "f2", "bearers": ["secret-bearer-3"]},
+            ],
+        }
+        code, output, runner, load_runner = self._run_main(2, 2, state)
+
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL: team=2 devices actual=1 expected=2", output)
+        self.assertNotIn("secret-bearer", output)
+        load_runner.assert_not_called()
+        runner.run.assert_not_called()
+
+    def test_main_runs_when_explicit_smaller_load_has_complete_coverage(self):
+        state = {
+            "league": "L",
+            "owners": [{"franchise": "f1", "bearers": ["secret-bearer"]}],
+        }
+        code, output, runner, load_runner = self._run_main(1, 1, state)
+
+        self.assertEqual(code, 0)
+        self.assertIn("PASS: load completed", output)
+        load_runner.assert_called_once()
+        runner.run.assert_called_once()
+
+    def test_onboard_rejects_short_seat_list_before_claims(self):
+        client = Mock()
+        franchises = {"franchises": [{"id": "f1", "taken": False}]}
+        with (
+            patch.object(gameday, "parse_join_file", return_value=("L", "code")),
+            patch.object(gameday, "Client", return_value=client),
+            patch.object(
+                gameday,
+                "auth_post",
+                return_value=(200, json.dumps(franchises).encode(), 1.0),
+            ) as auth_post,
+        ):
+            with self.assertRaisesRegex(
+                gameday.CoverageError, "available owners actual=1 expected=2"
+            ):
+                gameday.onboard("https://example.invalid", None, "unused", "unused", 2, 1, False)
+
+        auth_post.assert_called_once()
+        client.close.assert_called_once()
 
 
 if __name__ == "__main__":
