@@ -144,25 +144,25 @@ func (n *nativeSources) PlayerWeekStats(ctx context.Context, scope source.RawSta
 
 // NativeResults scores one week of the published schedule.
 func (s *Store) NativeResults(ctx context.Context, league string, season, week int) (commissioner.NativeResults, error) {
-	mark, err := s.recordsMarkFor(ctx, league)
-	if err != nil {
-		return commissioner.NativeResults{}, err
-	}
-	src := s.nativeSources(league, season)
-	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d|%d", league, season, week)
-	starters := league + "|" + mark + "|" + src.weekKey(season, week) + fmt.Sprintf("|%d|%d", season, week)
-	return shareReading(ctx, &s.flights, "NativeResults", args,
-		func(ctx context.Context) (commissioner.NativeResults, error) {
-			return s.readNativeResults(ctx, league, season, week, src, starters, mark)
-		})
-}
-
-func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources,
-	startersKey, mark string) (commissioner.NativeResults, error) {
+	// The ledger is read once, as in NativeStandings: its mark names the flight, the reading folds these
+	// records, and the score revision checks them as the league's own entries (nativeSources.canon).
 	records, err := s.nativeRecords(ctx, league)
 	if err != nil {
 		return commissioner.NativeResults{}, err
 	}
+	mark := recordsMark(records)
+	src := s.nativeSources(league, season)
+	src.canon = records
+	args := src.liveKey() + "|" + mark + "|" + fmt.Sprintf("%s|%d|%d", league, season, week)
+	starters := league + "|" + mark + "|" + src.weekKey(season, week) + fmt.Sprintf("|%d|%d", season, week)
+	return shareReading(ctx, &s.flights, "NativeResults", args,
+		func(ctx context.Context) (commissioner.NativeResults, error) {
+			return s.readNativeResults(ctx, league, season, week, src, records, starters, mark)
+		})
+}
+
+func (s *Store) readNativeResults(ctx context.Context, league string, season, week int, src *nativeSources,
+	records []commissioner.Record, startersKey, mark string) (commissioner.NativeResults, error) {
 	read := func() (commissioner.NativeResults, error) {
 		out, err := commissioner.NativeResultsReading(ctx, league, records, src, season, week, src.now)
 		if err != nil {
