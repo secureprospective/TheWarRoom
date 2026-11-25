@@ -9,15 +9,11 @@ const initial: NativeView = { server: 'https://league.example', league: '', mess
   confirmation: '', authGeneration: '0', seats: [] };
 let root: Root | undefined;
 let host: HTMLDivElement | undefined;
-let goDescriptor: PropertyDescriptor | undefined;
 afterEach(async () => {
   if (root) await act(async () => root!.unmount());
   host?.remove(); root = undefined; host = undefined;
   Reflect.deleteProperty(window, 'matchMedia');
   Reflect.deleteProperty(window, 'innerWidth');
-  if (goDescriptor) Object.defineProperty(window, 'go', goDescriptor);
-  else Reflect.deleteProperty(window, 'go');
-  goDescriptor = undefined;
   vi.unstubAllGlobals(); vi.restoreAllMocks();
 });
 function setPhoneViewport(width: number) {
@@ -36,8 +32,6 @@ function setValue(input: HTMLInputElement, value: string) {
 it('lands on the new phone app after sign-in and shows the ported Today tab', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   setPhoneViewport(390);
-  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
-  Reflect.deleteProperty(window, 'go');
   await vi.resetModules();
   const { default: NativeAccount } = await import('./NativeAccount');
   const admission = { protocol: 1, admission: { league: 'native.test', name: 'Test League',
@@ -108,8 +102,6 @@ it('lands on the new phone app after sign-in and shows the ported Today tab', as
 it('says No team of yours in the Team tab when the account holds no franchise', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   setPhoneViewport(390);
-  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
-  Reflect.deleteProperty(window, 'go');
   await vi.resetModules();
   const { default: NativeAccount } = await import('./NativeAccount');
   const admission = { protocol: 1, admission: { league: 'native.test', name: 'Test League',
@@ -152,8 +144,6 @@ it('says No team of yours in the Team tab when the account holds no franchise', 
 it('shows Live for the league the bar has selected, not the first league', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   setPhoneViewport(390);
-  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
-  Reflect.deleteProperty(window, 'go');
   await vi.resetModules();
   vi.doMock('../phone/LiveTab', () => ({ default: ({ league }: { league?: { id: string } }) =>
     <p className="live-league">{league?.id ?? 'none'}</p> }));
@@ -192,8 +182,6 @@ it('shows Live for the league the bar has selected, not the first league', async
 it('signed-out phone sign-in shows one Sign in button and no cookie jargon', async () => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
   setPhoneViewport(390);
-  goDescriptor = Object.getOwnPropertyDescriptor(window, 'go');
-  Reflect.deleteProperty(window, 'go');
   await vi.resetModules();
   const { default: NativeAccount } = await import('./NativeAccount');
   vi.stubGlobal('fetch', vi.fn(async () => new Response('unauthorized', { status: 401 })));

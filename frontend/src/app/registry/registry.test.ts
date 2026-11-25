@@ -1,11 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
-import { renderToPipeableStream, renderToStaticMarkup } from 'react-dom/server';
-import { PassThrough } from 'node:stream';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { createElement } from 'react';
 import { FixtureProvider } from '../data/provider';
 import { createCommands, commands } from '../commands/registry';
 import { renderState } from '../shell/state';
-import { TargetApp } from '../shell/TargetApp';
 import { searchCandidates, rankResults, runResult, indexResult } from '../commands/search';
 import {
   endpoints,
@@ -19,22 +17,6 @@ import type { Endpoint, EndpointId, Placement } from './index';
 import { assertEndpointRoutes } from './routes';
 import { EndpointIndex } from './EndpointIndex';
 import { nodes, nodeKeys } from '../shell/nodes';
-
-function renderSettledApp(): Promise<string> {
-  return new Promise((accept, reject) => {
-    const output = new PassThrough();
-    let html = '';
-    output.on('data', (chunk: Buffer) => {
-      html += chunk.toString();
-    });
-    output.on('end', () => accept(html));
-    output.on('error', reject);
-    const stream = renderToPipeableStream(createElement(TargetApp), {
-      onAllReady: () => stream.pipe(output),
-      onError: reject,
-    });
-  });
-}
 
 const snapshot = await new FixtureProvider().snapshot();
 const executor = createCommands(() => undefined);
@@ -177,45 +159,7 @@ describe('Endpoint map', () => {
       );
     }
   });
-  it('renders every reachable workspace and surface index without a snapshot', async () => {
-    // SSR otherwise reads Zustand's initial server snapshot, not dispatched navigation.
-    const projection = vi
-      .spyOn(commands, 'use')
-      .mockImplementation(() => renderState(commands.read()));
-    try {
-      for (const node of nodeKeys) {
-        for (const w of nodes[node].workspaces) {
-          commands.dispatch('nav.open', { node, workspace: w.slug } as Parameters<
-            (typeof commands.registry)['nav.open']['run']
-          >[0]);
-          const place = `${nodes[node].label} › ${w.label}`;
-          const html = await renderSettledApp();
-          expect(html).toContain(`${place} endpoint index`);
-          // Rendered before the snapshot arrives: a snapshot workspace reads as loading, never unwired.
-          if (['lineup-and-roster', 'contracts-and-cap', 'my-moves', 'trade-desk'].includes(w.slug)) {
-            expect(html).toContain('Reading the league…');
-            expect(html).not.toContain('Not wired');
-          }
-        }
-      }
-      for (const place of surfacePlaces) {
-        commands.dispatch('surface.open', { place });
-        const html = await renderSettledApp();
-        if (place === 'Report drawer') {
-          expect(html).toContain('Report shortcuts');
-          expect(html).toContain(endpointById('C-02').name.replaceAll('"', '&quot;'));
-          expect(html).toContain('League Pulse › Race');
-          expect(html).not.toContain('Report drawer endpoint index');
-        } else if (place === 'Command bar') expect(html).not.toContain('Command bar endpoint index');
-        else expect(html).toContain(`${place} endpoint index`);
-      }
-      expect(() => assertEndpointRoutes(endpoints, searchCandidates(executor))).not.toThrow();
-      commands.dispatch('overlays.close', {});
-      commands.dispatch('nav.open', { node: 'home', workspace: 'overview' });
-    } finally {
-      projection.mockRestore();
-    }
-  });
+
   it('kills an unplaced kept row, unreachable merge and a retired target', () => {
     const mutate = (id: EndpointId, patch: Partial<Endpoint>) =>
       endpoints.map((r) => (r.id === id ? ({ ...r, ...patch } as Endpoint) : r));

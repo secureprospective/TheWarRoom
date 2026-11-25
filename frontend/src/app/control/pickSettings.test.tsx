@@ -13,7 +13,7 @@ const param = (key: string, label: string, value: number) => ({ key, label, valu
 it('shows the two pick settings in League with the ruled label, defaults, range and normal command', () => {
   const dispatch = vi.spyOn(commands, 'canDispatch').mockReturnValue(true);
   vi.spyOn(dataState, 'use').mockReturnValue({ pending: false, error: '', busy: '', result: '', outcomes: {},
-    params: { convertValues: (v: unknown) => v, ok: true, error: '', params: [
+    params: { ok: true, error: '', params: [
       param('power.pick_weight', 'How much a future draft pick counts', .6),
       param('pickvalue.discount', 'Weight of each later draft', .75),
       param('dynasty.discount', 'Do not show player knobs', .75),

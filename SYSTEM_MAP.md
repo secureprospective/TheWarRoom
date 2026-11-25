@@ -87,7 +87,6 @@ features follow the Feature API template in `docs/architecture/feature-extractio
 | Placement (`make placement`) | A root file or internal package is missing, duplicated, stale or unindexed in `docs/architecture/placement.tsv`: correct its feature row and this map; remove obsolete paths. |
 | Decision syntax (`make boundary`, in `make lint`) | New/changed decision-bearing functions in composition/core fail against `docs/architecture/boundary-adapters.tsv`; reviewed adapters are frozen, legacy core policy is explicit debt, and removal requires tightening the allowlist. This is a syntax ratchet, not semantic proof; review is still required. |
 | Import boundaries (`make lint`, `.golangci.yml` depguard) | Non-app internals cannot import `internal/app` or root; services cannot import root or any Wails package. Features can import their own subtree (including test helpers) and the explicit shared set **`internal/app/report` and `internal/app/season`**, plus catalog where declared, not siblings. Core imports no features/Wails; features never import core. Inject dependencies at root or move shared view models to season and wording to report. Declare a newly extracted feature's own subtree in depguard; undeclared features default to shared-only imports. Existing engine, transport and store rules still apply. |
-| Binding freshness (`make bindings-fresh`) | `scripts/check-bindings-fresh.sh` regenerates in a private temporary source copy and diffs all of `frontend/wailsjs`, without overwriting local edits. Run `make bindings`, review and commit the generated changes. Both `make verify` and CI's required verify/checks job run this guard. |
 | Frontend transport (`make frontend-transport`) | Generated feature imports/models and window.go feature access stay in that feature's api.ts. Comms has no legacy main/App access. |
 | Wails version (`scripts/check-wails-version.sh`) | CLI differs from `go.mod` (currently v2.13.0): install the Wails CLI at the module's exact version (the script prints the command). CI installs that version before checking bindings. |
 
@@ -130,7 +129,7 @@ The frozen reference surface and compatible stored-plan names are documented in
 `docs/architecture/mfl-reference-fence.md`.
 
 Move my MFL league: Control Room's desktop `TargetMFLMigration` binding reuses
-`internal/leaguemigration` and its MFL source. Frontend: `app/control/MoveMFL.tsx`
+`internal/leaguemigration` and its MFL source. No import screen since PR-H (11-24): the hosted import runs as the server console command
 and `migration.ts`; flow, transaction boundaries and verification limits:
 `docs/ui/move-mfl.md`.
 

@@ -15,9 +15,20 @@ const view = (generation = '1', league = 'native.test'): NativeView => ({
 });
 const reply = (data: string): TaggedReply<string> => ({ data,
   tags: { serverEpoch: '', league: {}, football: '', live: '', values: '' } });
-const response = (value: unknown) => ({ ok: true, status: 200,
-  headers: new Headers({ 'Content-Type': 'application/json' }), json: async () => value });
-let stream = deferred<ReturnType<typeof response>>();
+const response = ({ league, name, role, franchise, franchiseName, seats }: NativeView) => ({
+  ok: true, status: 200, headers: new Headers({ 'Content-Type': 'application/json' }),
+  json: async () => ({ protocol: 1,
+    admission: { league, name, role, franchise, franchiseName, seats },
+    leagues: [{ id: league, name, role, franchise, franchiseName }],
+  }),
+});
+let stream: ReadableStreamDefaultController<Uint8Array>;
+function streamResponse() {
+  return new Response(new ReadableStream<Uint8Array>({ start: controller => { stream = controller; } }));
+}
+function send(change: unknown) {
+  stream.enqueue(new TextEncoder().encode(`event: invalidate\ndata: ${JSON.stringify(change)}\n\n`));
+}
 let status = deferred<ReturnType<typeof response>>();
 let statuses = 0;
 let seq = 0;
@@ -27,12 +38,14 @@ let createQuery: typeof import('./query').createReadQuery;
 let next = view();
 beforeEach(async () => {
   vi.resetModules();
+  vi.stubGlobal('window', { location: { origin: 'https://league.example' } });
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-  stream = deferred(); status = deferred(); statuses = 0; seq = 0; next = view();
+  status = deferred(); statuses = 0; seq = 0; next = view();
   vi.stubGlobal('indexedDB', new IDBFactory());
   vi.stubGlobal('fetch', vi.fn((url: string, init?: RequestInit) => {
-    if (url === '/desktop/changes') return stream.promise;
-    if (init?.body && JSON.parse(String(init.body)).action === 'status') {
+    if (url === '/v1/native/invalidations') return streamResponse();
+    if (init?.method === 'DELETE') return Promise.resolve(new Response(null, { status: 204 }));
+    if (init?.method === 'GET') {
       statuses++;
       return status.promise;
     }
@@ -57,10 +70,8 @@ function query(read: () => Promise<TaggedReply<string>> = async () => reply('A')
   });
 }
 async function change(state: string, generation = '1', team = false) {
-  const previous = stream;
-  stream = deferred();
-  previous.resolve(response({ seq: ++seq, authGeneration: generation, state, league: 'native.test',
-    topics: team ? [{ kind: 'team', franchise: 'one', version: String(seq) }] : [] }));
+  send({ seq: ++seq, authGeneration: generation, state, league: 'native.test',
+    topics: team ? [{ kind: 'team', franchise: 'one', version: String(seq) }] : [] });
   await vi.advanceTimersByTimeAsync(0);
 }
 it('account B never inherits a rendered private value from A', async () => {
@@ -172,11 +183,10 @@ it('tells screens each signed-in topic batch, never empty resync hints or a sign
   await change('connected', '1', true);
   expect(heard).toEqual([[`team:native.test:${seq}`]]);
   await change('signed-out');
-  await change('connected', '1', true);
   expect(heard).toHaveLength(1);
 });
-it('does not subscribe in local mode', async () => {
-  vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 404 } as Response);
-  expect(await api.nativeStartup()).toBeNull();
-  expect(vi.mocked(fetch).mock.calls.map(call => call[0])).toEqual(['/desktop/native']);
+it('reports a missing cookie session endpoint without opening the change stream', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(new Response('', { status: 404 }));
+  await expect(api.nativeStartup()).rejects.toThrow('League startup unavailable');
+  expect(vi.mocked(fetch).mock.calls.map(call => call[0])).toEqual(['/app/session']);
 });

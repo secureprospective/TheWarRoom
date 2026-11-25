@@ -41,12 +41,6 @@ describe('Shell routes and data', () => {
       expect(parseRoute(hash)).toEqual(homeRoute);
     }
   });
-  it('leaves freshness to the status strip, without a Home summary card', () => {
-    const shell = readFileSync(new URL('./TargetApp.tsx', import.meta.url), 'utf8');
-    expect(shell).toContain('LeaguePicker');
-    expect(shell).not.toContain('Snapshot summary');
-    expect(shell).not.toContain('snapshotSummary');
-  });
 });
 describe('Shell transitions through dispatch only', () => {
   it('remembers workspaces per node and isolates instances', () => {

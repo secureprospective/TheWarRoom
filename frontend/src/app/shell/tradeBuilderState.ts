@@ -1,13 +1,10 @@
 import { parseAssetCell } from '../assets/contract';
 import { create } from 'zustand';
-import { targetTradeBuilder, targetTradeBuilderRead } from '../trades/api';
-import { selectProvider } from '../data/provider';
 import { array, object, text } from '../data/parseValues';
 import { parseReceipt } from '../data/parseEnvelope';
 import { parseReading } from '../contracts/provider';
 import type { Reading } from '../contracts/contract';
 import type { Receipt, TradeAsset } from '../data/contract';
-import { commands } from '../commands/registry';
 
 export type Figure = { label: string; before: string; after: string; change: string };
 export type BuilderPlan = {
@@ -64,28 +61,12 @@ export type BuilderAction = {
 };
 export const useBuilder = create<{ busy: boolean; error: string }>(() => ({ busy: false, error: '' }));
 
-export async function builderAction(action: BuilderAction) {
+export async function builderAction(_action: BuilderAction) {
   const s = useBuilder.getState();
   if (s.busy) return;
   useBuilder.setState({ busy: true, error: '' });
   try {
-    if (selectProvider().kind !== 'live') throw new Error('Trade builder needs the desktop app');
-    if (action.action === 'handoff') {
-      const reading = parseBuilder(await targetTradeBuilderRead(action.mine));
-      if (reading.status !== 'ok') throw new Error(reading.absenceReason ?? 'Trade plan unavailable');
-      const proposal = reading.value?.plans.find(p => p.id === action.id);
-      const post = proposal?.post ?? action.post;
-      if (post) {
-      const { ClipboardSetText } = await import('../../../wailsjs/runtime/runtime');
-      if (!await ClipboardSetText(post)) throw new Error('Clipboard unavailable; nothing opened');
-      }
-    }
-    const response = parseBuilder(await targetTradeBuilder({
-      mine: action.mine, other: '', give: [], get: [], rationale: '',
-      action: action.action, id: action.id,
-    }));
-    if (response.status !== 'ok') throw new Error(response.absenceReason ?? 'Trade builder unavailable');
-    await commands.loadMoves(action.mine);
+    throw new Error('Trade builder needs the desktop app');
   } catch (cause) { useBuilder.setState({ error: String(cause) }); }
   finally { useBuilder.setState({ busy: false }); }
 }

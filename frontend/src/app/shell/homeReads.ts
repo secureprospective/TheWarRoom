@@ -2,7 +2,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { parseHostedBids, parseHostedTrades } from '../commissioner/hostedMarkets';
 import { nativeHQAssets, nativeHQCap } from '../commissioner/hqReading';
 import { parseJobSnoozes, parseJobs, type JobSnoozes, type Jobs } from '../commissioner/jobs';
-import { researchAPI, researchAvailable, type ResearchReader } from '../research/api';
+import { type ResearchReader } from '../research/api';
 import type { Research } from '../research/contract';
 import { parseLedger, type Ledger } from '../commissioner/proxy';
 import type { Snapshot } from '../data/contract';
@@ -45,8 +45,6 @@ export type HomeBrief = {
 export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | 'bids' | 'draft'
   | 'matchup' | 'assets' | 'jobs' | 'jobSnoozes' | 'trades' | 'research';
 
-export const defaultResearch = (): ResearchReader | undefined => researchAvailable() ? researchAPI :
-  undefined;
 export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
 export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchise\'s owner';
 
@@ -54,7 +52,7 @@ export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchis
  *  use. It adds no rule of its own: every value comes from the league's settings through them. */
 export async function readHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void,
-  research: ResearchReader | null | undefined = defaultResearch(), owner = true,
+  research: ResearchReader | null | undefined = undefined, owner = true,
   commissioner = false, accountPreferences = false): Promise<HomeBrief> {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });

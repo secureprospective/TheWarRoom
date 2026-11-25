@@ -1,9 +1,7 @@
-import { draftBindings as bindings } from '../commissioner/api';
 import { createReadQuery } from '../data/query';
 import { newKey } from '../commissioner/forms';
 import { parseReceipt, refusalText, staleWords } from '../commissioner/proxy';
 import { parseDraft, type Draft } from './draft';
-import type * as Bindings from '../commissioner/api';
 
 // Season 0 asks Go for the draft that is next, or with startup the league's startup draft; a time of zero
 // asks it to read at its own now.
@@ -13,13 +11,10 @@ type Choice = { league: string; season: number; franchise: string; player: strin
 type Port = { read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown> };
 
 
-// The generated classes only add a converter to plain data; Wails sends the data as JSON.
-type Arg<F> = F extends (arg: infer A) => unknown ? A : never;
-const asArg = <F>(value: object) => value as unknown as Arg<F>;
-const live: Port = {
-  read: scope => bindings().TargetNativeDraft(asArg<typeof Bindings.TargetNativeDraft>(scope)),
-  pick: choice => bindings().TargetNativeDraftPick(asArg<typeof Bindings.TargetNativeDraftPick>(choice)),
+const unavailable = async (): Promise<never> => {
+  throw new Error('The draft room requires the desktop app.');
 };
+const live: Port = { read: unavailable, pick: unavailable };
 const zeroTime = '0001-01-01T00:00:00Z';
 
 export type PickOutcome = { status: 'idle' } | { status: 'sending' } | { status: 'done'; message: string }
