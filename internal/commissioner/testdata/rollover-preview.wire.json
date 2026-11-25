@@ -1,7 +1,7 @@
 {
   "from": 2026,
   "to": 2027,
-  "beforeDigest": "f8c191d2180e0e62f80b7cd5c2b341395cf77fa9816898e3dac77c5bbff5383b",
+  "beforeDigest": "8af226c6ef373794d71453598a4de221ec8dbcc7831cbfd4534eac9dab281f8e",
   "blocked": false,
   "reasons": [],
   "lines": [
@@ -320,6 +320,11 @@
     "LeagueID": "native.rollover",
     "Season": 2027,
     "League": {
+      "ChatLink": {
+        "State": 1,
+        "Value": "",
+        "Citation": "League chat stays outside TheWarRoom"
+      },
       "StartingAssets": {
         "State": 1,
         "Value": "empty",

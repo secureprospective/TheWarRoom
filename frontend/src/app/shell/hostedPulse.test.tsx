@@ -90,6 +90,8 @@ function fakePort(scheduleMode: 'default' | 'empty' | 'unavailable' = 'default',
       case 'nfl.game.read': data = { league: 'test', game: nflGame,
         at: '2026-11-15T18:00:00Z', stale: false, words: '' }; break;
       case 'projections.read': data = { league: 'test', season: 2026, week: 1, players: [] }; break;
+      case 'native.rules.read': data = { league: 'test', name: 'Test League', revision: 1,
+        rollover: '', sections: [] }; break;
       default: throw new Error(`Unexpected read ${request.command}`);
     }
     return { data, football: '', writable: false, label: 'Server' };
