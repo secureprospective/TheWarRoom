@@ -1,0 +1,1 @@
+About 75 lines: the hosted server reports its own time per request (Server-Timing header, slow-request log over 250 ms) and the load driver records it, so tunnel time and server time can be told apart on the Lab (the 32-team p95 of ~250 ms with the server 84% idle).

@@ -32,6 +32,14 @@ HDR = {
 }
 
 
+def parse_server_timing(value):
+    if not value:
+        return None
+    # Cloudflare may add its own entries (cfL4;desc=...) to the same comma-separated header.
+    match = re.search(r"(?:^|,)\s*app;dur=([0-9]+(?:\.[0-9]+)?)\s*(?:,|$)", value)
+    return float(match.group(1)) if match else None
+
+
 def make_ssl_context(ca_path):
     if ca_path:
         return ssl.create_default_context(cafile=ca_path)
@@ -50,6 +58,7 @@ class Client:
         self.use_gzip = use_gzip
         self.conn = None
         self.last_connect_ms = None
+        self.last_server_ms = None
 
     def _new_conn(self, timeout):
         if self.scheme == "http":
@@ -66,6 +75,7 @@ class Client:
             h["Accept-Encoding"] = "gzip"
         data = json.dumps(body).encode()
         self.last_connect_ms = None
+        self.last_server_ms = None
         for attempt in (0, 1):
             try:
                 if self.conn is None:
@@ -77,6 +87,7 @@ class Client:
                 t0 = time.perf_counter()
                 self.conn.request("POST", path, body=data, headers=h)
                 resp = self.conn.getresponse()
+                self.last_server_ms = parse_server_timing(resp.getheader("Server-Timing"))
                 raw = resp.read()
                 ms = (time.perf_counter() - t0) * 1000.0
                 if resp.getheader("Content-Encoding") == "gzip" and raw:
@@ -266,7 +277,7 @@ class LoadRunner:
                 os.path.join(args.log_dir, "latency.jsonl"), "a", buffering=1
             )
 
-    def record(self, fid, dev, op, status, ms, connect_ms=None):
+    def record(self, fid, dev, op, status, ms, connect_ms=None, server_ms=None):
         with self.lock:
             self.statuses[status] = self.statuses.get(status, 0) + 1
             if status == 200:
@@ -282,11 +293,13 @@ class LoadRunner:
                 }
                 if connect_ms is not None:
                     rec["connect_ms"] = round(connect_ms, 1)
+                rec["server_ms"] = round(server_ms, 1) if server_ms is not None else None
                 self.log_fp.write(json.dumps(rec) + "\n")
 
     def read_op(self, client, bearer, fid, dev, op, args):
         s, raw, ms, _ = wf(client, bearer, op, args)
-        self.record(fid, dev, op, s, ms, connect_ms=client.last_connect_ms)
+        self.record(fid, dev, op, s, ms, connect_ms=client.last_connect_ms,
+                    server_ms=client.last_server_ms)
         if s == 200 and raw:
             try:
                 return json.loads(raw).get("data")
