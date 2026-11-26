@@ -180,7 +180,7 @@ func DueDrafts(records []Record, at time.Time, standings DraftStandings) []Draft
 	keys := []DraftKey{}
 	for _, key := range draftSeasonsKnown(records) {
 		basis, err := readDraft(records, key, at, standings)
-		if err == nil && basis.words == "" && basis.draft.Exhausted && basis.closed == nil {
+		if err == nil && basis.words == "" && basis.draft.Exhausted && !basis.draft.Owed() && basis.closed == nil {
 			keys = append(keys, key)
 		}
 	}
@@ -198,7 +198,8 @@ func NextDraftDeadline(records []Record, at time.Time, standings DraftStandings)
 		}
 		if !basis.started {
 			next = NearerFutureDeadline(next, basis.start, at)
-		} else if clock := basis.draft.OnClock; clock != nil && !clock.Paused {
+		} else if clock := basis.draft.OnClock; clock != nil && !clock.Paused &&
+			basis.rules.Draft.OnExpire.Value != leaguerules.WaitPick {
 			next = NearerFutureDeadline(next, clock.Deadline, at)
 		}
 	}

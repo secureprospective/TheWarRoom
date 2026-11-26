@@ -94,6 +94,10 @@ func readDraft(records []Record, key DraftKey, at time.Time, standings DraftStan
 	if err != nil {
 		return draftBasis{}, err
 	}
+	rules, closed, err := closedDraftRules(records, key, rules)
+	if err != nil {
+		return draftBasis{}, err
+	}
 	basis := draftBasis{key: key, rules: rules, owners: draftOwners(records)}
 	basis.start, err = draftCalendarStart(records, rules, season, at)
 	if err != nil {
@@ -125,9 +129,7 @@ func readDraft(records []Record, key DraftKey, at time.Time, standings DraftStan
 	if err != nil {
 		return basis, fmt.Errorf("replay the rookie draft: %w", err)
 	}
-	if closed, ok := closeRecord(records, key); ok {
-		basis.closed = &closed
-	}
+	basis.closed = closed
 	return basis, nil
 }
 
@@ -223,6 +225,8 @@ func draftStatusWords(basis draftBasis) string {
 	switch {
 	case basis.closed != nil:
 		return "The " + kind + " draft is closed."
+	case basis.draft.Exhausted && basis.draft.Owed():
+		return "All turns have ended; missed picks may still be made until the draft closes."
 	case basis.draft.Exhausted:
 		return "Every pick has been used; the draft has not been closed."
 	case basis.draft.OnClock != nil && basis.draft.OnClock.Paused:

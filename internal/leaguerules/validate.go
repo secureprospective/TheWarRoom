@@ -162,7 +162,7 @@ func menus() map[string][]string {
 		"ExperienceBasis": {"calendar_years", "career_games", "nfl_seasons"}, "WaiverTrigger": {"cut"},
 		"WaiverMethod": {"reverse_standings", "rolling"}, "BidMode": {"blind", "open"},
 		"ReviewRoute": {"dot", "commissioner", "none"}, "BoundarySide": {"start_of_day", "end_of_day"},
-		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick"},
+		"DraftMode": {"slow", "live"}, "ExpiryAction": {"skip", "autopick", "wait"},
 		"OrderSource": {"standings"}, "OrderPattern": {"linear", "snake"},
 		"StartupOrderSource": {"random", "commissioner"}, "AutoPickRanking": {"dynasty", "season"},
 		"Criterion": {"win_percentage", "head_to_head", "division_percentage", "conference_percentage",

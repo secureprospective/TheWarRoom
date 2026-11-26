@@ -34,6 +34,7 @@ func presetLeague(t *testing.T, preset string, teams int) []Record {
 			RecordedAt: noChangeTime().Add(-time.Hour)}}}
 }
 
+// The wait expiry menu changes reading choices, not preset rules or ledger values.
 // The catalog changes where a preset is named, not what a league starts with: each creation, its ledger
 // and preview words and its rules in force hash to what they were before the catalog (20a00b25). The
 // rules reading is pinned too where the citation wording did not change; the 32-Team Default's reading
@@ -46,9 +47,9 @@ func TestPresetCreationIsUnchangedByTheCatalog(t *testing.T) {
 		records, read string
 	}{
 		{PresetDefault32, 0, "328e004b57850db3", ""},
-		{PresetLegacy, 32, "0dab923634344240", "f82e3e034a1231b2"},
-		{PresetLegacy, 12, "0fe8107e4cb66618", "1aef31821cc7eb5e"},
-		{PresetEmpty, 12, "2611477a23c36c30", "b507286dd0572b1f"},
+		{PresetLegacy, 32, "0dab923634344240", "e5801523f1f3ae23"},
+		{PresetLegacy, 12, "0fe8107e4cb66618", "0fae0e21889f7d26"},
+		{PresetEmpty, 12, "2611477a23c36c30", "6bbe40543daa779d"},
 	} {
 		records := presetLeague(t, c.preset, c.teams)
 		rules, err := RulesInForce(records, 2026, noChangeTime())
