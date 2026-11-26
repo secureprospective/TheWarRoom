@@ -490,8 +490,7 @@ describe('LiveTab', () => {
     expect(laterGameIDs.every(id => id === '410')).toBe(true);
   });
 
-  it('default Live path skips Home-only reads on first load and invalidation, renders results/lineups, and surfaces errors',
-    async () => {
+  it('default Live path skips Home-only reads and shows scores, lineups and errors', async () => {
     Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
     HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
     HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false; };
@@ -580,7 +579,7 @@ describe('LiveTab', () => {
     };
 
     host = document.createElement('div'); document.body.append(host); root = createRoot(host);
-    // Default readBrief (omitted) exercises readLive -> readLiveBrief.
+    // Omit readBrief to exercise the default transport path.
     await act(async () => root!.render(<LiveTab league={league} port={port} subscribe={subscribe}
       reduced={true} />));
     await act(async () => { await new Promise(r => setTimeout(r, 0)); });

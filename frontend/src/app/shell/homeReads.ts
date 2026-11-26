@@ -92,16 +92,9 @@ function startLiveReads(league: string, mine: string, port: HostedPort,
 }
 
 /** readLiveBrief reads only the pulse, current-week results, and my matchup that phone Live shows. */
-export async function readLiveBrief(league: string, mine: string, port: HostedPort,
-  publish?: (brief: HomeBrief) => void): Promise<HomeBrief> {
-  const { out, send, apply } = startBrief(publish);
-  if (!mine) {
-    await apply('pulse', async () => {
-      out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
-      if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);
-    });
-    return out;
-  }
+export async function readLiveBrief(league: string, mine: string, port: HostedPort): Promise<HomeBrief> {
+  if (!mine) return readThinHomeBrief(league, mine, port);
+  const { out, send, apply } = startBrief();
   const { tasks } = startLiveReads(league, mine, port, out, send, apply);
   await Promise.all(tasks);
   return out;
