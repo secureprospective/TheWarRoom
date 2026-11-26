@@ -1,22 +1,22 @@
 #!/usr/bin/env bash
 # shapes.sh (target: lab) — GATE part 2: the 10/12/16-team one-season leagues with computer owners.
 #   setup   recreate native.rehtest-10/-12/-16 from the one_season_N presets, schedule weeks 13-18 (schedule.py),
-#           10 s pick clock, open the startup drafts. The commissioner holds franchise.01 only for setup; its
-#           turns time out to the computer, so every team is drafted by the computer within minutes.
-#   release (after the drafts finish) revoke the setup helpers and free franchise.01: every team is computer-run.
-# Never touches native.rehearsal-* or the Sunday practice leagues' scripts. Needs TWR_LAB_KIT and LAB_SSH_CONF.
+#           10 s pick clock, open the startup drafts. The commissioner holds franchise.01; draft.onExpire
+#           controls its timed-out turns. The other open franchises are computer-drafted.
+#   release (after the drafts finish) revoke the setup helpers; franchise.01 stays held by the commissioner.
+# Never touches rehearsal or Sunday practice leagues. Needs TWR_LAB_KIT; setup also needs LAB_SSH_CONF.
 set -euo pipefail
 HERE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 D=${TWR_LAB_KIT:?set TWR_LAB_KIT to the Lab kit folder}; cd "$D"
 # shellcheck source=lib.sh
 . "$HERE/lib.sh"
-lab_init
-DB=/var/lib/twr/server.db
-trap lab_restart_on_exit EXIT
 cmd=${1:-}; [ "$#" -eq 1 ] || { echo 'usage: shapes.sh setup|release' >&2; exit 2; }
 for n in 10 12 16; do guard_id "native.rehtest-$n" || exit 1; done
 case $cmd in
 setup)
+  lab_init
+  DB=/var/lib/twr/server.db
+  trap lab_restart_on_exit EXIT
   lab_stop
   for n in 10 12 16; do id=native.rehtest-$n
     if ! out=$(lab_twrserver delete-league -db "$DB" -league "$id" </dev/null 2>&1); then case $out in *"is not on this server"*) ;; *) echo "STOPPED: could not delete $id: ${out:0:300}" >&2; exit 1;; esac; fi
@@ -46,8 +46,6 @@ PY
   lab_start ;;
 release)
   for n in 10 12 16; do python3 -I labcommish.py revoke "native.rehtest-$n"; done
-  lab_stop
-  for n in 10 12 16; do lab_twrserver join-link -db "$DB" -league "native.rehtest-$n" -release franchise.01 < lab-commish.json | tail -1; done
-  lab_start ;;
+  echo 'Setup helpers revoked; commissioner seat franchise.01 remains held.' ;;
 *) echo 'usage: shapes.sh setup|release' >&2; exit 2;;
 esac

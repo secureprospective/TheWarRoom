@@ -32,6 +32,10 @@ HDR = {
 }
 
 
+class CoverageError(RuntimeError):
+    """The requested load could not be onboarded at its required coverage."""
+
+
 def parse_server_timing(value):
     if not value:
         return None
@@ -188,6 +192,10 @@ def onboard(base, ssl_ctx, join_file, state_file, teams, devices_per_team, use_g
             f"onboard: league={league} open={len(open_ids)} target_teams={teams}",
             flush=True,
         )
+        if len(open_ids) < teams:
+            raise CoverageError(
+                f"available owners actual={len(open_ids)} expected={teams}"
+            )
         for idx, fid in enumerate(open_ids, 1):
             user = f"loadowner{idx:02d}_{secrets.token_hex(2)}"
             pw = secrets.token_urlsafe(18)
@@ -252,6 +260,18 @@ def sample_rss_mib(pid):
     except OSError:
         return None
     return None
+
+
+def require_coverage(state, teams, devices_per_team):
+    actual_owners = len(state["owners"])
+    if actual_owners < teams:
+        raise CoverageError(f"owners actual={actual_owners} expected={teams}")
+    for idx, owner in enumerate(state["owners"], 1):
+        actual_devices = len(owner["bearers"])
+        if actual_devices < devices_per_team:
+            raise CoverageError(
+                f"team={idx} devices actual={actual_devices} expected={devices_per_team}"
+            )
 
 
 class LoadRunner:
@@ -560,14 +580,15 @@ def main():
             args.devices_per_team,
             args.gzip,
         )
-        if not state["owners"]:
-            print("FAIL: 0 x 502, 0 x 5xx, p95 0 ms, max RSS 0.0 MiB", flush=True)
-            sys.exit(1)
+        require_coverage(state, args.teams, args.devices_per_team)
         runner = LoadRunner(args, state, ssl_ctx)
         runner.run(args.minutes)
         line = runner.summary_line()
         print(line, flush=True)
         sys.exit(0 if line.startswith("PASS:") else 1)
+    except CoverageError as exc:
+        print(f"FAIL: {exc}", flush=True)
+        sys.exit(1)
     finally:
         if os.path.exists(args.state_file):
             os.remove(args.state_file)
