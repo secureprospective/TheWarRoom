@@ -36,6 +36,22 @@ repos:
         pass_filenames: false
         stages: [pre-commit]
 
+      - id: frontend-controls
+        name: frontend controls & TS line length (<=110)
+        entry: pnpm --dir frontend test -- src/app/commands/controls.test.ts
+        language: system
+        files: ^frontend/(src/|tsconfig(\.node)?\.json$|vite\.config\.ts$|package\.json$|pnpm-lock\.yaml$)
+        pass_filenames: false
+        stages: [pre-commit]
+
+      - id: frontend-tsc
+        name: frontend typecheck (tsc --noEmit)
+        entry: pnpm --dir frontend exec tsc --noEmit
+        language: system
+        files: ^frontend/(src/|tsconfig(\.node)?\.json$|vite\.config\.ts$|package\.json$|pnpm-lock\.yaml$)
+        pass_filenames: false
+        stages: [pre-commit]
+
   # verify: a quick local gate: lint and build all for Go changes, test directly changed
   # packages (except composition), and run frontend checks for frontend changes.
   # GitHub CI runs the full suite on every push, and the merge waits for it.
