@@ -8,21 +8,24 @@ import { parseDraft, type Draft } from './draft';
 type Scope = { league: string; season: number; franchise: string; at: string; startup?: boolean };
 type Choice = { league: string; season: number; franchise: string; player: string; request: string;
   expected: number; startup?: boolean };
-type Port = { read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown> };
+export type DraftRoomPort = {
+  read(scope: Scope): Promise<unknown>; pick(choice: Choice): Promise<unknown>;
+};
 
 
 const unavailable = async (): Promise<never> => {
   throw new Error('The draft room requires the desktop app.');
 };
-const live: Port = { read: unavailable, pick: unavailable };
+const live: DraftRoomPort = { read: unavailable, pick: unavailable };
 const zeroTime = '0001-01-01T00:00:00Z';
 
 export type PickOutcome = { status: 'idle' } | { status: 'sending' } | { status: 'done'; message: string }
   | { status: 'refused'; message: string };
-type RoomState = { draft?: Draft; error: string; pending: boolean; pick: PickOutcome; startup: boolean };
+type RoomState = { draft?: Draft; scope?: Scope; error: string; pending: boolean; pick: PickOutcome;
+  startup: boolean };
 
 // One draft room: the reading Go sent, the owner's pick, and why anything was refused.
-export function createDraftRoom(port: Port = live) {
+export function createDraftRoom(port: DraftRoomPort = live) {
   const query = createReadQuery('commissioner.TargetNativeDraft', {
     initial: (): RoomState => ({ error: '', pending: false, pick: { status: 'idle' }, startup: false }),
     retainErrorWhilePending: true, failure: refusalText,
@@ -34,7 +37,9 @@ export function createDraftRoom(port: Port = live) {
   function read(league: string, franchise: string, season = 0) {
     const { draft: held, startup } = store.getState();
     if (held && (held.league !== league || held.startup !== startup)) store.setState({ draft: undefined });
-    return query.load([{ league, season, franchise, at: zeroTime, ...(startup ? { startup } : {}) }]);
+    const scope = { league, season, franchise, at: zeroTime, ...(startup ? { startup } : {}) };
+    store.setState({ scope });
+    return query.load([scope]);
   }
   // choose says which draft the room shows: the league's startup draft, or the rookie draft that is next.
   const choose = (startup: boolean) => store.setState({ startup });

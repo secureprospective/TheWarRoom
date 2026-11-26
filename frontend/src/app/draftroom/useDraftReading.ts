@@ -22,15 +22,15 @@ export function useNow(counting: boolean): number {
 // due, which is the pick on the clock running out (Go skips it when the draft is read, so the next reading
 // shows the skip) or the draft's start arriving. due is that instant, or empty when nothing is counting.
 export function useDraftReading(league: string, franchise: string, due: string, now: number, reread: string,
-  startup = false) {
+  startup = false, read = draftRoom.read) {
   const looked = useRef('');
   useEffect(() => {
     if (!league || !franchise) return undefined;
-    return poll(() => draftRoom.read(league, franchise), lookEveryMs);
+    return poll(() => read(league, franchise), lookEveryMs);
   }, [league, franchise, reread, startup]);
   useEffect(() => {
     if (!due || !league || now < Date.parse(due) || looked.current === due) return;
     looked.current = due;
-    void draftRoom.read(league, franchise);
-  }, [now, due, league, franchise]);
+    void read(league, franchise);
+  }, [now, due, league, franchise, read]);
 }

@@ -1,7 +1,9 @@
 // Desktop v3 War Room, Draft room, after TheWarRoom-mock-v3-FINAL.html (screens.js war.draft): the clock
 // and picks made, the board of players still available, my picks and my auto-pick queue. Reads are the
 // War Room's own (draft.read, draft.queue.read); making a pick stays in the league draft room, opened below.
-import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { hostedWorkflow } from '../commissioner/api';
+import { hostedDraftPort } from '../draftroom/hostedPort';
 import { FailureAlert } from '../data/FailureAlert';
 import { errorCodeFor } from '../data/errorCodes';
 import { HQAct } from '../shell/HQAct';
@@ -36,6 +38,7 @@ export function madePicks(draft: Draft) {
 
 export function WarDraftV3({ context, badge }: { context: WarRoomContext; badge: ReactNode }) {
   const native = context.native;
+  const draftPort = useMemo(() => hostedDraftPort(native?.port ?? hostedWorkflow), [native?.port]);
   const reading = useWarRoomRead(JSON.stringify([native?.league, context.mine]), () =>
     readWarRoomDraft(context));
   const draft = reading.reading?.draft;
@@ -129,6 +132,8 @@ export function WarDraftV3({ context, badge }: { context: WarRoomContext; badge:
     {room && native && <section className="pc panel sz-L" style={{ gridColumn: '1/-1', overflow: 'auto' }}>
       <div className="ph">{badge}<b className="pt">League draft room</b><span className="sp" /></div>
       <div className="pb"><Suspense fallback={<St>Opening the draft room…</St>}>
-        <DraftRoom league={native.league} /></Suspense></div></section>}
+        <DraftRoom league={native.league} franchise={context.mine}
+          sessionFranchise={native.sessionFranchise ?? context.mine} port={draftPort} />
+      </Suspense></div></section>}
   </div></div>;
 }

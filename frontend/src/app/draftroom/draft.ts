@@ -30,6 +30,11 @@ export type Draft = {
   checkpoints: Checkpoint[];
 };
 
+export function oldestOwedPick(draft: Draft, franchise: string): Pick | undefined {
+  if (!franchise || draft.closed || draft.onClock?.paused) return undefined;
+  return draft.picks.find(p => p.owner === franchise && p.skipped && p.how === 'expired' && p.player === '');
+}
+
 const slotKeys = ['round', 'original', 'owner', 'slot'];
 const slot = (r: Record<string, unknown>, path: string): Slot => ({
   round: integer(r.round, path, 1), original: text(r.original, path), owner: text(r.owner, path),

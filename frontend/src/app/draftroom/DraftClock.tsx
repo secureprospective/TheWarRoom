@@ -13,7 +13,7 @@ export function DraftLauncher({ action, text, label = text }:
   );
 }
 
-function Running({ draft, now }: { draft: Draft; now: number }) {
+function Running({ draft, now, waitsOnExpiry }: { draft: Draft; now: number; waitsOnExpiry: boolean }) {
   const c = draft.onClock!;
   const left = c.paused ? nanosToMs(c.remaining) : Date.parse(c.deadline) - now;
   return (
@@ -25,7 +25,8 @@ function Running({ draft, now }: { draft: Draft; now: number }) {
       <p className="draft-countdown">
         <span role="timer" aria-live="off">{countdownWords(left)}</span>
         {c.paused ? ' left, and the clock is paused'
-          : <> left. The pick closes <time dateTime={c.deadline}>{when(c.deadline)}</time></>}
+          : waitsOnExpiry ? ' left. The pick stays open until its owner or commissioner acts.'
+            : <> left. The pick closes <time dateTime={c.deadline}>{when(c.deadline)}</time></>}
       </p>
       <p>This pick signs for {contractWords(c.contract)}.</p>
     </>
@@ -36,6 +37,8 @@ function Running({ draft, now }: { draft: Draft; now: number }) {
 export function DraftClock({ draft, now, may }: { draft: Draft; now: number; may: boolean }) {
   const running = draft.onClock !== null && draft.closed === null;
   const waiting = !draft.started && draft.closed === null && Date.parse(draft.start) > 0;
+  const waitsOnExpiry = draft.rules.some(rule => rule.label === 'Expired draft clock'
+    && rule.words.includes('(no expiry)'));
   return (
     <section className="draft-clock" aria-label="The pick clock">
       <h5>The pick clock</h5>
@@ -46,7 +49,7 @@ export function DraftClock({ draft, now, may }: { draft: Draft; now: number; may
           on <time dateTime={draft.start}>{when(draft.start)}</time>
         </p>
       )}
-      {running && <Running draft={draft} now={now} />}
+      {running && <Running draft={draft} now={now} waitsOnExpiry={waitsOnExpiry} />}
       {draft.closed && <p>Closed <time dateTime={draft.closed.at}>{when(draft.closed.at)}</time>
         {draft.closed.automatic ? ', automatically, at the last pick' : ' by the commissioner'}.</p>}
       {may && running && (

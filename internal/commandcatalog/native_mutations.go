@@ -178,7 +178,7 @@ func nativeMutation(id, args string, seed Schema) Command {
 	if id == commissioner.DraftPick {
 		command.Arguments = Shape(reflect.TypeFor[commissioner.DraftPickInput](), "DraftPickInput.Validate")
 		command.Modes = []Mode{Execute}
-		command.Safeguards = "on-clock owner selection; server fixes slot and contract"
+		command.Safeguards = "owner selection; server chooses the oldest owed slot and fixes its contract"
 	}
 	if id == commissioner.NativeSeed {
 		command.Availability, command.Undo = "desktop", "none"

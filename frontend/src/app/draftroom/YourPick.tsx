@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { Act } from '../commands/Act';
-import type { Draft } from './draft';
+import type { Draft, Pick } from './draft';
 import { contractWords, playerLine } from './draftWords';
 import type { PickOutcome } from './state';
 
 // YourPick is the owner's own pick: choose a rookie for the pick on your clock and make it. Go checks
 // whose turn it is, the roster and the cap, and says so in words if the pick cannot be made.
-export function YourPick({ draft, outcome }: { draft: Draft; outcome: PickOutcome }) {
+export function YourPick({ draft, outcome, owed }: { draft: Draft; outcome: PickOutcome; owed?: Pick }) {
   const [choice, setChoice] = useState('');
   const [search, setSearch] = useState('');
   const [position, setPosition] = useState('');
   const clock = draft.onClock;
-  if (!clock || clock.paused) return null;
+  if ((!owed && !clock) || clock?.paused) return null;
+  const contract = owed?.contract ?? clock?.contract;
   const positions = [...new Set(draft.available.map(p => p.position))].sort();
   const needle = search.trim().toLowerCase();
   const shown = draft.available
@@ -19,7 +20,7 @@ export function YourPick({ draft, outcome }: { draft: Draft; outcome: PickOutcom
   const chosen = draft.available.find(p => p.id === choice);
   return (
     <section className="draft-your-pick" aria-label="Your pick">
-      <h5>It is your pick</h5>
+      <h5>{owed ? `You missed round ${owed.round} pick ${owed.slot}. Pick any time.` : 'It is your pick'}</h5>
       <label>Search by name
         <input value={search} onChange={e => setSearch(e.target.value)} />
       </label>
@@ -36,7 +37,7 @@ export function YourPick({ draft, outcome }: { draft: Draft; outcome: PickOutcom
         </select>
       </label>
       {shown.length === 0 && <p>No player matches.</p>}
-      <p>This pick signs for {contractWords(clock.contract)}.</p>
+      {contract && <p>This pick signs for {contractWords(contract)}.</p>}
       <Act verb="commissioner.surface" variant="button" className="btn" disabled={!chosen ||
         outcome.status === 'sending'}
         label={chosen ? `Pick ${chosen.name}` : 'Make this pick'}
