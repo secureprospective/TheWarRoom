@@ -489,4 +489,122 @@ describe('LiveTab', () => {
       .map(([r]) => (r.arguments as { game: string }).game);
     expect(laterGameIDs.every(id => id === '410')).toBe(true);
   });
+
+  it('default Live path skips Home-only reads and shows scores, lineups and errors', async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) { this.open = true; };
+    HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) { this.open = false; };
+    const homeOnly = [
+      'native.assets.read', 'trades.read', 'native.cap.check', 'commish.ledger.filtered.read',
+      'bids.read', 'draft.read', 'commish.jobs.read', 'job.snoozes.read', 'calendar.read',
+      'schedule.read',
+    ];
+    let myProvisional = 242000;
+    let failResults = '';
+    const common = { league: 'league', season: 2026, revision: 1, name: 'Test League', words: 'Published' };
+    const teams = [
+      { franchise: 'mine', name: 'Iron Curtain', abbreviation: 'IRN' },
+      { franchise: 'other', name: 'Gridlock', abbreviation: 'GRD' },
+    ];
+    const port = vi.fn<HostedPort>(async request => {
+      const args = request.arguments;
+      switch (request.command) {
+        case 'native.directory.read':
+          return reply({ league: 'league', name: 'Test League', revision: 1, rosterSeason: 2026,
+            franchises: teams });
+        case 'week.read':
+          return reply({ schedule: { league: 'league', season: 2026, revision: 1, franchise: 'mine',
+            games: [{ week: 11, venue: 'home' }] }, current: { week: 11 }, message: '' });
+        case 'schedule.franchise.read':
+          return reply({ league: 'league', franchise: 'mine', season: 2026, revision: 1, message: '',
+            games: [{ week: 11, game: 'g1', opponent: 'other', venue: 'Home' }] });
+        case 'standings.read':
+          return reply({ ...common, status: 'Ready', through: 0, decided: 0, pending: 1, criteria: [],
+            noData: [], computed: teams.map((t, i) => ({ franchise: t.franchise, name: t.name,
+              rank: i + 1, wins: 0, losses: 0, ties: 0, record: '0-0', pointsFor: 0,
+              pointsWords: '', why: [] })) });
+        case 'bracket.read':
+          return reply({ ...common, status: 'Projected', started: false, fields: [], projected: [],
+            rules: { startWeek: 14, finalWeek: 17, perConference: 2, byeSeeds: 0, shape: [] } });
+        case 'odds.read':
+          return reply({ ...common, status: 'Ready', powerWords: '', gameWords: '', oddsWords: '',
+            week: 11, runs: 100, seed: 1, rows: [],
+            games: [{ week: 11, home: 'mine', away: 'other', homeName: 'Iron Curtain',
+              awayName: 'Gridlock', homeWin: 0.44 }] });
+        case 'results.read':
+          if (failResults) throw new Error(failResults);
+          return reply({ league: 'league', season: 2026, revision: 1, words: 'Published', week: 11,
+            published: true, missed: [],
+            games: [{ week: 11, home: 'mine', away: 'other', homeName: 'Iron Curtain',
+              awayName: 'Gridlock', status: 'in', homeProvisional: myProvisional,
+              awayProvisional: 258000, words: '', why: [] }],
+            scores: [
+              { franchise: 'mine', name: 'Iron Curtain', status: 'Provisional',
+                provisional: myProvisional, words: '', adjustment: 0,
+                lineup: { status: 'Valid', words: '', flagged: false },
+                starters: [{ player: 'm1', name: 'Mahomes, Patrick', position: 'QB', words: '',
+                  provisional: 181000 }] },
+              { franchise: 'other', name: 'Gridlock', status: 'Provisional', provisional: 258000,
+                words: '', adjustment: 0, lineup: { status: 'Valid', words: '', flagged: false },
+                starters: [{ player: 'o1', name: 'Allen, Josh', position: 'QB', words: '',
+                  provisional: 204000 }] },
+            ] });
+        case 'lineup.read': {
+          const franchise = 'franchise' in args ? String(args.franchise) : '';
+          return reply({ ...common, franchise, week: 11,
+            starters: [{ player: franchise === 'mine' ? 'm1' : 'o1',
+              team: franchise === 'mine' ? 'KC' : 'BUF', locked: true }] });
+        }
+        case 'projections.read':
+          return reply({ league: 'league', season: 2026, week: 11, players: [] });
+        case 'nfl.games.read':
+          return reply({ league: 'league', board: { stale: false, source: 'ESPN',
+            at: '2026-11-15T18:00:00Z', failure: '', games: [nflGame] } });
+        case 'nfl.game.read':
+          return reply({ league: 'league', game: nflGame, at: '2026-11-15T18:00:00Z',
+            stale: false, words: '' });
+        default:
+          throw new Error(`Unexpected read ${request.command}`);
+      }
+    });
+    const listeners: (() => void)[] = [];
+    const subscribe = (load: () => void) => {
+      listeners.push(load);
+      return () => { const i = listeners.indexOf(load); if (i >= 0) listeners.splice(i, 1); };
+    };
+    const notify = () => { for (const fn of [...listeners]) fn(); };
+    const assertZeroHomeOnly = () => {
+      const called = port.mock.calls.map(([r]) => r.command);
+      for (const cmd of homeOnly) expect(called, cmd).not.toContain(cmd);
+    };
+
+    host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+    // Omit readBrief to exercise the default transport path.
+    await act(async () => root!.render(<LiveTab league={league} port={port} subscribe={subscribe}
+      reduced={true} />));
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+
+    expect(region('My matchup')).toContain('IRN · YOU');
+    expect(region('My matchup')).toContain('24.2');
+    expect(region('My matchup')).toContain('44% WIN');
+    await tap('Matchup box score');
+    expect(region('Matchup box score')).toContain('Patrick Mahomes');
+    expect(region('Matchup box score')).toContain('Josh Allen');
+    assertZeroHomeOnly();
+
+    // Invalidation re-reads live brief and updates scores with zero Home-only reads.
+    myProvisional = 315000;
+    await act(async () => { notify(); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(region('My matchup')).toContain('31.5');
+    assertZeroHomeOnly();
+
+    // Affected results failure surfaces through FailureAlert with zero Home-only reads.
+    failResults = 'results.read refused';
+    await act(async () => { notify(); });
+    await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+    expect(host!.querySelector('[aria-label="My matchup"] [role="alert"]')?.textContent)
+      .toContain('results.read refused');
+    assertZeroHomeOnly();
+  });
 });

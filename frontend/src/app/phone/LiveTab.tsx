@@ -10,7 +10,7 @@ import type { Game } from '../now/liveContract';
 import { clockWords, followKey, useHostedGames, useNow } from '../shell/hostedGames';
 import { unavailable } from '../shell/hqModel';
 import { HQAct } from '../shell/HQAct';
-import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
+import { readLiveBrief, type HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import { PhoneSheet } from '../shell/PhoneAppFrame';
 import { espnTeam, pairStarters, pulseRows, scoreOf, starterRows, type PulseRow, type PulseStarterRow }
@@ -23,14 +23,13 @@ import { useAnimatedValue } from './liveMotion';
 import './LiveTab.css';
 
 type BriefReader = (league: string, mine: string, port: HostedPort) => Promise<HomeBrief>;
-const readLive: BriefReader = (league, mine, port) => readThinHomeBrief(league, mine, port);
 type Subscribe = (load: () => void) => () => void;
 const topicsFor = (league: string): Subscribe => load =>
   onHostedTopics(topics => { if (topics.some(topic => topic.league === league)) load(); });
 
 /** LiveTab is the phone Live page of mobile mock v1. Every value is one existing read: the league
  *  brief Today's "Live now" uses (results, odds, my lineups) and League Pulse's NFL scoreboard. */
-export function LiveTab({ league, port = hostedWorkflow, readBrief = readLive, subscribe, reduced }: {
+export function LiveTab({ league, port = hostedWorkflow, readBrief = readLiveBrief, subscribe, reduced }: {
   league?: LeagueChoice; port?: HostedPort; readBrief?: BriefReader; subscribe?: Subscribe;
   reduced?: boolean;
 }) {

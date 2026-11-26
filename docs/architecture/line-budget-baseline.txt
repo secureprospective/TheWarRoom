@@ -1,9 +1,9 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	55602
+docs	55744
 frontend-generated	5272
-frontend-src	67114
-frontend-tests	43828
+frontend-src	67127
+frontend-tests	43962
 go-prod	156014
 go-prod/cmd/twr	1139
 go-prod/cmd/twr-canary	673

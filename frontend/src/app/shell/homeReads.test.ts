@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { HostedPort } from '../commissioner/hostedRoom';
-import { readHomeBrief, readThinHomeBrief } from './homeReads';
+import { readHomeBrief, readLiveBrief, readThinHomeBrief } from './homeReads';
 
 const rejectingPort = () => vi.fn<HostedPort>(async () => { throw new Error('not configured'); });
 const count = (port: ReturnType<typeof rejectingPort>, command: string) =>
@@ -35,4 +35,20 @@ describe('Home commissioner-only jobs read', () => {
     await readHomeBrief('league', 'franchise.1', local, undefined, null, true, true);
     expect(count(local, 'job.snoozes.read')).toBe(0);
   });
+});
+
+it('keeps Thin Home reads when an owner opens Home', async () => {
+  const port = rejectingPort();
+  await readThinHomeBrief('league', 'franchise.1', port);
+  for (const command of [
+    'native.assets.read', 'trades.read', 'native.cap.check', 'commish.ledger.filtered.read',
+    'bids.read', 'draft.read',
+  ]) expect(count(port, command), command).toBe(1);
+});
+
+it('preserves the teamless brief and errors', async () => {
+  const live = rejectingPort();
+  const home = rejectingPort();
+  expect(await readLiveBrief('league', '', live)).toEqual(await readThinHomeBrief('league', '', home));
+  expect(live.mock.calls).toEqual(home.mock.calls);
 });
