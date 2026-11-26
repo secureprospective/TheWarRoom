@@ -48,22 +48,20 @@ export type HomeSource = 'pulse' | 'results' | 'calendar' | 'cap' | 'ledger' | '
 export const OWNER_ONLY_BIDS = 'Bids are visible only to this franchise\'s owner';
 export const OWNER_ONLY_TRADES = 'Trade offers are visible only to this franchise\'s owner';
 
-/** readHomeBrief calls the reads League Pulse, Franchise HQ, the War Room and the ledger already
- *  use. It adds no rule of its own: every value comes from the league's settings through them. */
-export async function readHomeBrief(league: string, mine: string, port: HostedPort,
-  publish?: (brief: HomeBrief) => void,
-  research: ResearchReader | null | undefined = undefined, owner = true,
-  commissioner = false, accountPreferences = false): Promise<HomeBrief> {
+function startBrief(publish?: (brief: HomeBrief) => void) {
   const out: HomeBrief = { at: {}, errors: {} };
   const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
   const apply = async (source: HomeSource, read: () => Promise<void>) => {
-    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; } catch (error)
-      {
-      out.errors[source] = error instanceof Error ? error.message : String(error);
-    } finally { send(); }
+    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; }
+    catch (error) { out.errors[source] = error instanceof Error ? error.message : String(error); }
+    finally { send(); }
   };
-  const noResearch = 'Player research requires the desktop app';
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  return { out, send, apply };
+}
+
+function startLiveReads(league: string, mine: string, port: HostedPort,
+  out: HomeBrief, send: () => void,
+  apply: (source: HomeSource, read: () => Promise<void>) => Promise<void>) {
   // Standings and odds can wait on season scoring. They must not hold unrelated Home tiles hostage.
   let ready!: () => void;
   const weekReady = new Promise<void>(resolve => { ready = resolve; });
@@ -75,23 +73,52 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
       if (reading.week !== undefined) ready();
     }, true);
   }).finally(ready);
+  const results = apply('results', async () => {
+    await weekReady;
+    const season = out.pulse?.season, week = out.pulse?.week;
+    if (season === undefined || week === undefined) throw new Error('No league week is open');
+    out.results = await readPulseWeekResults(league, season, week, port);
+  }).then(() => apply('matchup', async () => {
+    const season = out.pulse?.season, week = out.pulse?.week;
+    const g = out.results?.games.find(x => x.home === mine || x.away === mine);
+    if (!g || season === undefined || week === undefined) throw new Error('No game this week');
+    const starters = (f: string) => out.results?.scores.find(s => s.franchise === f)?.starters
+      .map(s => s.player) ?? [];
+    out.matchup = await readPulseMatchup(league, season, week, [g.home, g.away],
+      { [g.home]: starters(g.home), [g.away]: starters(g.away) }, port);
+    if (out.matchup.errors.length) throw new Error(out.matchup.errors[0]);
+  }));
+  return { weekReady, tasks: [pulse, results] };
+}
+
+/** readLiveBrief reads only the pulse, current-week results, and my matchup that phone Live shows. */
+export async function readLiveBrief(league: string, mine: string, port: HostedPort,
+  publish?: (brief: HomeBrief) => void): Promise<HomeBrief> {
+  const { out, send, apply } = startBrief(publish);
+  if (!mine) {
+    await apply('pulse', async () => {
+      out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
+      if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);
+    });
+    return out;
+  }
+  const { tasks } = startLiveReads(league, mine, port, out, send, apply);
+  await Promise.all(tasks);
+  return out;
+}
+
+/** readHomeBrief calls the reads League Pulse, Franchise HQ, the War Room and the ledger already
+ *  use. It adds no rule of its own: every value comes from the league's settings through them. */
+export async function readHomeBrief(league: string, mine: string, port: HostedPort,
+  publish?: (brief: HomeBrief) => void,
+  research: ResearchReader | null | undefined = undefined, owner = true,
+  commissioner = false, accountPreferences = false): Promise<HomeBrief> {
+  const { out, send, apply } = startBrief(publish);
+  const noResearch = 'Player research requires the desktop app';
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const { weekReady, tasks } = startLiveReads(league, mine, port, out, send, apply);
   await Promise.all([
-    pulse,
-    apply('results', async () => {
-      await weekReady;
-      const season = out.pulse?.season, week = out.pulse?.week;
-      if (season === undefined || week === undefined) throw new Error('No league week is open');
-      out.results = await readPulseWeekResults(league, season, week, port);
-    }).then(() => apply('matchup', async () => {
-      const season = out.pulse?.season, week = out.pulse?.week;
-      const g = out.results?.games.find(x => x.home === mine || x.away === mine);
-      if (!g || season === undefined || week === undefined) throw new Error('No game this week');
-      const starters = (f: string) => out.results?.scores.find(s => s.franchise === f)?.starters
-        .map(s => s.player) ?? [];
-      out.matchup = await readPulseMatchup(league, season, week, [g.home, g.away],
-        { [g.home]: starters(g.home), [g.away]: starters(g.away) }, port);
-      if (out.matchup.errors.length) throw new Error(out.matchup.errors[0]);
-    })),
+    ...tasks,
     apply('assets', async () => {
       const r = await port({ command: 'native.assets.read', mode: 'read', arguments: { league } });
       out.assets = nativeHQAssets(r.data, league);
@@ -165,13 +192,7 @@ export async function readHomeBrief(league: string, mine: string, port: HostedPo
 export async function readThinHomeBrief(league: string, mine: string, port: HostedPort,
   publish?: (brief: HomeBrief) => void, commissioner = false): Promise<HomeBrief> {
   if (mine) return readHomeBrief(league, mine, port, publish, null, true, commissioner, true);
-  const out: HomeBrief = { at: {}, errors: {} };
-  const send = () => publish?.({ ...out, at: { ...out.at }, errors: { ...out.errors } });
-  const apply = async (source: HomeSource, read: () => Promise<void>) => {
-    try { await read(); out.at[source] = new Date().toISOString(); delete out.errors[source]; }
-    catch (error) { out.errors[source] = error instanceof Error ? error.message : String(error); }
-    finally { send(); }
-  };
+  const { out, send, apply } = startBrief(publish);
   const pulse = apply('pulse', async () => {
     out.pulse = await readNativePulse(league, '', port, reading => { out.pulse = reading; send(); }, true);
     if (out.pulse.errors.length) throw new Error(out.pulse.errors[0]);

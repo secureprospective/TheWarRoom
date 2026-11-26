@@ -10,7 +10,7 @@ import type { Game } from '../now/liveContract';
 import { clockWords, followKey, useHostedGames, useNow } from '../shell/hostedGames';
 import { unavailable } from '../shell/hqModel';
 import { HQAct } from '../shell/HQAct';
-import { readThinHomeBrief, type HomeBrief } from '../shell/homeReads';
+import { readLiveBrief, type HomeBrief } from '../shell/homeReads';
 import type { LeagueChoice } from '../shell/leaguePicker';
 import { PhoneSheet } from '../shell/PhoneAppFrame';
 import { espnTeam, pairStarters, pulseRows, scoreOf, starterRows, type PulseRow, type PulseStarterRow }
@@ -23,7 +23,7 @@ import { useAnimatedValue } from './liveMotion';
 import './LiveTab.css';
 
 type BriefReader = (league: string, mine: string, port: HostedPort) => Promise<HomeBrief>;
-const readLive: BriefReader = (league, mine, port) => readThinHomeBrief(league, mine, port);
+const readLive: BriefReader = (league, mine, port) => readLiveBrief(league, mine, port);
 type Subscribe = (load: () => void) => () => void;
 const topicsFor = (league: string): Subscribe => load =>
   onHostedTopics(topics => { if (topics.some(topic => topic.league === league)) load(); });
