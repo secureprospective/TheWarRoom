@@ -2,7 +2,7 @@
 # Quick local check; the full suite is CI's job.
 # Docs only: skip. Go: lint, build all, test directly changed packages.
 # Gate scripts or an unknown base: lint and build; CI runs the rest.
-# Frontend: type check, tests, build and bundle budget.
+# Frontend: full vitest suite, build and bundle budget (tsc --noEmit and controls/line-length run at pre-commit).
 set -euo pipefail
 
 fallback=0
@@ -55,7 +55,7 @@ if [[ ${#go_changed[@]} -gt 0 ]]; then
 fi
 
 if [[ $front -eq 1 ]]; then
-  (cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build && node scripts/bundle-budget.mjs)
+  (cd frontend && pnpm test && pnpm run build && node scripts/bundle-budget.mjs)
 fi
 
 echo "prepush: quick local check passed; CI runs the full suite"

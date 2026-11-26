@@ -1,6 +1,6 @@
 # TheWarRoom desktop mock v3 — a plan for every stub
 
-**Written:** 2026-11-17 by Tom (Claude on the Beelink). **Pairs with:** `V3-STUB-INVENTORY.md` (what each stub is and needs) and `UIUX-INVENTORY-2026-11-17.md` (what the real app has). **Checked against:** `origin/main` `64e0507fa`.
+**Written:** 2026-11-17 by Tom (Claude on the Beelink). **Pairs with:** `V3-STUB-INVENTORY.md` (what each stub is and needs) and `UIUX-INVENTORY-2026-11-17.md` (what the real app has). **Checked against:** `origin/main` `64e0507fa`; **E3.1 hosted-owner repair:** 2026-11-26 against `main` `c42de40fd` (frontend paths under `frontend/src/app/`; 11-17 decisions and command IDs preserved).
 
 The point: v3 is a picture of the finished app. Most of what it shows already has an owner in the real code. A session that builds a v3 stub must extend that owner, not write a new one beside it. Every one of the 287 stubs has a plan line below.
 
@@ -26,7 +26,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | 0 | Finish HQ + War Room gaps already in flight | Saved trade drafts #338, recent winning bids (lane `wins`), F51 player values (unlocks usage + age arc), contract decisions (`contract.action.set` on a screen), stacked what-if read | in flight / M |
 | 1 | **Home (app level)** | D58 per-person layout store (approved 11-17; storage seam migration), boards + pieces as an extension of `homeTiles.tsx` TILES, cross-league fan-out reads (week, today, cards), Docket read (one fan-out over existing producers), alert band in the shell | L |
 | 2 | Shell | App zone in the rail, entity cards (extend EntityInspector), search results for players/teams/leagues, status bar health | M |
-| 3 | **Control Room in thin mode** | Port `control/room/*` onto `hostedReads` + `hostedRoom`; every tool is already an actTable row. Then missing job producers (D60). Read `~/fleet/runs/twr-v3-1117/CONTROL-ROOM-WIRING.md` first (job engine behaviour, 10 mistakes, 4 open decisions) | L |
+| 3 | **Control Room in thin mode** | Hosted Control Room now lives in `v3/ControlRoomV3.tsx` + `v3/Ctrl*V3.tsx` over `commissioner/HostedControlRoom*.tsx` (`hostedReads` + `hostedRoom` + `actTable`). Remaining gaps: missing job producers (D60), preset compare, house-rules editor, pick ops (D67), permission sets (D65), join-link UI. Read `~/fleet/runs/twr-v3-1117/CONTROL-ROOM-WIRING.md` first (job engine behaviour, 10 mistakes, 4 open decisions) | L |
 | 4 | Pulse extras | My Road (`schedule.franchise.read`), stat changes (D51 hosted read), per-play fantasy delta (D08/D09 server), Archive tab (D47) | M |
 | 5 | New domains | Plans (D39), trophies (D49), week story (D50), depth charts (D53), stats table (D54), assistant (D74), pick ops (D67), permission sets (D65), pop-out windows | L each; each waits on a ruling or a feed |
 
@@ -50,7 +50,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `today` | Not on main | Fan-out lineup.read per league + nfl.games.read once; group by kickoff client-side. Exposure ('in 3 leagues') is derived from those reads; no new store. |
 | `cards` | Partly | League list from the account memberships (NativeAccount view) + commish.leagues.read; per card standings.read and the docket count. Reuse leaguePicker.tsx rows. |
 | `deadlines` | Hosted | Reuse clock/ (ClockStrip, labels, urgency, deadlineRoute). Reminder = PRIV personal kind (D57) shown only in-app (no push, no email). |
-| `cjobs` | Local only | Port JobsView/jobs.ts to thin mode via hostedReads; cross-league = fan-out commish.jobs.read over leagues where the role is commish. The v3 Jobs engine (85-control.js) is a design reference for lanes, not code to copy. |
+| `cjobs` | Partly | Hosted per-league jobs live in v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (hostedJobs.ts + jobs.ts via hostedReads). Gap: cross-league fan-out of commish.jobs.read over leagues where the role is commish (no standalone cross-league jobs strip yet). The v3 Jobs engine (85-control.js) is a design reference for lanes, not code to copy. |
 | `shortcuts` | Local only | Reuse SHORTCUTS + ☆ pins from homeTiles.tsx; persistence moves to the D58 layout store with the boards. |
 | `notes` | Partly | Reuse personal/PersonalLists NoteEditor and player.note.* for per-player notes. A free scratch pad is a new PRIV kind (storage seam); ask before adding it. |
 | `clock` | Hosted | Reuse clock/ticker.ts + useLeagueClock; no new timer per piece (one ticker). |
@@ -69,7 +69,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `form` | Partly | Hosted form from results.read (HQ map row: derive from results, no desktop research). One helper shared by HQ form bars, Home tile and this piece. |
 | `trophy` | Not on main | Not on main. D49 in app/archive; award command through the commands seam with a ledger event. Wait for the Archive lane; ask Christopher before building (social builds are seams, not features yet). |
 | `archive` | Not on main | Expose app/archive facts as a hosted read (D47); eras/stories D48 later. Archive is a Pulse tab in v3 but not in nodes.ts: add the tab only with the read. |
-| `wire` | Hosted | Reuse Home tile wire (commish.ledger.filtered.read) and HQMoveHistory (franchise.moves.history.read). Kind chips = D23 filters already in LedgerFilters.tsx. |
+| `wire` | Hosted | Reuse Home tile wire (commish.ledger.filtered.read) and HQMoveHistory (franchise.moves.history.read). Kind chips = D23 filters already in commissioner/HostedControlRoomLeague.tsx (ledgerChips). |
 | `lineup` | Hosted | Done in thin HQ (LineupEditor, hqPlacement, hqNativeLineup). Owner save is commish.lineup.set through the hosted workflow (the v3 'editor.save, name not identified' note is resolved). |
 | `roster` | Hosted | Done in thin HQ (HQPanels, HQRelease G3 hold). Reuse; do not rebuild the taxi/IR drawers. |
 | `caprun` | Hosted | Done: native.cap.check runway (native_runway.go). Reuse HQ runway renderer. |
@@ -81,7 +81,7 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `pcard` | Partly | One player card: HQInspector/WarRoomInspector share warroomInspectorReads + hqPlayerData. Usage/age arc reads exist but refuse until F51 player values land on the server. Status facts (Out · hamstring, practice) come from injuries ingest (D14); no prose news. |
 | `offers` | Hosted | Reuse HostedWorkflows trades task (trade.accept/decline/withdraw) and WarRoomDrawers. Trade card action < 100 ms UI (§18). Decline note is a new optional argument; ask before adding. |
 | `desk` | Hosted | Done in thin War Room (#324 send). Versions/pocket = saved trade drafts (PR #338, owner-only, 50 cap). Do not add a second proposal state. |
-| `review` | Hosted | Reuse HostedWorkflows trade.review/recuse/appeal; DOT votes only from DOT members (P2). |
+| `review` | Hosted | Reuse commissioner/HostedWorkflows.tsx trade.review/recuse/appeal; DOT votes only from DOT members (P2). Control Room job routing lives in v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx. |
 | `pool` | Hosted | Done in thin War Room Market (#329 bids, #336 targets). Recent winning bids = D35 from revealed history only (lane 'wins' running 11-17). Never count sealed bids. |
 | `bids` | Hosted | Done (bids.read, bid.place/raise). R3: a placed bid is final; the server refuses `bid.withdraw`, and the app offers neither lowering nor withdrawal on placed bids. |
 | `waivers` | Partly | Claims via HostedWorkflows waivers.claim. Claim reorder and claim cancel have no command: add through the commands seam (internal/commissioner) with tests; ask before adding. |
@@ -92,18 +92,18 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `headlines` | Not on main | D50 week story: not on main. Later; frozen per week, server-written, never AI-invented numbers. |
 | `depth` | Not on main | D53 depth charts: no feed on main. Christopher's call on source (Sleeper/ESPN). Park. |
 | `nflstats` | Not on main | D54 league-scored stats table: needs a hosted read over fantasyscore weekly stats. Saved views = PRIV kind. Later. |
-| `describe` | Partly | Form path exists (RuleChangeForm, ruleDraft, useChangePreview: preview → confirm). The words-to-proposal assistant is D74 over scoped AI tokens (scopes seam); never a second rule writer. |
-| `house` | Partly | House rules are rules (native.rules.read/TargetNativeHouseRules + commish.rules.set). Firing log = ledger filter of rule events, not a new log (events seam). |
+| `describe` | Partly | Form path exists in commissioner/HostedRules.tsx (HostedRuleEditorTray, ruleDraft.ts, useChangePreview.ts: preview → confirm). Gap: words-to-proposal assistant is D74 over scoped AI tokens (scopes seam); never a second rule writer. |
+| `house` | Partly | House rules are rules (native.rules.read/TargetNativeHouseRules + commish.rules.set). Hosted rules live in v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx; gap: no hosted house-rules editor yet. Firing log = ledger filter of rule events, not a new log (events seam). |
 | `layout` | Not on main | League surface on/off/auto (fold 1) is a new league setting: add as rule keys in leaguerules so the commissioner preset machinery covers it. Ask before building. |
-| `statq` | Local only | Port control/room openers stat queue to thin; commands exist. |
-| `rules` | Hosted | Thin HostedRules exists; local RulesView + PresetCompare are the fuller board. Port RulesView onto hostedRoom; one rule input (RuleInput.tsx). |
-| `season` | Local only | Port SeasonView; wire calendar.window.set/remove (catalog only today) into the same window editor as move. |
-| `fix` | Local only | Port FixView + UndoForm + actTable correction rows. Corrections are new ledger rows (never edits). |
-| `people` | Local only | Port PeopleView/LeaguePeople. Never-delegable: role grant/revoke, deputy order, succession settings. |
-| `ledger` | Local only | Port LeagueLedger + LedgerFilters onto hostedReads. |
-| `notices` | Local only | Port NoteForm/notes.ts. In-app only (no pestering outside the app). |
+| `statq` | Partly | Commands exist in commissioner/actTable.ts + actReadings.ts and route via firstHostedJobTool/resolveSituationStep in commissioner/hostedControlRoomData.ts (HostedCommissionerActTray); gap: no dedicated hosted stat-queue drawer UI yet. |
+| `rules` | Partly | Hosted rules board lives in v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx over hostedRoom; one rule input (RuleInput.tsx). Gap: no hosted preset-compare view yet. |
+| `season` | Partly | Hosted season screen lives in v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx; gap: wire calendar.window.set/remove (catalog only today) into the same window editor as move. |
+| `fix` | Hosted | Hosted fix screen lives in v3/CtrlFixV3.tsx + commissioner/HostedControlRoomFix.tsx + actTable.ts correction/revert rows (HostedCommissionerActTray). Corrections are new ledger rows (never edits). |
+| `people` | Hosted | Hosted people screen lives in v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (people.ts). Never-delegable: role grant/revoke, deputy order, succession settings. |
+| `ledger` | Hosted | Hosted ledger lives in v3/CtrlLeagueV3.tsx + commissioner/HostedControlRoomLeague.tsx (ledgerChips + createHostedLedgerQuery) and v3/CtrlServerV3.tsx + commissioner/HostedControlRoom.tsx. |
+| `notices` | Hosted | Hosted notices composer lives in v3/CtrlLeagueV3.tsx + commissioner/HostedControlRoomLeague.tsx (useHostedLeague + notes.ts). In-app only (no pestering outside the app). |
 | `health` | Local only | Same producer as Jobs (commish.jobs.read + people last seen). No second engine; v3 R.health already reads Jobs. |
-| `server` | Local only | Commissioner view of server health is OPS data: serverstatus is an operator socket. Show read-only status only; restore/upgrade/feed switches stay operator-only (decided 11-17). |
+| `server` | Hosted | Hosted server tab lives in v3/CtrlServerV3.tsx + commissioner/HostedControlRoom.tsx (with commissioner/HostedBackupNow.tsx). Commissioner view of server health is OPS data: serverstatus is an operator socket. Show read-only status only; restore/upgrade/feed switches stay operator-only (decided 11-17). |
 
 ## Plans — screen tabs
 | Stub | State | Plan |
@@ -118,29 +118,29 @@ Christopher's order for the real app (tracker, 11-17): **Franchise HQ → War Ro
 | `pulse:now` | Hosted | Done in thin Pulse. Per-play fantasy delta + stat changes are server work (D08/D09/D51). |
 | `pulse:race` | Hosted | Done in thin Pulse; why-moved notes (D05) and tiebreak step (D03) are partial engine work. |
 | `pulse:archive` | Not on main | New tab + hosted archive read (D47). After Home. |
-| `control:jobs` | Local only | Port JobsView to thin mode (Christopher's order: after Home). Jobs come from commish.jobs.read; 7 producers still missing (D60). |
-| `control:situations` | Local only | Port SituationsView + guide.ts as is; guide marks B/R/G tell which steps are built. |
-| `control:rules` | Partly | Port RulesView/PresetCompare onto hostedRoom. |
-| `control:season` | Local only | Port SeasonView; add calendar.window.set/remove. |
-| `control:fix` | Local only | Port FixView. |
-| `control:picks` | Local only | Port PicksView; D67 pick ops (grant/swap/forfeit/condition/void/create) are ruled and not built: commands seam. |
-| `control:people` | Local only | Port PeopleView; permission sets D65 not built. |
-| `control:league` | Local only | Port LeagueView; league colour + layout surfaces are new rule keys (ask). |
-| `control:server` | Local only | Read-only status in thin; actions operator-only (ruling). |
+| `control:jobs` | Partly | Hosted owner: v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (hostedJobs.ts + jobs.ts). Jobs come from commish.jobs.read; gap: 7 producers still missing (D60). |
+| `control:situations` | Hosted | Hosted owner: v3/CtrlSituationsV3.tsx + commissioner/HostedControlRoomSituations.tsx + control/room/guide.ts + resolveSituationStep (hostedControlRoomData.ts); guide marks B/R/G tell which steps are built. |
+| `control:rules` | Partly | Hosted owner: v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx over hostedRoom. Gaps: preset compare and house-rules editor are not built yet. |
+| `control:season` | Partly | Hosted owner: v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx; gap: add calendar.window.set/remove. |
+| `control:fix` | Hosted | Hosted owner: v3/CtrlFixV3.tsx + commissioner/HostedControlRoomFix.tsx + actTable.ts. |
+| `control:picks` | Partly | Hosted owner: v3/CtrlPicksV3.tsx + commissioner/HostedControlRoomPicks.tsx; gap: D67 pick ops (grant/swap/forfeit/condition/void/create) are ruled and not built: commands seam. |
+| `control:people` | Partly | Hosted owner: v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx; gaps: permission sets D65 and join-link UI (E1.1) not built. |
+| `control:league` | Partly | Hosted owner: v3/CtrlLeagueV3.tsx + commissioner/HostedControlRoomLeague.tsx (notices + filtered ledger); gap: league colour + layout surfaces are new rule keys (ask). |
+| `control:server` | Hosted | Hosted owner: v3/CtrlServerV3.tsx + commissioner/HostedControlRoom.tsx (with HostedBackupNow.tsx). Read-only status in thin; actions operator-only (ruling). |
 
 ## Plans — shell
 | Stub | State | Plan |
 |---|---|---|
 | `shell:home-boards` | Not on main | Biggest new build. Replace per-league homeLayout with an app Home whose layout lives in a D58 PRIV store (storage seam: new table; approved 11-17). Pieces = registry entries that declare their reads (homeTiles TILES already do this: extend TILES, do not start a second registry). |
-| `shell:rail` | Local only | Reuse ShellRail + leaguePicker. Add the app zone (Home + boards) above the league zone (ruled 11-16). |
+| `shell:rail` | Partly | Hosted owner: Rail in v3/V3Shell.tsx + shell/leaguePicker.tsx (and shell/RailNodes.tsx in ThinLeagueShell.tsx). App zone + league zone exist (ruled 11-16); gaps: multi-board links, shortcuts persistence (D58), and rail collapse. |
 | `shell:league-chip` | Partly | Reuse leaguePicker; waiting/live counts come from the docket read. |
-| `shell:search` | Local only | Reuse CommandBar + commands/search.ts + commandbar.gen.ts; add players/teams/leagues as result kinds (D76). |
+| `shell:search` | Partly | Hosted owner: Commands in v3/overlays.tsx + commands/search.ts + commandbar.gen.ts; gap: wire command candidates and players/teams/leagues entity results (D76) into Commands. |
 | `shell:needs-you` | Partly | Count = docket read; drawer = Docket. |
 | `shell:alert-band` | Partly | Reuse HomeBrief alertsOf()/parseAlerts; lift it into the shell for every screen (UI Direction: one-row alert band outside the layout, all screens). |
 | `shell:assistant` | Not on main | D74: AI helpers already act through scoped tokens + MCP (cmd/twr). An in-app drawer is a client for that same door; it prepares, the owner confirms (ruled). Never a second command path. |
 | `shell:feeds` | Mock only | Mock-only. The real equivalent is registry/EndpointIndex (developer view). Do not ship. |
 | `shell:account` | Hosted | Reuse NativeAccount (devices, recovery, sign-out). |
-| `shell:status-bar` | Partly | Reuse StatusStrip + data/freshness.ts. Spoiler delay is a client preference (UI-SAVE). |
+| `shell:status-bar` | Partly | Hosted owner: status footer in v3/V3Shell.tsx + data/freshness.ts. Gaps: per-server health drawer and spoiler-delay menu (spoiler delay is a client preference, UI-SAVE). |
 | `shell:inspector` | Hosted | Reuse HQInspector/WarRoomInspector; one inspector read module (warroomInspectorReads). |
 | `shell:popout` | Not on main | No window code exists. Wails supports extra windows; keep-on-top only for live scoring (ruled). New, after Home. |
 | `shell:cards` | Partly | Extend EntityInspector (team, offer, pick) with player/club/transaction kinds; center card exception is ruled. One card component per kind. |
@@ -193,7 +193,7 @@ Each action points at its parent piece or screen above; the line says only what 
 | `account` | UI | Hosted | Part of shell:account: Reuse NativeAccount (devices, recovery, sign-out).. |
 | `acct` | IN+OUT | Partly | Labels toggle = client pref; devices/sign-out = NativeAccount (/v1/auth). AI provider key: none on main; AI access is scoped tokens (D74). Ask before storing provider keys. |
 | `map` | UI | Not on main | Part of shell:tour: New, small, client-only. |
-| `cmdk` | IN | Local only | Reuse CommandBar; command candidates are generated (commandbar.gen.ts). Add entity results (D76). |
+| `cmdk` | IN | Partly | Hosted owner: Commands in v3/overlays.tsx; command candidates are generated (commandbar.gen.ts + commands/search.ts). Gap: wire command candidates and entity results (D76) into Commands. |
 | `docket` | IN | Partly | Part of p:docket: Build ONE server read that fans out the existing producers (alertsOf, commish.jobs.read, moves.read needs_you, trades.read, bids.read, waivers.read, calendar.read) per league; client merges leagues. |
 | `dkLane` | UI | Not on main | Part of p:docket: Build ONE server read that fans out the existing producers (alertsOf, commish.jobs.read, moves.read needs_you, trades.read, bids.read, waivers.read, calendar.read) per league; client merges leagues. |
 | `dkLg` | UI | Not on main | Part of p:docket: Build ONE server read that fans out the existing producers (alertsOf, commish.jobs.read, moves.read needs_you, trades.read, bids.read, waivers.read, calendar.read) per league; client merges leagues. |
@@ -208,7 +208,7 @@ Each action points at its parent piece or screen above; the line says only what 
 | `asstCm` | OUT | Not on main | Part of shell:assistant: D74: AI helpers already act through scoped tokens + MCP (cmd/twr). |
 | `trInspect` | IN | Hosted | Part of shell:inspector: Reuse HQInspector/WarRoomInspector; one inspector read module (warroomInspectorReads).. |
 | `stConn` | IN | Not on main | Per-server health: one row per league server from the existing serverversion preflight/status; no ping loop in the client (§18). |
-| `stLive` | UI | Not on main | Part of shell:status-bar: Reuse StatusStrip + data/freshness.ts. |
+| `stLive` | UI | Not on main | Part of shell:status-bar: status footer in v3/V3Shell.tsx + data/freshness.ts (gap: spoiler-delay menu not wired yet). |
 | `stDelay` | UI·S | Not on main | Client preference (spoiler delay). Saved with the person, not the league. |
 | `ent` | IN | Partly | One popover per kind, extending EntityInspector. Player card shows status facts (no prose), his leagues, actions that route to existing screens. |
 | `devOut` | OUT | Hosted | Done: NativeAccount Revoke this device. Confirm first; no undo (a revoked token cannot come back). |
@@ -281,61 +281,61 @@ Each action points at its parent piece or screen above; the line says only what 
 | Stub | Kind | State | Plan |
 |---|---|---|---|
 | `say` | OUT | Local only | Generic commissioner act box. Real: CommissionerActTray + ActFields over actTable rows (CM-xxx). Every v3 "say" type maps to an actTable row. |
-| `jobOpen` | IN | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
-| `jobDone` | OUT | Local only | Same as cjMark. |
-| `cmTry` | IN | Local only | Part of control:rules: Port RulesView/PresetCompare onto hostedRoom.. |
-| `cmCancel` | UI | Local only | Part of control:rules: Port RulesView/PresetCompare onto hostedRoom.. |
-| `cmApply` | OUT | Hosted | Rule change via RuleChangeForm preview → confirm (exists). |
+| `jobOpen` | IN | Partly | Part of control:jobs: hosted owner v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (opens tools via firstHostedJobTool + HostedCommissionerActTray; no separate v2 job drawer). |
+| `jobDone` | OUT | Not on main | Same as cjMark (hosted jobs live in v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx). |
+| `cmTry` | IN | Partly | Part of control:rules: hosted owner v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx (preview via useChangePreview.ts / hostedRoom; gap: words-to-proposal assistant). |
+| `cmCancel` | UI | Hosted | Part of control:rules: hosted owner v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx (cancel/close on HostedRuleEditorTray). |
+| `cmApply` | OUT | Hosted | Rule change via commissioner/HostedRules.tsx (HostedRuleEditorTray preview → confirm, exists). |
 | `surf` | OUT | Not on main | League surface setting = new rule keys (fold 1). Ask before building. |
 | `lcolor` | OUT | Not on main | League colour + badge = commissioner setting (ruled 11-16 yes). New rule key; avoid green/blue/amber/red. |
-| `cmOk` | OUT | Local only | Part of control:people: Port PeopleView; permission sets D65 not built.. |
-| `seatGo` | OUT | Local only | Seat tools exist (commish.seat.*); invite links go through the join seam (internal/accounts/join.go: one revocable per-league secret). |
+| `cmOk` | OUT | Hosted | Part of control:people: hosted owner v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (seat actions open HostedCommissionerActTray; permission sets D65 not built). |
+| `seatGo` | OUT | Partly | Hosted owner: v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (commish.seat.*); gap: join-link UI (E1.1); invite links go through the join seam (internal/accounts/join.go: one revocable per-league secret). |
 | `copyLink` | UI | Not on main | Client-only copy of the join link. |
-| `cmDone` | OUT | Local only | Part of control:people: Port PeopleView; permission sets D65 not built.. |
+| `cmDone` | OUT | Hosted | Part of control:people: hosted owner v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (invite via HostedCommissionerActTray; permission sets D65 not built). |
 | `tOk` | UI | Local only | Reuse the commissioner form engine (actTable.ts + ActFields.tsx + hostedRoom preview → confirm → execute). One form component, never a per-tool form. |
-| `preCmp` | IN | Local only | Part of control:rules: Port RulesView/PresetCompare onto hostedRoom.. |
-| `preApply` | OUT | Local only | PresetCompare.tsx exists (local). Port onto hostedRoom; presets are setting bundles (ruled). |
-| `houseNew` | OUT | Partly | House rule = rules text + commish.rules.set. Firing log is a ledger filter (events seam). |
-| `schedTool` | IN | Local only | Part of control:season: Port SeasonView; add calendar.window.set/remove.. |
-| `schedSwap` | OUT | Local only | Part of control:season: Port SeasonView; add calendar.window.set/remove.. |
-| `brkTool` | OUT | Local only | Part of control:season: Port SeasonView; add calendar.window.set/remove.. |
-| `titleTool` | OUT | Local only | title.set only sets the title label. Crowning by ruling = bracket.advance / commish.standings.override through the same act form. |
+| `preCmp` | IN | Not on main | Part of control:rules: gap — no hosted preset-compare view exists yet (deleted with desktop removal; future owner v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx). |
+| `preApply` | OUT | Not on main | Gap: no hosted preset-compare/apply view exists yet (deleted with desktop removal; future owner v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx over hostedRoom; presets are setting bundles, ruled). |
+| `houseNew` | OUT | Partly | House rule = rules text + commish.rules.set. Future hosted owner: v3/CtrlRulesV3.tsx + commissioner/HostedRules.tsx (gap: no hosted house-rules editor yet). Firing log is a ledger filter (events seam). |
+| `schedTool` | IN | Hosted | Part of control:season: hosted owner v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx; gap: add calendar.window.set/remove. |
+| `schedSwap` | OUT | Hosted | Part of control:season: hosted owner v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx (schedule actions via HostedCommissionerActTray); gap: add calendar.window.set/remove. |
+| `brkTool` | OUT | Hosted | Part of control:season: hosted owner v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx (bracket actions via HostedCommissionerActTray); gap: add calendar.window.set/remove. |
+| `titleTool` | OUT | Hosted | Hosted owner: v3/CtrlSeasonV3.tsx + commissioner/HostedControlRoomSeason.tsx. title.set only sets the title label. Crowning by ruling = bracket.advance / commish.standings.override through the same act form. |
 | `rollTool` | IN | Hosted | Done: season.rollover preview. |
 | `rollRun` | OUT | Hosted | Done: season.rollover via HostedWorkflows + HoldToFire (G3). Keep. |
-| `pkF` | UI | Local only | Part of control:picks: Port PicksView; D67 pick ops (grant/swap/forfeit/condition/void/create) are ruled and not built: commands seam.. |
-| `pkMenu` | UI | Local only | Part of control:picks: Port PicksView; D67 pick ops (grant/swap/forfeit/condition/void/create) are ruled and not built: commands seam.. |
-| `pkDo` | OUT | Partly | Move = correct.pick (exists). Grant/swap/forfeit/condition/void/restore are D67: ruled, not built; add through the commands seam in internal/commissioner. |
+| `pkF` | UI | Hosted | Part of control:picks: hosted owner v3/CtrlPicksV3.tsx + commissioner/HostedControlRoomPicks.tsx (filters exist; gap: D67 pick ops grant/swap/forfeit/condition/void/create are ruled and not built: commands seam). |
+| `pkMenu` | UI | Partly | Part of control:picks: hosted owner v3/CtrlPicksV3.tsx + commissioner/HostedControlRoomPicks.tsx (gap: D67 pick ops grant/swap/forfeit/condition/void/create are ruled and not built: commands seam). |
+| `pkDo` | OUT | Partly | Hosted owner: v3/CtrlPicksV3.tsx + commissioner/HostedControlRoomPicks.tsx. Move = correct.pick (exists). Grant/swap/forfeit/condition/void/restore are D67: ruled, not built; add through the commands seam in internal/commissioner. |
 | `pkNew` | OUT | Not on main | Create pick = D67, ruled not built. Commands seam. |
-| `permT` | OUT | Local only | commish.abilities.set exists. Permission sets (D65) are not built; never-delegable list applies. |
-| `depAdd` | OUT | Local only | commish.role.grant (+ abilities). Never-delegable: role grant/revoke, deputy order, succession settings. |
-| `depDel` | OUT | Local only | Part of control:people: Port PeopleView; permission sets D65 not built.. |
-| `sucMove` | OUT | Local only | Part of control:people: Port PeopleView; permission sets D65 not built.. |
-| `bkNow` | OUT | Local only | Local mode has backup.now; hosted backups are automatic (R2 offsite). A commissioner "backup now" on hosted is new and operator-side: ask. |
+| `permT` | OUT | Partly | Hosted owner: v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx. commish.abilities.set exists. Permission sets (D65) are not built; never-delegable list applies. |
+| `depAdd` | OUT | Hosted | Hosted owner: v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx. commish.role.grant (+ abilities). Never-delegable: role grant/revoke, deputy order, succession settings. |
+| `depDel` | OUT | Hosted | Part of control:people: hosted owner v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (permission sets D65 not built). |
+| `sucMove` | OUT | Hosted | Part of control:people: hosted owner v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (permission sets D65 not built). |
+| `bkNow` | OUT | Hosted | Hosted owner: commissioner/HostedBackupNow.tsx (wired in v3/CtrlServerV3.tsx, v3/CtrlSeasonV3.tsx, commissioner/HostedControlRoom.tsx). Runs backup.now with preview → hold; automatic backups also run (R2 offsite). |
 | `bkRestore` | IN | Ruling | Restore is operator-only today (deploy/server/RESTORE.md). Ruling needed before any commissioner restore. |
 | `bkRun` | OUT | Ruling | Same as bkRestore. |
 | `feedT` | OUT | Ruling | Feed control is operator-side (serverstatus). Ruling needed. |
 | `feedSw` | OUT | Ruling | Truth-ladder override (ESPN → Sleeper → nflverse) is server policy. Ruling needed. |
 | `upChk` | IN | Partly | Read-only update status can show; desktop client already has UpdateRequired.tsx. |
 | `upRun` | OUT | Ruling | Server upgrade is operator-only (signed releases, releasetrust). Ruling needed. |
-| `cjFilter` | UI | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
-| `cjReopen` | UI | Not on main | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
+| `cjFilter` | UI | Hosted | Part of control:jobs: hosted owner v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (kind filter chips via hostedJobs.ts). |
+| `cjReopen` | UI | Partly | Part of control:jobs: hosted owner v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (wake snoozed jobs works; gap: manual settle/reopen). |
 | `cjSnooze` | OUT | Not on main | Snooze = PRIV per-actor state (D57). A job is computed; snoozing never hides it from co-commissioners. |
-| `cjOpen` | IN | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
-| `cjMark` | OUT | Local only | A job settles when its command runs; the producer drops it on the next read. A manual "settled" mark without a command is new: ask. |
-| `cjTrade` | IN | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
+| `cjOpen` | IN | Partly | Part of control:jobs: hosted owner v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx (opens tools via firstHostedJobTool + HostedCommissionerActTray). |
+| `cjMark` | OUT | Not on main | Hosted jobs live in v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx. A job settles when its command runs; the producer drops it on the next read. Gap: a manual "settled" mark without a command is new: ask. |
+| `cjTrade` | IN | Partly | Part of control:jobs: hosted owner v3/CtrlJobsV3.tsx + commissioner/HostedControlRoomJobs.tsx + commissioner/HostedWorkflows.tsx (gap: no inline trade-ballot drawer in Jobs yet). |
 | `cjTx` | OUT | Partly | Approve/veto = trade.review (DOT only); override = trade.override. "Extend the review window" has no command: ask Christopher, then add via the commands seam. |
-| `cjStat` | IN | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
-| `cjSq` | OUT | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
-| `cjTie` | OUT | Local only | bids.award.override / waivers.award.override exist (SeasonView). Port. |
+| `cjStat` | IN | Partly | Part of control:jobs: routed via firstHostedJobTool (commissioner/hostedControlRoomData.ts) + commissioner/actReadings.ts; gap: no dedicated hosted stat-queue drawer UI yet. |
+| `cjSq` | OUT | Partly | Part of control:jobs: stat-queue approve/reject live in commissioner/actTable.ts via firstHostedJobTool + HostedCommissionerActTray; gap: no dedicated/bulk stat-queue drawer UI yet. |
+| `cjTie` | OUT | Hosted | bids.award.override / waivers.award.override exist in commissioner/HostedWorkflows.tsx + commissioner/actTable.ts (routed via firstHostedJobTool in commissioner/hostedControlRoomData.ts). |
 | `cjLine` | IN | Not on main | Lineup holes across the league = a new job producer in app/control alerts (one of the 7 missing producers, D60). |
 | `cjLn` | OUT | Partly | Commissioner sets a lineup = commish.lineup.set (exists). "Nudge" = in-app notice (commish.notice.publish), never outside the app. |
 | `cjCap` | OUT | Local only | Ruling tools exist: commish.cap.relief, rule.exception, commish.notice.publish (guide.ts lists them). |
-| `cjNotice` | OUT | Local only | Part of control:jobs: Port JobsView to thin mode (Christopher's order: after Home). |
+| `cjNotice` | OUT | Hosted | Part of control:jobs / control:league: hosted notice composer lives in v3/CtrlLeagueV3.tsx + commissioner/HostedControlRoomLeague.tsx. |
 | `cjOrder` | OUT | Local only | draft.order.set/auto/pattern exist in actTable. Port. |
-| `cfgEdit` | OUT | Hosted | Done in thin: HostedRules + RuleInput (typed value, timing, reason, preview → confirm). |
-| `divTool` | IN | Local only | Part of control:rules: Port RulesView/PresetCompare onto hostedRoom.. |
+| `cfgEdit` | OUT | Hosted | Done in thin: commissioner/HostedRules.tsx (HostedRuleEditorTray) + v3/CtrlRulesV3.tsx + RuleInput.tsx (typed value, timing, reason, preview → confirm). |
+| `divTool` | IN | Partly | Hosted divisions status renders in v3/CtrlSeasonV3.tsx (Rollover & divisions panel); gap: no hosted divisions edit drawer yet (see divMove ruling). |
 | `divMove` | OUT | Ruling | Check whether division membership is a rules key (leaguerules competition) before adding anything; if not, it is a new commish command via the seam (ask). |
-| `pfS` | UI | Local only | Part of control:people: Port PeopleView; permission sets D65 not built.. |
+| `pfS` | UI | Hosted | Part of control:people: hosted owner v3/CtrlPeopleV3.tsx + commissioner/HostedControlRoomPeople.tsx (search + seat filters exist; permission sets D65 not built). |
 
 ### Navigation only
 | Stub | Kind | State | Plan |
@@ -343,7 +343,7 @@ Each action points at its parent piece or screen above; the line says only what 
 | `closeLayer` | UI | Hosted | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `home` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `nav` | UI | Hosted | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
-| `railCol` | UI·S | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
+| `railCol` | UI·S | Not on main | Navigation only (v3/V3Shell.tsx rail-foot renders the collapse button without a handler yet — gap); reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `pickLeague` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `goLeague` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `star` | UI·S | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
@@ -358,7 +358,7 @@ Each action points at its parent piece or screen above; the line says only what 
 | `healthGo` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `hJob` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `cjHome` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
-| `cjGo` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
+| `cjGo` | UI | Hosted | Navigation only: job → tool routing lives in firstHostedJobTool (commissioner/hostedControlRoomData.ts) + v3/CtrlJobsV3.tsx / commissioner/HostedControlRoomJobs.tsx; reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 | `askGo` | UI | Local only | Navigation only: reuse nav.open / leagueState.choose / route tables. No data, no new state. |
 
 ### Mock only
