@@ -1,6 +1,8 @@
 import { readWarRoomDraft, saveWarRoomDraftQueue } from './warroomDraftReads';
 import { HQAct as WarRoomAct } from './HQAct';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { hostedWorkflow } from '../commissioner/api';
+import { hostedDraftPort } from '../draftroom/hostedPort';
 import type { WarRoomContext } from './warroomReads';
 import { useWarRoomRead } from './warroomReads';
 import { WarRoomEmpty } from './WarRoomHeader';
@@ -8,10 +10,13 @@ import { unavailable } from './hqModel';
 const DraftRoom = lazy(() => import('../draftroom/DraftRoom'));
 export function WarRoomDraft({ context, select }: { context: WarRoomContext;
   select: (id: string, name: string, position?: string) => void }) {
+  const draftPort = useMemo(() => hostedDraftPort(context.native?.port ?? hostedWorkflow),
+    [context.native?.port]);
   if (context.native?.embedded) return <section className="native-draft ws on" aria-label="Draft room">
     <div className="ch"><b>DRAFT ROOM</b><span>league draft and actions</span></div>
     <Suspense fallback={<p role="status">Reading the draft…</p>}>
-      <DraftRoom league={context.native.league} />
+      <DraftRoom league={context.native.league} franchise={context.mine}
+        sessionFranchise={context.native.sessionFranchise ?? context.mine} port={draftPort} />
     </Suspense>
   </section>;
   return <DraftReading context={context} select={select} />;

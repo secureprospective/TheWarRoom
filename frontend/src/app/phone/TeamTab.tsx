@@ -7,6 +7,8 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { useContractRead } from '../contracts/Contracts';
 import { FailureAlert } from '../data/FailureAlert';
 import { parseDraft } from '../draftroom/draft';
+import DraftRoom from '../draftroom/DraftRoom';
+import { hostedDraftPort } from '../draftroom/hostedPort';
 import { parseHostedGames, type Game } from '../now/liveContract';
 import { HQAct } from '../shell/HQAct';
 import { useNativeLineup, NativeLineupReview } from '../shell/hqNativeLineup';
@@ -60,7 +62,9 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   const editor = useNativeLineup(league, mine, reading?.lineup, port, true);
   const [moving, setMoving] = useState<string>();
   const [drag, setDrag] = useState<DragState>();
-  const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } | { kind: 'picks' }>();
+  const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } |
+    { kind: 'picks' } | { kind: 'draft' }>();
+  const draftPort = useMemo(() => hostedDraftPort(port), [port]);
   const tabRef = useRef<HTMLDivElement>(null);
   const dragCtrl = useMemo(() => createRowDrag(), []);
   useEffect(() => () => dragCtrl.cancel(), [dragCtrl]);
@@ -198,7 +202,13 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
       {from.position} · {from.name}</span>}
     <NativeLineupReview editor={editor} refresh={() => refresh(n => n + 1)} />
     {sheet?.kind === 'picks' && <TeamSheet title="My draft picks" onClose={() => setSheet(undefined)}>
-      <PicksList league={league} mine={mine} port={port} /></TeamSheet>}
+      <PicksList league={league} mine={mine} port={port} />
+      <HQAct className="team-key team-key--go" onAction={() => setSheet({ kind: 'draft' })}>
+        Open draft room</HQAct></TeamSheet>}
+    {sheet?.kind === 'draft' && <TeamSheet title="Draft room" onClose={() => setSheet(undefined)}>
+      <HQAct className="team-key" onAction={() => setSheet({ kind: 'picks' })}>My picks</HQAct>
+      <DraftRoom league={league} franchise={mine} sessionFranchise={mine} port={draftPort}
+        mayChangeRules={false} hideFranchiseView /></TeamSheet>}
     {sheet?.kind === 'card' && <TeamSheet title="Player" onClose={() => setSheet(undefined)}>
       <PlayerSheet row={sheet.row} reading={reading} league={league} mine={mine} port={port} status={status}
         canMove={editable && sheet.row.section !== 'ir' && !sheet.row.locked}

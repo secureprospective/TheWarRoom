@@ -192,7 +192,8 @@ export default function V3Shell({ leagues: admitted, active, onOpen, onHome, onS
           : <Suspense fallback={<div className="st"><div className="eng">Opening War Room…</div></div>}>
             <div style={{ display: 'contents' }}>
               <WarRoomNative key={`${L.id}:${hqTeam[L.id] || L.franchise}`} embedded league={L.id}
-                mine={hqTeam[L.id] || L.franchise || ''} port={port} tabs={warSink}
+                mine={hqTeam[L.id] || L.franchise || ''} sessionFranchise={L.franchise || ''}
+                port={port} tabs={warSink}
                 owner={(hqTeam[L.id] || L.franchise) === L.franchise} workspace={warTab}
                 navigateWorkspace={setWarTab} onTeams={setWarTeams} leave={home}
                 v3={{ badge: <Badge L={L} /> }} /></div></Suspense>}</>)

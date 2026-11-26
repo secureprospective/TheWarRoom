@@ -1,10 +1,10 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	54945
+docs	54947
 frontend-generated	5272
-frontend-src	67035
-frontend-tests	43569
-go-prod	155990
+frontend-src	67114
+frontend-tests	43828
+go-prod	156014
 go-prod/cmd/twr	1139
 go-prod/cmd/twr-canary	673
 go-prod/cmd/twr-check	508
@@ -15,7 +15,7 @@ go-prod/internal/app	13690
 go-prod/internal/appvalue	1064
 go-prod/internal/archive	310
 go-prod/internal/commandcatalog	2602
-go-prod/internal/commissioner	31927
+go-prod/internal/commissioner	31951
 go-prod/internal/db	3681
 go-prod/internal/deepclone	103
 go-prod/internal/domain	324
@@ -64,6 +64,6 @@ go-prod/internal/tradelens	559
 go-prod/internal/transactions	2046
 go-prod/scripts	56
 go-prod/tools	1772
-go-test	106058
+go-test	106074
 go-testdata	40916
 other	19195

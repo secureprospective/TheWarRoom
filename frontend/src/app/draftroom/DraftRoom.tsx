@@ -1,12 +1,12 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { leagueState } from '../commissioner/proxy';
 import { surfaceActions } from '../commissioner/surfaceActions';
 import { DraftBoard } from './DraftBoard';
 import { DraftClock, DraftLauncher } from './DraftClock';
 import { DraftOutcome } from './DraftOutcome';
-import type { Draft } from './draft';
+import { oldestOwedPick, type Draft } from './draft';
 import { franchiseName } from './draftWords';
-import { draftRoom } from './state';
+import { createDraftRoom, draftRoom, type DraftRoomPort } from './state';
 import { parseTrayAction, type TrayAction } from './trayAction';
 import { useDraftReading, useNow } from './useDraftReading';
 import { YourPick } from './YourPick';
@@ -41,40 +41,62 @@ function Rules({ draft }: { draft: Draft }) {
 
 // DraftRoom is the rookie draft: the clock, your own pick, the board and, for a commissioner, the tray.
 // Go replays the ledger into the draft and decides every refusal; this presents it.
-export default function DraftRoom({ league }: { league?: string } = {}) {
-  const { choices, selected, people, outcome, error: leagueError, pending } = leagueState.use();
-  const room = draftRoom.use();
+export default function DraftRoom({ league, franchise: viewFranchise, sessionFranchise, port, mayChangeRules,
+  hideFranchiseView = false }:
+  { league?: string; franchise?: string; sessionFranchise?: string; port?: DraftRoomPort;
+    mayChangeRules?: boolean;
+    hideFranchiseView?: boolean } = {}) {
+  const session = leagueState.use();
+  const { choices, people, outcome, error: leagueError, pending } = session;
+  const client = useMemo(() => port ? createDraftRoom(port) : draftRoom, [port]);
+  const room = client.use();
   const [viewing, setViewing] = useState('');
   const [round, setRound] = useState(0);
   const [tray, setTray] = useState<Tray>();
   const background = useRef<HTMLDivElement>(null);
-  const draft = room.draft;
-  const franchise = viewing || people?.yourFranchise || people?.seats[0]?.franchise || '';
-  const may = people?.mayChangeRules === true;
+  const hasScopedSession = sessionFranchise !== undefined;
+  const selected = hasScopedSession ? league ?? '' : session.selected;
+  const actingFranchise = hasScopedSession ? sessionFranchise : people?.yourFranchise || '';
+  const franchise = hasScopedSession ? viewing || viewFranchise || ''
+    : viewing || viewFranchise || actingFranchise || people?.seats[0]?.franchise || '';
+  const loaded = room.draft;
+  const draft = loaded && loaded.league === selected && room.scope?.league === selected &&
+    room.scope.franchise === franchise ? loaded : undefined;
+  const mayChange = mayChangeRules ?? people?.mayChangeRules === true;
+  const may = mayChange && !hideFranchiseView;
   const clock = draft?.onClock ?? null;
   const waiting = draft !== undefined && !draft.started && Date.parse(draft.start) > 0;
   const now = useNow((clock !== null && !clock.paused) || waiting);
   const due = clock && !clock.paused ? clock.deadline : waiting ? draft.start : '';
   const landed = outcome.status === 'done' && outcome.form.startsWith('draft.')
     ? outcome.receipt : undefined;
-  useDraftReading(selected, franchise, due, now, landed?.entry ?? '', room.startup);
-  useEffect(() => { void leagueState.choose(league); }, [league]);
+  useDraftReading(selected, franchise, due, now, landed?.entry ?? '', room.startup,
+    client.read);
+  useEffect(() => { if (!hasScopedSession) void leagueState.choose(league); }, [league, hasScopedSession]);
   useEffect(() => { if (landed) setTray(undefined); }, [landed?.entry]);
   useEffect(() => surfaceActions.register('draftroom', args => {
     if (args.action === 'close') setTray(undefined);
-    if (args.action === 'pick' && people?.yourFranchise)
-      return draftRoom.pick(people.yourFranchise, args.value).then(() => {
-        const outcome = draftRoom.peek().pick;
+    const current = client.peek();
+    if (args.action === 'pick' && actingFranchise && franchise === actingFranchise &&
+      current.draft?.league === selected && current.scope?.league === selected &&
+      current.scope.franchise === franchise)
+      return client.pick(actingFranchise, args.value).then(() => {
+        const outcome = client.peek().pick;
         if (outcome.status === 'refused') throw new Error(outcome.message);
       });
     const action = args.action === 'tray' ? parseTrayAction(args.value) : null;
     if (action && may && draft) setTray({ ...action, opener: document.activeElement as HTMLElement });
-  }), [may, draft, people]);
-  if (!pending && choices.length === 0 && !leagueError) return <section className="draft-room">
+  }), [may, draft, people, actingFranchise, client, franchise, selected]);
+  if (!hasScopedSession && !pending && choices.length === 0 && !leagueError)
+    return <section className="draft-room">
     <h4>Draft room</h4>
     <p>No app league has been started. Create a league in Control Room to use the draft.</p>
   </section>;
-  const yourTurn = clock !== null && people?.yourFranchise === clock.owner && draft?.closed === null;
+  const owed = draft ? oldestOwedPick(draft, actingFranchise) : undefined;
+  const viewingOwnTeam = franchise === actingFranchise;
+  const canMakeOwed = Boolean(owed?.contract && viewingOwnTeam && !clock?.paused);
+  const yourTurn = !owed && viewingOwnTeam && clock !== null && actingFranchise === clock.owner &&
+    draft?.closed === null;
   const kind = room.startup ? 'startup' : 'rookie';
   return (
     <section className="draft-room" aria-label={room.startup ? 'Startup draft room' : 'Rookie draft room'}
@@ -86,7 +108,7 @@ export default function DraftRoom({ league }: { league?: string } = {}) {
         {!draft && !room.error && !leagueError && <p role="status">Reading the draft…</p>}
         {draft && (
           <>
-            {people && people.seats.length > 1 && (
+            {!hideFranchiseView && people && people.seats.length > 1 && (
               <label>Franchise to view
                 <select value={franchise} onChange={e => setViewing(e.target.value)}>
                   {people.seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
@@ -97,8 +119,9 @@ export default function DraftRoom({ league }: { league?: string } = {}) {
               <DraftLauncher action={{ kind: 'open' }} text="Open the startup draft" />
             )}
             <DraftClock draft={draft} now={now} may={may} />
-            {yourTurn && <YourPick draft={draft} outcome={room.pick} />}
-            {draft.next && !yourTurn && draft.closed === null && (
+            {(yourTurn || canMakeOwed) && <YourPick draft={draft} outcome={room.pick}
+              owed={canMakeOwed ? owed : undefined} />}
+            {draft.next && franchise === actingFranchise && !yourTurn && draft.closed === null && (
               <p>{franchiseName(draft, franchise)}’s next pick is round {draft.next.round}, pick{' '}
                 {draft.next.slot}.</p>
             )}

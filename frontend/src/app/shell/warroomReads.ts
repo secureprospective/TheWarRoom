@@ -13,7 +13,7 @@ import type { HostedPort } from '../commissioner/hostedRoom';
 import { hqEvents } from './hqReads';
 import { settingsFromReport, type HQCap } from './hqModel';
 import { standingFromReport } from './hqPlayerData';
-export type WarRoomNative = { league: string; mine: string; port?: HostedPort;
+export type WarRoomNative = { league: string; mine: string; sessionFranchise?: string; port?: HostedPort;
   leave: (node?: Node) => void; week?: number; embedded?: boolean; tabs?: HTMLElement | null;
   workspace?: string; navigateWorkspace?: (workspace: string) => void;
   reading?: NativeHQ; owner?: boolean; inspectPlayer?: PlayerCandidate;
