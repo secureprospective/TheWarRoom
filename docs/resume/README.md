@@ -1,6 +1,6 @@
 # Active Workstream Resumes
 
-Start here: **[RESUME-build-plan.md](RESUME-build-plan.md)** (11-22 reset, 7 stages, current state).
+Start here: **[RESUME-astra-plan.md](RESUME-astra-plan.md)** (11-25: carrying out Astra's rehearsal plan and PWA brief; current state, running lanes, next actions). Background: [RESUME-build-plan.md](RESUME-build-plan.md) (11-22 reset, 7 stages).
 
 Recent:
 - **desktop-v3** ([RESUME-desktop-v3.md](RESUME-desktop-v3.md), 2026-11-21) — Desktop v3 shell,
