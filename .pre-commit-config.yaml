@@ -40,7 +40,7 @@ repos:
         name: frontend controls & TS line length (<=110)
         entry: pnpm --dir frontend test -- src/app/commands/controls.test.ts
         language: system
-        files: ^frontend/(src/|tsconfig(\.node)?\.json$|package\.json$|pnpm-lock\.yaml$)
+        files: ^frontend/(src/|tsconfig(\.node)?\.json$|vite\.config\.ts$|package\.json$|pnpm-lock\.yaml$)
         pass_filenames: false
         stages: [pre-commit]
 
@@ -48,7 +48,7 @@ repos:
         name: frontend typecheck (tsc --noEmit)
         entry: pnpm --dir frontend exec tsc --noEmit
         language: system
-        files: ^frontend/(src/|tsconfig(\.node)?\.json$|package\.json$|pnpm-lock\.yaml$)
+        files: ^frontend/(src/|tsconfig(\.node)?\.json$|vite\.config\.ts$|package\.json$|pnpm-lock\.yaml$)
         pass_filenames: false
         stages: [pre-commit]
 

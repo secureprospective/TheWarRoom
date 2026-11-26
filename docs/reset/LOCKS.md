@@ -11,8 +11,8 @@ Initial ledger for BUILD-PLAN Stage 6 ("Lock it in"). Lists automatic guards ver
 | `golangci-lint-full` | Go changes | Full `golangci-lint` suite (`v2.12.2`, pinned SHA) | `.pre-commit-config.yaml` |
 | `gitleaks` | Staged files | Secret scan on staged changes (`v8.30.1`, pinned SHA) | `.pre-commit-config.yaml` |
 | `ifaceguard` | Go changes | `make ifaceguard` — blocks `interface{}` / `any` escapes in exported Go signatures | `tools/ifaceguard`, `Makefile` |
-| `frontend-controls` | Applicable `frontend/` changes (`src/`, `tsconfig*.json`, `package.json`, `pnpm-lock.yaml`) | `pnpm --dir frontend test -- src/app/commands/controls.test.ts` — raw control ban (`<button>`, `<a `, `onClick=`, `role="button"`, unallowlisted `onKeyDown=`), `Act` tooltip/semantics, and TS/TSX max line length (`<= 110` chars under `frontend/src/app`) | `frontend/src/app/commands/controls.test.ts` |
-| `frontend-tsc` | Applicable `frontend/` changes (`src/`, `tsconfig*.json`, `package.json`, `pnpm-lock.yaml`) | `pnpm --dir frontend exec tsc --noEmit` — TypeScript typecheck | `frontend/tsconfig.json` |
+| `frontend-controls` | Applicable `frontend/` changes (`src/`, `tsconfig*.json`, `vite.config.ts`, `package.json`, `pnpm-lock.yaml`) | `pnpm --dir frontend test -- src/app/commands/controls.test.ts` — raw control ban (`<button>`, `<a `, `onClick=`, `role="button"`, unallowlisted `onKeyDown=`), `Act` tooltip/semantics, and TS/TSX max line length (`<= 110` chars under `frontend/src/app`) | `frontend/src/app/commands/controls.test.ts` |
+| `frontend-tsc` | Applicable `frontend/` changes (`src/`, `tsconfig*.json`, `vite.config.ts`, `package.json`, `pnpm-lock.yaml`) | `pnpm --dir frontend exec tsc --noEmit` — TypeScript typecheck | `frontend/tsconfig.json` |
 
 ### Push time (`pre-push` via `scripts/prepush.sh`)
 
@@ -39,7 +39,7 @@ Initial ledger for BUILD-PLAN Stage 6 ("Lock it in"). Lists automatic guards ver
 
 | Item | Status | Notes |
 |---|---|---|
-| 11-20 phone test failure / quarantine | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #3 notes a phone test that failed once on 11-20 during a push and passed on retry (referenced in Claudebox `/root/TheWarRoom-RESUME-desktop-v3.md`). Exact failing test and failure mode are not yet identified in this worktree; phone tests remain unaltered until identified. |
+| Nov 20 commissioner admission timing | **VERIFIED** | The recorded failure was in `hostedRules.test.tsx`. The test asserted on the Change Lineup lock button before Rules rendered. Commit `877683d50` waits for the button. Both commissioner roles still run in Vitest. The focused admission and controls suites passed 31 checks on Nov 26. |
 | Additional Stage 6 build guards | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #2: add one guard per class of bug found (modeled on the `sw.js` asset manifest check in `frontend/vite.config.ts`). |
 | Daily cleanup PR job (T665) | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #4 (Hydrogen from Hermes, after reset settles). |
 | Weekly habit check | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #5 (stale cards, done lines, cold-start test). |
