@@ -6504,7 +6504,7 @@ export const nativeCommands = {
     ],
     "Undo": "none",
     "Facts": "ledger,player-facts",
-    "Safeguards": "on-clock owner selection; server fixes slot and contract",
+    "Safeguards": "owner selection; server chooses the oldest owed slot and fixes its contract",
     "Arguments": schema110
   },
   phrase: "pick draft",

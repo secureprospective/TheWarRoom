@@ -158,15 +158,16 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if len(records) == 0 || !leagueFranchise(records, scope.Franchise) {
 		return NativeDraft{}, fmt.Errorf("choose a franchise in this app league")
 	}
-	switch {
-	case scope.Startup && scope.Season == 0:
-		scope.Season = startupKey(records).Season
-	case scope.Season == 0:
-		season, err := draftSeasonNext(scope.League, records, scope.At)
-		if err != nil {
-			return NativeDraft{}, err
+	if scope.Season == 0 {
+		if scope.Startup {
+			scope.Season = startupKey(records).Season
+		} else {
+			season, err := draftSeasonNext(scope.League, records, scope.At)
+			if err != nil {
+				return NativeDraft{}, err
+			}
+			scope.Season = season
 		}
-		scope.Season = season
 	}
 	basis, err := readDraft(records, pickKey(records, DraftPickInput{Season: scope.Season, Startup: scope.Startup,
 		Franchise: scope.Franchise}), scope.At, standings)
@@ -195,11 +196,34 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if pick, ok := out.Draft.NextPick(scope.Franchise); ok {
 		out.Next = &pick
 	}
+	if err := projectOwedPickContract(&out.Draft, basis, scope.Franchise); err != nil {
+		return NativeDraft{}, err
+	}
 	if err := out.addRoom(basis, through, facts); err != nil {
 		return NativeDraft{}, err
 	}
 	localizeDraft(&out.Draft, local)
 	return out, nil
+}
+
+func projectOwedPickContract(draft *rookiedraft.Draft, basis draftBasis, franchise string) error {
+	if basis.closed != nil || (basis.draft.OnClock != nil && basis.draft.OnClock.Paused) {
+		return nil
+	}
+	for i := range draft.Picks {
+		pick := &draft.Picks[i]
+		if pick.Owner != franchise || !pick.Skipped || pick.How != rookiedraft.HowExpired ||
+			pick.Player != "" {
+			continue
+		}
+		terms, err := rookiedraft.SlotTerms(basis.rules.Draft, pick.Round, pick.Slot)
+		if err != nil {
+			return fmt.Errorf("read owed pick terms: %w", err)
+		}
+		pick.Contract = &terms
+		break
+	}
+	return nil
 }
 
 // namedRules writes a franchise's name wherever a rule's words give its id, so the draft room never shows

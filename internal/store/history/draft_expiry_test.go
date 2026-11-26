@@ -63,6 +63,16 @@ func TestOwedPickUsesOriginalSlotAfterTurnsEnd(t *testing.T) {
 	if due := commissioner.DueDrafts(recs, f.c.now, nil); len(due) != 0 {
 		t.Fatalf("owed draft auto-closes: %+v", due)
 	}
+	reading := f.draftReading("franchise.01")
+	if len(reading.Draft.Picks) == 0 || reading.Draft.Picks[0].Contract == nil ||
+		reading.Draft.Picks[0].Round != 1 || reading.Draft.Picks[0].Slot != 1 {
+		t.Fatalf("owner reading lacks the oldest owed slot's terms: %+v", reading.Draft.Picks)
+	}
+	terms := *reading.Draft.Picks[0].Contract
+	other := f.draftReading("franchise.02")
+	if other.Draft.Picks[0].Contract != nil {
+		t.Fatalf("another franchise received the owed price: %+v", other.Draft.Picks[0])
+	}
 	gate, err := commissioner.NativeActionGate(f.league, recs, "franchise.01", "draft_pick", f.c.now, time.UTC)
 	if err != nil {
 		t.Fatal(err)
@@ -81,6 +91,9 @@ func TestOwedPickUsesOriginalSlotAfterTurnsEnd(t *testing.T) {
 	p := d.Draft.Picks[0]
 	if p.Player != "1002" || p.Round != 1 || p.Slot != 1 || p.Contract == nil {
 		t.Fatalf("wrong owed selection: %+v", p)
+	}
+	if *p.Contract != terms {
+		t.Fatalf("recorded terms %+v differ from owed-read terms %+v", *p.Contract, terms)
 	}
 }
 
@@ -102,6 +115,9 @@ func TestVacantFranchiseAutopickUsesLiveSlotAndLeavesOwedPick(t *testing.T) {
 	if reading.Draft.Picks[0].How != "expired" || reading.Draft.OnClock == nil ||
 		reading.Draft.OnClock.Owner != "franchise.01" || reading.Draft.OnClock.Round != 2 {
 		t.Fatalf("expected an owed round-one pick and live round-two turn: %+v", reading.Draft)
+	}
+	if reading.Draft.Picks[0].Contract == nil || reading.Draft.Picks[0].Round != 1 {
+		t.Fatalf("oldest owed slot terms are missing beside the live turn: %+v", reading.Draft.Picks[0])
 	}
 	liveTerms := reading.Draft.OnClock.Contract
 	// Releasing the seat makes its current turn eligible for computer selection.
