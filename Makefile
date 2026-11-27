@@ -59,6 +59,7 @@ measure-dictionary:
 
 # lint runs ifaceguard, filelen, bloat, placement AND golangci-lint — all must pass to clear.
 lint: ifaceguard filelen bloat placement frontend-transport boundary
+	scripts/golangci-cache.test.sh
 	scripts/golangci-cache.sh run ./...
 
 .PHONY: boundary

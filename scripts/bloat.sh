@@ -24,7 +24,7 @@ read -r total comments provenance tiny < <(awk -v re="$provenance_re" '
 ' "${files[@]}")
 
 comment_pct=$(( 100 * comments / total ))
-dupl=$(golangci-lint run --enable-only dupl --max-issues-per-linter=0 --max-same-issues=0 ./... 2>/dev/null | grep -c '(dupl)$' || true)
+dupl=$(scripts/golangci-cache.sh run --enable-only dupl --max-issues-per-linter=0 --max-same-issues=0 ./... 2>/dev/null | grep -c '(dupl)$' || true)
 
 declare -A now=([comment_pct]=$comment_pct [provenance]=$provenance [tiny_files]=$tiny [dupl]=$dupl)
 declare -A base=()
