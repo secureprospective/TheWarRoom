@@ -338,10 +338,14 @@ it.each(['Commissioner', 'Co-commissioner'])(
   '%s sees loading state while Rules is pending and usable control after it resolves',
   async role => {
     const serve = service();
+    let reached = false;
     let release!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
     const port: HostedPort = async request => {
-      if (request.command === 'commish.rules.read') await gate;
+      if (request.command === 'commish.rules.read') {
+        reached = true;
+        await gate;
+      }
       return serve(request);
     };
     const admission: NativeView = {
@@ -369,11 +373,13 @@ it.each(['Commissioner', 'Co-commissioner'])(
     await click('Pick Test League');
     await click('Open Control Room');
     await click('Rules');
+    await vi.waitFor(() => expect(reached).toBe(true), { timeout: 10_000 });
     await vi.waitFor(
       () => expect(host.textContent).toContain('Reading league rules…'), { timeout: 10_000 });
     expect(buttons('Change Lineup lock')).toHaveLength(0);
     await act(async () => { release(); await gate; });
     await vi.waitFor(() => expect(buttons('Change Lineup lock')).toHaveLength(1), { timeout: 10_000 });
+    expect(host.textContent).not.toContain('Reading league rules…');
     expect(buttons('Change Lineup lock')[0].disabled).toBe(false);
     await click('Change Lineup lock');
     expect(host.querySelector('[role="dialog"]')).not.toBeNull();
