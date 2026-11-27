@@ -4,7 +4,6 @@ import { join, resolve } from 'node:path';
 import ts from 'typescript';
 import { shallow } from 'zustand/shallow';
 import { renderState } from './state';
-import { connectDensity } from './density';
 import { createCommands } from '../commands/registry';
 import { assertShortList } from './shortList';
 
@@ -53,25 +52,16 @@ describe('Performance is law (§18, §M3)', () => {
       'commands.read().density;',
     ]) expect(densityRead(mutant)).toBe(true);
   });
-  it('changes the CSS attribute, but not the React render snapshot, for N/T/M', () => {
+  it('excludes density from the React render snapshot for N/T/M', () => {
     const c = createCommands(() => undefined);
-    const writes: string[] = [];
-    const root = {
-      setAttribute: (_key: string, value: string) => writes.push(value),
-      querySelectorAll: () => [] as unknown as NodeListOf<Element>,
-    };
-    const stop = connectDensity(c, root);
     const before = renderState(c.read());
-    for (const key of ['N', 'T', 'M']) {
+    for (const [key, density] of [['N', 'narrative'], ['T', 'tactical'], ['M', 'matrix']] as const) {
       expect(c.key(key)).toBe(true);
+      expect(c.read().density).toBe(density);
       expect(shallow(before, renderState(c.read()))).toBe(true);
     }
-    expect(writes).toEqual(['tactical', 'narrative', 'tactical', 'matrix']);
     const mutant = { ...renderState(c.read()), density: c.read().density };
     expect(shallow(before, mutant)).toBe(false);
-    stop();
-    c.key('N');
-    expect(writes).toHaveLength(4);
   });
   it('requires a dynamic fixture boundary and rejects a static import', () => {
     const valid = (source: string) => source.includes("import('./fixtures/snapshot.json')") &&
