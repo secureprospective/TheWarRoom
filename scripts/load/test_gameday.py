@@ -135,9 +135,9 @@ class TestConnectTiming(unittest.TestCase):
 
 
 class TestLoadCoverage(unittest.TestCase):
-    def _run_main(self, teams, devices_per_team, state):
+    def _run_main(self, teams, devices_per_team, state, summary_line="PASS: load completed"):
         runner = Mock()
-        runner.summary_line.return_value = "PASS: load completed"
+        runner.summary_line.return_value = summary_line
         output = io.StringIO()
         args = [
             "gameday.py",
@@ -161,19 +161,21 @@ class TestLoadCoverage(unittest.TestCase):
         ):
             with self.assertRaises(SystemExit) as exit_error:
                 gameday.main()
-        remove.assert_called_once_with("/dev/shm/twr-gameday-test.json")
-        return exit_error.exception.code, output.getvalue(), runner, load_runner
+        return exit_error.exception.code, output.getvalue(), runner, load_runner, remove
 
     def test_main_rejects_fewer_owners_before_starting_workers(self):
         state = {
             "league": "L",
             "owners": [{"franchise": "f1", "bearers": ["secret-bearer"]}],
         }
-        code, output, runner, load_runner = self._run_main(2, 1, state)
+        code, output, runner, load_runner, remove = self._run_main(2, 1, state)
 
         self.assertEqual(code, 1)
         self.assertIn("FAIL: owners actual=1 expected=2", output)
+        self.assertIn("keeping state file /dev/shm/twr-gameday-test.json", output)
+        self.assertIn("seats were claimed", output)
         self.assertNotIn("secret-bearer", output)
+        remove.assert_not_called()
         load_runner.assert_not_called()
         runner.run.assert_not_called()
 
@@ -185,11 +187,14 @@ class TestLoadCoverage(unittest.TestCase):
                 {"franchise": "f2", "bearers": ["secret-bearer-3"]},
             ],
         }
-        code, output, runner, load_runner = self._run_main(2, 2, state)
+        code, output, runner, load_runner, remove = self._run_main(2, 2, state)
 
         self.assertEqual(code, 1)
         self.assertIn("FAIL: team=2 devices actual=1 expected=2", output)
+        self.assertIn("keeping state file /dev/shm/twr-gameday-test.json", output)
+        self.assertIn("seats were claimed", output)
         self.assertNotIn("secret-bearer", output)
+        remove.assert_not_called()
         load_runner.assert_not_called()
         runner.run.assert_not_called()
 
@@ -198,12 +203,140 @@ class TestLoadCoverage(unittest.TestCase):
             "league": "L",
             "owners": [{"franchise": "f1", "bearers": ["secret-bearer"]}],
         }
-        code, output, runner, load_runner = self._run_main(1, 1, state)
+        code, output, runner, load_runner, remove = self._run_main(1, 1, state)
 
         self.assertEqual(code, 0)
         self.assertIn("PASS: load completed", output)
+        self.assertNotIn("keeping state file", output)
+        remove.assert_called_once_with("/dev/shm/twr-gameday-test.json")
         load_runner.assert_called_once()
         runner.run.assert_called_once()
+
+    def test_main_keeps_state_file_on_load_fail(self):
+        state = {
+            "league": "L",
+            "owners": [{"franchise": "f1", "bearers": ["secret-bearer"]}],
+        }
+        code, output, runner, load_runner, remove = self._run_main(
+            1, 1, state, summary_line="FAIL: 1 x 502, 0 x 5xx, p95 10 ms, max RSS n/a MiB"
+        )
+
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL: 1 x 502", output)
+        self.assertIn("keeping state file /dev/shm/twr-gameday-test.json", output)
+        remove.assert_not_called()
+        load_runner.assert_called_once()
+        runner.run.assert_called_once()
+
+    def test_main_deletes_state_file_when_zero_seats_claimed(self):
+        state = {"league": "L", "owners": []}
+        code, output, runner, load_runner, remove = self._run_main(1, 1, state)
+
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL: owners actual=0 expected=1", output)
+        self.assertNotIn("keeping state file", output)
+        remove.assert_called_once_with("/dev/shm/twr-gameday-test.json")
+        load_runner.assert_not_called()
+        runner.run.assert_not_called()
+
+    def _new_shm_state_file(self):
+        fd, path = tempfile.mkstemp(dir="/dev/shm", prefix="twr-gameday-test-", suffix=".json")
+        os.close(fd)
+        os.remove(path)
+        self.addCleanup(lambda: os.path.exists(path) and os.remove(path))
+        return path
+
+    def test_partial_onboard_coverage_error_keeps_real_state_file(self):
+        state_path = self._new_shm_state_file()
+        franchises = {"franchises": [{"id": "f1", "taken": False}, {"id": "f2", "taken": False}]}
+        responses = iter([
+            (200, json.dumps(franchises).encode(), 1.0),
+            (201, b"{}", 1.0),
+            (500, b"{}", 1.0),
+            (200, json.dumps({"bearer": "secret-bearer-token"}).encode(), 1.0),
+        ])
+        client = Mock()
+        output = io.StringIO()
+        args = [
+            "gameday.py",
+            "--join-file",
+            "unused",
+            "--teams",
+            "2",
+            "--devices-per-team",
+            "1",
+            "--state-file",
+            state_path,
+        ]
+        with (
+            patch.object(sys, "argv", args),
+            patch.object(gameday, "make_ssl_context", return_value=None),
+            patch.object(gameday, "parse_join_file", return_value=("L", "code")),
+            patch.object(gameday, "Client", return_value=client),
+            patch.object(gameday, "auth_post", side_effect=lambda *_: next(responses)),
+            redirect_stdout(output),
+        ):
+            with self.assertRaises(SystemExit) as exit_error:
+                gameday.main()
+
+        self.assertEqual(exit_error.exception.code, 1)
+        out = output.getvalue()
+        self.assertIn("FAIL: owners actual=1 expected=2", out)
+        self.assertIn(f"keeping state file {state_path}", out)
+        self.assertNotIn("secret-bearer-token", out)
+        self.assertTrue(os.path.exists(state_path))
+        with open(state_path, "r") as f:
+            saved = json.load(f)
+        self.assertEqual(len(saved["owners"]), 1)
+        self.assertEqual(saved["owners"][0]["franchise"], "f1")
+        self.assertEqual(saved["owners"][0]["bearers"], ["secret-bearer-token"])
+        self.assertNotIn(saved["owners"][0]["password"], out)
+
+    def test_partial_onboard_exception_keeps_real_state_file(self):
+        state_path = self._new_shm_state_file()
+        franchises = {"franchises": [{"id": "f1", "taken": False}, {"id": "f2", "taken": False}]}
+
+        def fake_auth_post(_client, _pacer, path, _body):
+            if path == "/v1/auth/join/franchises":
+                return (200, json.dumps(franchises).encode(), 1.0)
+            if path == "/v1/auth/join/claim":
+                if not hasattr(fake_auth_post, "claimed"):
+                    fake_auth_post.claimed = True
+                    return (201, b"{}", 1.0)
+                raise RuntimeError("boom during second claim")
+            raise AssertionError(f"unexpected path {path}")
+
+        client = Mock()
+        output = io.StringIO()
+        args = [
+            "gameday.py",
+            "--join-file",
+            "unused",
+            "--teams",
+            "2",
+            "--devices-per-team",
+            "1",
+            "--state-file",
+            state_path,
+        ]
+        with (
+            patch.object(sys, "argv", args),
+            patch.object(gameday, "make_ssl_context", return_value=None),
+            patch.object(gameday, "parse_join_file", return_value=("L", "code")),
+            patch.object(gameday, "Client", return_value=client),
+            patch.object(gameday, "auth_post", side_effect=fake_auth_post),
+            redirect_stdout(output),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "boom during second claim"):
+                gameday.main()
+
+        out = output.getvalue()
+        self.assertIn(f"keeping state file {state_path}", out)
+        self.assertTrue(os.path.exists(state_path))
+        with open(state_path, "r") as f:
+            saved = json.load(f)
+        self.assertEqual(len(saved["owners"]), 1)
+        self.assertEqual(saved["owners"][0]["franchise"], "f1")
 
     def test_onboard_rejects_short_seat_list_before_claims(self):
         client = Mock()
