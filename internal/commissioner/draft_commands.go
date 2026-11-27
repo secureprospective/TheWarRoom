@@ -203,7 +203,7 @@ func checkLiveDraft(raw RawCommand, records []Record, at time.Time, standings Dr
 	if err != nil {
 		return err
 	}
-	if raw.Command == DraftRevert && trial.draft.Exhausted && trial.closed == nil {
+	if raw.Command == DraftRevert && trial.draft.Exhausted && !trial.draft.Owed() && trial.closed == nil {
 		return fmt.Errorf("every pick would still be used, so the draft would close itself again; restore it " +
 			"to a point before the last pick")
 	}
