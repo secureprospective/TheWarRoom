@@ -334,3 +334,47 @@ it('a refused rules read leaves league-wide Pulse available', async () => {
   expect(host.textContent).toContain('Standings available');
   expect(port.mock.calls.some(([r]) => r.command === 'results.read')).toBe(true);
 });
+it.each(['Commissioner', 'Co-commissioner'])(
+  '%s sees loading state while Rules is pending and usable control after it resolves',
+  async role => {
+    const serve = service();
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const port: HostedPort = async request => {
+      if (request.command === 'commish.rules.read') await gate;
+      return serve(request);
+    };
+    const admission: NativeView = {
+      server: 'https://league.example', league, name: 'Test League', role, franchise: '',
+      franchiseName: '', message: 'Connected', seed: '', connection: '', helperId: '',
+      confirmation: '', authGeneration: '1', seats: [],
+      leagues: [{ id: league, name: 'Test League', role, franchise: '', franchiseName: '' }],
+    };
+    vi.stubGlobal('fetch', vi.fn(async (url: string, init?: RequestInit) => {
+      if (url === '/v1/native/invalidations') return new Promise(() => {});
+      if (url === '/v1/native/workflow') {
+        const request = JSON.parse(String(init?.body)).workflow as NativeRequest;
+        return { ok: true, json: async () => await port(request) };
+      }
+      return {
+        ok: true, headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: async () => ({
+          protocol: 1, leagues: admission.leagues,
+          admission: { league, name: admission.name, role, franchise: '', franchiseName: '', seats: [] },
+        }),
+      };
+    }));
+    await act(async () => root.render(<NativeAccount initial={admission} />));
+    await vi.waitFor(() => expect(buttons('Pick Test League')).toHaveLength(1), { timeout: 15_000 });
+    await click('Pick Test League');
+    await click('Open Control Room');
+    await click('Rules');
+    await vi.waitFor(
+      () => expect(host.textContent).toContain('Reading league rules…'), { timeout: 10_000 });
+    expect(buttons('Change Lineup lock')).toHaveLength(0);
+    await act(async () => { release(); await gate; });
+    await vi.waitFor(() => expect(buttons('Change Lineup lock')).toHaveLength(1), { timeout: 10_000 });
+    expect(buttons('Change Lineup lock')[0].disabled).toBe(false);
+    await click('Change Lineup lock');
+    expect(host.querySelector('[role="dialog"]')).not.toBeNull();
+  }, 30_000);
