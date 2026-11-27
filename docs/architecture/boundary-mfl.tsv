@@ -40,9 +40,7 @@ debt	internal/ingestion/players	internal/mfl
 # Shared source reader still uses MFL read transport; not an MFL policy relocation.
 debt	internal/ingestion/playerscores	internal/mfl
 # Shared source reader still uses MFL read transport; not an MFL policy relocation.
-debt	internal/ingestion/researchfeeds	internal/mfl
 # Shared source reader still uses MFL read transport; not an MFL policy relocation.
-debt	internal/ingestion/sitenews	internal/mfl
 # MFL schedule/standings service remains a shared reference dependency.
 debt	internal/m2service	internal/ingestion/league
 # MFL schedule/standings service remains a shared reference dependency.

@@ -1,4 +1,4 @@
-Baton: Bee — 2026-11-28
-State: B2 tests-only slice complete; both server twins absent and are explicit GAP skips. Focused run passed with skips; lint blocked by branch line-budget gate (docs/go-test overruns require reason). tidy-check clean.
-Next: commit tests and REPORT.md once; no push.
-Blocked: requested behavior/mutation proof impossible without server twins; lint requires line-budget reason.
+Baton: Bee — 2026-11-26
+State: T710 PR-F removes three unimported packages on a43521f7b. PR-E contracts/trades still require whatif, tradeplans and rulebook. No migration or frontend shell change. Build, lint and line budget passed.
+Next: finish focused race tests, push through hooks, open PR against main. Do not merge.
+Blocked: none.

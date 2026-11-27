@@ -6,6 +6,7 @@ cap dollar, and every rule live in one ledger exact to the penny.
 
 TheWarRoom is AI-first and CLI-first: every move is a typed command in one catalogue, and the
 browser PWA (on phones and computers), CLI, and MCP all use the same rules and server-owned clock.
+The server holds the league ledger and runs the engine.
 
 See the full feature tour, architecture diagrams, 32-team default scoring study, and
 downloadable browser mocks in [docs/product-tour.md](docs/product-tour.md).
@@ -44,10 +45,10 @@ The test: if the commissioner ever quits, the owners love it so much they start 
 |:--|:--|
 | Phone tabs | ![Phone tabs](docs/ui/showcase/v1/phone-tabs.png) |
 | Phone sheets | ![Phone sheets](docs/ui/showcase/v1/phone-sheets.png) |
-| League Pulse | ![Desktop pulse](docs/ui/showcase/v1/desktop-pulse.png) |
-| War Room trade desk | ![Desktop trade](docs/ui/showcase/v1/desktop-trade.png) |
-| Franchise HQ | ![Desktop HQ](docs/ui/showcase/v1/desktop-hq.png) |
-| Control Room | ![Desktop control](docs/ui/showcase/v1/desktop-control.png) |
+| League Pulse | ![Wide-screen pulse](docs/ui/showcase/v1/desktop-pulse.png) |
+| War Room trade desk | ![Wide-screen trade](docs/ui/showcase/v1/desktop-trade.png) |
+| Franchise HQ | ![Wide-screen HQ](docs/ui/showcase/v1/desktop-hq.png) |
+| Control Room | ![Wide-screen control](docs/ui/showcase/v1/desktop-control.png) |
 
 ## Where things live
 

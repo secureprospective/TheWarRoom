@@ -10,7 +10,7 @@
   - Before PR-A, `go list -deps ./cmd/twr-server ./cmd/twr ./frontend/scripts/nativegen` links **130** packages because `frontend/scripts/nativegen` imports `internal/composition` (dragging in 30 desktop packages), and `nativegen` tests also import `internal/app/commissioner`.
 - **35 Go packages can be removed** (**26,880** prod + **16,895** test = **43,775 lines**), plus second-wave desktop files inside kept packages and the frontend Wails glue.
 - **10 packages moved from Tom's earlier delete list (`c7b6f2337`) onto KEEP** (**4,984** prod + **7,022** test = **12,006 lines**): PR #489 ("My MFL moves on the hosted app") wired them directly into `cmd/twr-server`. Deleting them would break the server build.
-- **Solo-owner rule ("trim, never delete"):** PR #489 now carries the hosted MFL moves path on top of those 10 kept packages. Removing the remaining desktop MFL/offer packages and updating `CLAUDE.md`, `North_Star.md`, and `README.md` still waits for Christopher's sign-off in PR-F.
+- **Solo-owner rule ("trim, never delete"):** PR #489 now carries the hosted MFL moves path on top of those 10 kept packages. Christopher approved removal on 2026-11-26. PR-F removes the unimported leaves; PR-E importers still keep three packages in place.
 
 ## Scan method
 
@@ -77,12 +77,12 @@ Verdict: **STAY** = kept (test dependency of kept packages, repo guard, or gener
 | `internal/app/research` | 2,666 | 1,784 | GO (PR-E) |
 | `internal/app/research/researchtest` | 117 | 0 | GO (PR-E) |
 | `internal/app/scoring` | 545 | 402 | GO (PR-E, after PR-B parity check) |
-| `internal/mflref/whatif` | 71 | 66 | GO (PR-F, needs Christopher's ruling) |
-| `internal/store/mflref/tradeplans` | 72 | 50 | GO (PR-F, needs Christopher's ruling) |
-| `internal/store/rulebook` | 787 | 323 | GO (PR-F, needs Christopher's ruling) |
-| `internal/store/playerrecord` | 207 | 244 | GO (PR-F, needs Christopher's ruling) |
-| `internal/ingestion/researchfeeds` | 469 | 246 | GO (PR-F, needs Christopher's ruling) |
-| `internal/ingestion/sitenews` | 115 | 51 | GO (PR-F, needs Christopher's ruling) |
+| `internal/mflref/whatif` | 71 | 66 | Kept (PR-E contracts and trades still import it) |
+| `internal/store/mflref/tradeplans` | 72 | 50 | Kept (PR-E trades still imports it) |
+| `internal/store/rulebook` | 787 | 323 | Kept (PR-E contracts still imports it) |
+| `internal/store/playerrecord` | 207 | 244 | Removed (PR-F) |
+| `internal/ingestion/researchfeeds` | 469 | 246 | Removed (PR-F) |
+| `internal/ingestion/sitenews` | 115 | 51 | Removed (PR-F) |
 | `frontend/scripts/nativegen` | 572 | 218 | STAY (retargeted off desktop in PR-A) |
 | `internal/app/now/nowtest` | 52 | 0 | STAY (test dep of `internal/app/now`) |
 | `internal/app/season/seasontest` | 98 | 0 | STAY (test dep of `internal/app/now`/`season`) |
@@ -115,7 +115,7 @@ Each PR must pass `go build ./... && go vet ./...` and tests of touched packages
 | **PR-C** | **Desktop CI (done on branch session/pulse-desktopc):** remove `.github/workflows/desktop-packages.yml`, `scripts/desktop/`, and the Wails lines in `.github/workflows/verify.yml` (lines 44, 64, 66) and `scripts/prepush.sh` (line 36). Must land before deleting `wails.json` so CI stays green. | Verify workflow and prepush stay green without `make bindings-fresh` / `check-wails-version.sh`. |
 | **PR-D** | **Root and composition (one commit; requires PR-A):** remove root `main.go`, `wails.json`, `build/`, `internal/composition`, `tools/fixtures`, composition half of `tools/boundarycheck` (+ `boundary-adapters.tsv`), composition shard row in `scripts/ci-shard*`, obsolete `.golangci.yml` depguard rules, and matching `placement.tsv` / `root-go-baseline.txt` entries. | `go build ./... && go vet ./...` and `make lint` pass. |
 | **PR-E** | **Desktop `internal/app/*` leaves:** remove `internal/app/{core,platform,control,commissioner,draft,market,race,research,offers,mflref}` and their `*test` helpers (`internal/app/scoring` only after PR-B). Keep `app/{now,report,season,sources}` and `nowtest`/`seasontest`. | `go build ./... && go test ./...` pass. |
-| **PR-F** | **Remaining solo-owner desktop leaves + doc updates (requires Christopher's ruling):** remove `internal/mflref/whatif`, `internal/store/mflref/tradeplans`, `internal/store/rulebook`, `internal/store/playerrecord`, `internal/ingestion/{researchfeeds,sitenews}`; update `CLAUDE.md`, `North_Star.md`, `README.md`, and `desktop-modes.md` in the same PR. **Keep** all 10 must-keep packages (`envelope`, `lineup`, `moves`, `transactions/*`, `contractacts`, `freeagents`). | Christopher's explicit ruling; `go build ./cmd/twr-server ./cmd/twr` and tests pass. |
+| **PR-F (done)** | **Unimported desktop leaves + doc updates:** removed `internal/store/playerrecord`, `internal/ingestion/{researchfeeds,sitenews}`. Rechecked on `a43521f7b`: `whatif`, `tradeplans`, and `rulebook` still have PR-E importers and stay until those callers are removed. Updated `CLAUDE.md`, `North_Star.md`, `README.md`, and `desktop-modes.md`. **Kept** all 10 must-keep packages (`envelope`, `lineup`, `moves`, `transactions/*`, `contractacts`, `freeagents`). | Christopher's explicit ruling; `go build ./cmd/twr-server ./cmd/twr` and tests pass. |
 | **PR-G** | **Desktop code in kept Go packages:** remove `commandcatalog/desktop.go`, `WailsDoor`, `serverclient/desktop*.go` + tests, `serverhttp/desktop*_test.go`, and desktop-only surfaces in `nativegen`; regenerate CLI/PWA tables. | Repeat PR-A byte-diff on kept CLI and browser outputs; `nativegen -check` clean. |
 | **PR-H** | **Frontend Wails removal and `go.mod`:** remove `frontend/wailsjs/` (28 files, 18,130 lines), update the 43 references across 24 files in `frontend/src/`, re-point `frontend/vite.config.ts:10` off `wails.json`, drop Wails deps from `go.mod` + `go mod tidy`. | `cd frontend && pnpm tsc --noEmit && pnpm test && pnpm run build` and bundle budget pass. |
 | **PR-I (done)** | **Makefile, scripts and current docs cleanup:** remove desktop release metadata and old version/bindings checks. Keep `make build` (server and CLI) and the league benchmarks. `LDFLAGS` stays in the Makefile with `-X main.version/commit/buildDate` for Lab release stamping; `internal/serverversion` owns league-file compatibility only. | Build/vet, stamped binary, lint, release dry run and reference scans; see `RESULT.md`. |

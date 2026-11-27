@@ -62,10 +62,8 @@ github.com/secureprospective/TheWarRoom/internal/ingestion/pendingtrades	1.019
 github.com/secureprospective/TheWarRoom/internal/ingestion/players	1.017
 github.com/secureprospective/TheWarRoom/internal/ingestion/playerscores	1.013
 github.com/secureprospective/TheWarRoom/internal/ingestion/playoffs	1.025
-github.com/secureprospective/TheWarRoom/internal/ingestion/researchfeeds	1.890
 github.com/secureprospective/TheWarRoom/internal/ingestion/rosters	1.014
 github.com/secureprospective/TheWarRoom/internal/ingestion/salaryadjustments	1.010
-github.com/secureprospective/TheWarRoom/internal/ingestion/sitenews	1.186
 github.com/secureprospective/TheWarRoom/internal/ingestion/transactions	1.074
 github.com/secureprospective/TheWarRoom/internal/ingestion/weeklyresults	3.483
 github.com/secureprospective/TheWarRoom/internal/leagueclock	1.013

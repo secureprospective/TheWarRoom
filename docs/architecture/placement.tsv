@@ -45,10 +45,8 @@ internal/ingestion/pendingtrades	trades
 internal/ingestion/players	sources
 internal/ingestion/playerscores	scoring
 internal/ingestion/playoffs	race
-internal/ingestion/researchfeeds	research
 internal/ingestion/rosters	control
 internal/ingestion/salaryadjustments	contracts
-internal/ingestion/sitenews	control
 internal/ingestion/transactions	control
 internal/ingestion/weeklyresults	now
 internal/leagueclock	control
@@ -105,7 +103,6 @@ internal/leaguemigration	platform
 internal/leaguemigration/migrationtest	platform
 internal/leaguemigration/mflsource	platform
 internal/playerrecord	core
-internal/store/playerrecord	core
 internal/pickvalue	market
 internal/app/mflref/planwatch	platform
 internal/mflref/whatif	contracts

@@ -1,10 +1,10 @@
 # line-budget-baseline.txt — per-area line budget (area<TAB>lines). Ratchet: only ever goes down.
 # Written by scripts/check-line-budget.sh --write from git ls-files + wc -l. Do not edit by hand.
-docs	55621
+docs	55560
 frontend-generated	5272
 frontend-src	67127
 frontend-tests	44012
-go-prod	156014
+go-prod	155222
 go-prod/cmd/twr	1139
 go-prod/cmd/twr-canary	673
 go-prod/cmd/twr-check	508
@@ -24,7 +24,7 @@ go-prod/internal/fantasyscore	3556
 go-prod/internal/feedwire	58
 go-prod/internal/governance	1529
 go-prod/internal/headshot	337
-go-prod/internal/ingestion	8686
+go-prod/internal/ingestion	8102
 go-prod/internal/leagueclock	506
 go-prod/internal/leaguefeed	326
 go-prod/internal/leagueload	1275
@@ -50,7 +50,7 @@ go-prod/internal/offline	139
 go-prod/internal/offsite	1029
 go-prod/internal/pickvalue	296
 go-prod/internal/playerid	124
-go-prod/internal/playerrecord	398
+go-prod/internal/playerrecord	397
 go-prod/internal/powerrankings	395
 go-prod/internal/projection	113
 go-prod/internal/releasetrust	549
@@ -59,11 +59,11 @@ go-prod/internal/serverhttp	4955
 go-prod/internal/serverstatus	510
 go-prod/internal/serverversion	207
 go-prod/internal/snapshot	738
-go-prod/internal/store	23415
+go-prod/internal/store	23208
 go-prod/internal/tradelens	559
 go-prod/internal/transactions	2046
 go-prod/scripts	56
 go-prod/tools	1772
-go-test	106077
-go-testdata	40916
-other	19372
+go-test	105536
+go-testdata	38582
+other	19370

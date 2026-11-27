@@ -130,8 +130,7 @@ Owners should never relearn what already works.
 - The web app (PWA) is the main way people use TheWarRoom: on the phone (mobile mock v1) and on the
   desktop browser (desktop mock v3), with the same Go engine behind our server.
 - The CLI (`twr`) and its MCP mode are the door AI uses.
-- **Under review in the reset:** the standalone desktop app and the old local mode. Until Christopher rules
-  on them, nothing new is built on them.
+- The league runs on the server, whether we host it or a commissioner self-hosts.
 - Home hosting: a dedicated Linux machine on the UPS, Cloudflare Tunnel (no open ports), and encrypted
   backups to Cloudflare R2.
 

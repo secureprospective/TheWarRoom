@@ -4,8 +4,7 @@
 // production through, so every per-player input the model reads is keyed by our ID.
 //
 // Feeds write facts into the record; the record resolves them (which source wins a field) and
-// never mints a second identity for a player it already holds. It is pure: the store persists
-// it (internal/store/playerrecord) and callers hand it the facts.
+// never mints a second identity for a player it already holds. It is pure: callers supply its facts.
 package playerrecord
 
 import (
