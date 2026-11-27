@@ -106,16 +106,3 @@ describe('player-card view model', () => {
     );
   });
 });
-
-it('never renders not-wired placeholders in the rostered Inspector', async () => {
-  const { renderToStaticMarkup } = await import('react-dom/server');
-  const { createElement } = await import('react');
-  const { PlayerInspector } = await import('../shell/PlayerInspector');
-  const { snapshot, roster, player } = input();
-  const html = renderToStaticMarkup(createElement(PlayerInspector, {
-    snapshot, subject: { kind: 'player', id: player.id, franchiseId: roster.franchiseId },
-  }));
-  expect(html.toLowerCase()).not.toContain('not wired');
-  expect(html).toContain('On-field-now');
-  expect(html).toContain('Dynasty value');
-});

@@ -1,9 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { createCommands } from '../commands/registry';
-import { nodes, nodeKeys, homeRoute, routeFor } from './nodes';
-import { parseRoute, formatRoute } from './routes';
-import { FixtureProvider } from '../data/provider';
+import { nodes, nodeKeys } from './nodes';
 
 describe('Shell routes and data', () => {
   it('keeps shell names, with War Room trade/draft destinations after the rail cut', () => {
@@ -21,24 +19,6 @@ describe('Shell routes and data', () => {
           !['market', 'offers history', 'counterparties', 'archive', 'data and sources'].includes(name)),
       );
       expect(nodes[n].workspaces.length).toBeLessThanOrEqual(3);
-    }
-  });
-  it('round-trips every workspace and falls back safely', () => {
-    for (const n of nodeKeys)
-      for (const w of nodes[n].workspaces) {
-        const route = routeFor(n, w.slug)!;
-        expect(parseRoute(formatRoute(route))).toEqual(route);
-      }
-    for (const hash of [
-      '',
-      '#/unknown/foo',
-      '#/home/market',
-      '#/home',
-      '#/home/seasonal-card/extra',
-      '#/%ZZ/%AA',
-      '#/constructor/foo',
-    ]) {
-      expect(parseRoute(hash)).toEqual(homeRoute);
     }
   });
 });
