@@ -27,7 +27,7 @@ export function useDraftReading(league: string, franchise: string, due: string, 
   useEffect(() => {
     if (!league || !franchise) return undefined;
     return poll(() => read(league, franchise), lookEveryMs);
-  }, [league, franchise, reread, startup]);
+  }, [league, franchise, reread, startup, read]);
   useEffect(() => {
     if (!due || !league || now < Date.parse(due) || looked.current === due) return;
     looked.current = due;

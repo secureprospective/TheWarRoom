@@ -47,15 +47,20 @@ export default function DraftRoom({ league, franchise: viewFranchise, sessionFra
     mayChangeRules?: boolean;
     hideFranchiseView?: boolean } = {}) {
   const session = leagueState.use();
-  const { choices, people, outcome, error: leagueError, pending } = session;
+  const hasScopedSession = sessionFranchise !== undefined;
+  const { choices, pending } = session;
+  const people = hasScopedSession ? undefined : session.people;
+  const outcome = hasScopedSession ? undefined : session.outcome;
+  const leagueError = hasScopedSession ? '' : session.error;
   const client = useMemo(() => port ? createDraftRoom(port) : draftRoom, [port]);
   const room = client.use();
-  const [viewing, setViewing] = useState('');
+  const selected = hasScopedSession ? league ?? '' : session.selected;
+  const viewKey = `${hasScopedSession ? 1 : 0}\0${league ?? ''}\0${selected}\0${viewFranchise ?? ''}`;
+  const [viewingState, setViewingState] = useState<{ key: string; franchise: string }>();
+  const viewing = viewingState?.key === viewKey ? viewingState.franchise : '';
   const [round, setRound] = useState(0);
   const [tray, setTray] = useState<Tray>();
   const background = useRef<HTMLDivElement>(null);
-  const hasScopedSession = sessionFranchise !== undefined;
-  const selected = hasScopedSession ? league ?? '' : session.selected;
   const actingFranchise = hasScopedSession ? sessionFranchise : people?.yourFranchise || '';
   const franchise = hasScopedSession ? viewing || viewFranchise || ''
     : viewing || viewFranchise || actingFranchise || people?.seats[0]?.franchise || '';
@@ -68,10 +73,11 @@ export default function DraftRoom({ league, franchise: viewFranchise, sessionFra
   const waiting = draft !== undefined && !draft.started && Date.parse(draft.start) > 0;
   const now = useNow((clock !== null && !clock.paused) || waiting);
   const due = clock && !clock.paused ? clock.deadline : waiting ? draft.start : '';
-  const landed = outcome.status === 'done' && outcome.form.startsWith('draft.')
+  const landed = outcome?.status === 'done' && outcome.form.startsWith('draft.')
     ? outcome.receipt : undefined;
   useDraftReading(selected, franchise, due, now, landed?.entry ?? '', room.startup,
     client.read);
+  useEffect(() => { setViewingState(undefined); }, [viewKey]);
   useEffect(() => { if (!hasScopedSession) void leagueState.choose(league); }, [league, hasScopedSession]);
   useEffect(() => { if (landed) setTray(undefined); }, [landed?.entry]);
   useEffect(() => surfaceActions.register('draftroom', args => {
@@ -86,7 +92,7 @@ export default function DraftRoom({ league, franchise: viewFranchise, sessionFra
       });
     const action = args.action === 'tray' ? parseTrayAction(args.value) : null;
     if (action && may && draft) setTray({ ...action, opener: document.activeElement as HTMLElement });
-  }), [may, draft, people, actingFranchise, client, franchise, selected]);
+  }), [may, draft, actingFranchise, client, franchise, selected]);
   if (!hasScopedSession && !pending && choices.length === 0 && !leagueError)
     return <section className="draft-room">
     <h4>Draft room</h4>
@@ -110,7 +116,8 @@ export default function DraftRoom({ league, franchise: viewFranchise, sessionFra
           <>
             {!hideFranchiseView && people && people.seats.length > 1 && (
               <label>Franchise to view
-                <select value={franchise} onChange={e => setViewing(e.target.value)}>
+                <select value={franchise}
+                  onChange={e => setViewingState({ key: viewKey, franchise: e.target.value })}>
                   {people.seats.map(s => <option key={s.franchise} value={s.franchise}>{s.name}</option>)}
                 </select>
               </label>
