@@ -1,0 +1,1 @@
+Stage 6 guard: a delayed-Rules test for both commissioner roles in hostedRules.test.tsx (about 44 test lines) and its LOCKS.md row. It locks the Nov 20 admission timing bug class; no app code changes.
