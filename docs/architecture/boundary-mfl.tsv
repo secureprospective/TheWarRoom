@@ -1,5 +1,4 @@
 # Reviewed exact package paths; debt is an importer/target pair, not a wildcard.
-fence	internal/app/mflref/migration	-
 fence	internal/ingestion/draftreports	-
 fence	internal/ingestion/freeagents	-
 fence	internal/ingestion/league	-
@@ -49,12 +48,6 @@ debt	internal/m2service	internal/ingestion/leagueschedule
 debt	internal/m2service	internal/ingestion/leaguestandings
 # MFL roster translation remains in shared source normalization.
 debt	internal/normalize	internal/ingestion/rosters
-# MFL mirror rulebook still stores and compares parsed source rule types.
-debt	internal/store/rulebook	internal/ingestion/league
-fence	internal/app/mflref/contracts	-
-fence	internal/app/mflref/contracts/contractstest	-
-fence	internal/app/mflref/trades	-
-fence	internal/app/mflref/planwatch	-
 fence	internal/app/comms/commstest	-
 # Native roots: every production dependency is checked, with no debt-edge exemption.
 native	internal/commissioner	-
@@ -64,7 +57,6 @@ native	internal/leagueweek	-
 native	internal/nativecheck	-
 native	internal/store/history	-
 native	internal/leaguemigration	-
-fence	internal/mflref/whatif	-
 native	internal/engine	-
 native	internal/model	-
 native	internal/domain	-
@@ -72,9 +64,6 @@ fence	internal/mflref/envelope	-
 fence	internal/mflref/lineup	-
 fence	internal/mflref/bid	-
 fence	internal/store/mflref/moves	-
-fence	internal/store/mflref/tradeplans	-
-fence	internal/app/mflref/bids	-
-fence	internal/app/mflref/seed	-
 # Offline MFL mirror/report fixture builders; never native production dependencies.
 fence	internal/app/season/seasontest	-
 fence	internal/app/now/nowtest	-

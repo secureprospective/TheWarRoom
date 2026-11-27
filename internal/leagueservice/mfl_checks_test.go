@@ -389,7 +389,7 @@ func TestMflPlanLinkIsAValidatedMflAddress(t *testing.T) {
 	}
 }
 
-// The golden files are the same ones the desktop path is held to in internal/app/mflref/contracts.
+// The golden files were shared with the former desktop contracts path.
 
 func TestMflLineupCheckGivesTheDesktopVerdict(t *testing.T) {
 	body, err := os.ReadFile("../mflref/lineup/testdata/hosted_golden.json")
