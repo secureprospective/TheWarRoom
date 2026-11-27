@@ -3,8 +3,7 @@ import { newKey } from '../commissioner/forms';
 import { parseReceipt, refusalText, staleWords } from '../commissioner/proxy';
 import { parseDraft, type Draft } from './draft';
 
-// Season 0 asks Go for the draft that is next, or with startup the league's startup draft; a time of zero
-// asks it to read at its own now.
+// Season 0 asks Go for the draft that is next unless startup is requested; a time of zero reads at Go's now.
 type Scope = { league: string; season: number; franchise: string; at: string; startup?: boolean };
 type Choice = { league: string; season: number; franchise: string; player: string; request: string;
   expected: number; startup?: boolean };
@@ -30,15 +29,17 @@ export function createDraftRoom(port: DraftRoomPort = live) {
     initial: (): RoomState => ({ error: '', pending: false, pick: { status: 'idle' }, startup: false }),
     retainErrorWhilePending: true, failure: refusalText,
     read: async (scope: Scope) => parseDraft(await port.read(scope)),
-    accept: draft => ({ draft }),
+    accept: draft => ({ draft, startup: draft.startup }),
   });
   const store = query.store;
   let held = { signature: '', key: '' };
   function read(league: string, franchise: string, season = 0) {
-    const { draft: held, startup } = store.getState();
-    if (held && (held.league !== league || held.startup !== startup)) store.setState({ draft: undefined });
+    const previous = store.getState();
+    const startup = previous.scope && previous.scope.league !== league ? false : previous.startup;
     const scope = { league, season, franchise, at: zeroTime, ...(startup ? { startup } : {}) };
-    store.setState({ scope });
+    const draft = previous.draft;
+    store.setState({ scope, startup, draft: draft?.league === league && draft.startup === startup
+      ? draft : undefined });
     return query.load([scope]);
   }
   // choose says which draft the room shows: the league's startup draft, or the rookie draft that is next.

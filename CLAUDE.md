@@ -91,6 +91,16 @@ Rules that follow from it:
    Season server once it is ready; until then they run on the Lab (Nov 29).
 6. Claudebox assumption (Christopher can overrule): Lab releases need no per-release OK from
    Christopher; only the Season server does.
+7. Why the split (Christopher, 11-26): hot-patch testing happens on the Lab, so the Season server
+   stays stable until the hot-patch cadence is worked out. Saturday upgrades of the Season server are
+   the controlled test of the upgrade path. The aim is a proven, repeatable system before any league
+   relies on hot patches.
+8. Log every hot patch and every upgrade in `deploy/CHANGE-LOG.md`: Lab hot patches (not routine
+   automatic Lab releases, which have their own release folders), every Season server install,
+   upgrade or rollback, and every release hold. One entry each: when (Central), target, from and
+   to versions, why, the exact commands, how long it took, what broke, whether rollback was needed,
+   and what to change next time. The entry rides in the same PR as the fix, or in a small PR
+   straight after.
 
 Tracker card titles say "Lab" or "Season server", never just "lab". The Saturday swap is
 `deploy/season/season-swap.sh` (guarded; see `deploy/season/README.md`).

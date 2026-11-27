@@ -198,19 +198,34 @@ func draftCheckpoints(records []Record, key DraftKey, facts nativecheck.Facts) [
 	return out
 }
 
-// draftSeasonNext is the season of the first rookie draft nobody has closed that this league has yet to run:
-// one with a pick still waiting to be ordered. The picks of a draft run before the league began are history.
-func draftSeasonNext(league string, records []Record, at time.Time) (int, error) {
-	through := RecordsThrough(records, at)
-	assets, err := NativeAssetsReading(league, through)
+// draftReadingKey honors an explicit draft. Otherwise it finds the next rookie draft with picks
+// waiting to be ordered, or the viewer's open startup draft if there is no rookie draft to run.
+func draftReadingKey(scope RawNativeDraftScope, records []Record) (DraftKey, error) {
+	key := pickKey(records, DraftPickInput{Season: scope.Season, Startup: scope.Startup, Franchise: scope.Franchise})
+	if key.Season != 0 {
+		return key, nil
+	}
+	if key.Startup {
+		key.Season = startupKey(records).Season
+		return key, nil
+	}
+	through := RecordsThrough(records, scope.At)
+	assets, err := NativeAssetsReading(scope.League, through)
 	if err != nil {
-		return 0, err
+		return DraftKey{}, err
 	}
 	if !assets.Seeded {
-		return 0, fmt.Errorf("record the starting snapshot's draft picks before opening the draft room")
+		return DraftKey{}, fmt.Errorf("record the starting snapshot's draft picks before opening the draft room")
 	}
 	if season, ok := draftSeasonPending(assets, through); ok {
-		return season, nil
+		key.Season = season
+		return key, nil
 	}
-	return 0, fmt.Errorf("this league has no rookie draft left to run")
+	startup := startupKeyOf(through, scope.Franchise)
+	if _, open := startupOpened(through, startup); open {
+		if _, closed := closeRecord(through, startup); !closed {
+			return startup, nil
+		}
+	}
+	return DraftKey{}, fmt.Errorf("this league has no rookie draft left to run")
 }
