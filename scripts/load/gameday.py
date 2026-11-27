@@ -542,6 +542,15 @@ class LoadRunner:
             return f"{tag}: {n502} x 502, {n5xx + n0} x 5xx, p95 {p95:.0f} ms, max RSS {rss_str}"
 
 
+def state_has_claimed_seats(path):
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+        return bool(data.get("owners"))
+    except (OSError, ValueError, TypeError, AttributeError):
+        return False
+
+
 def main():
     p = argparse.ArgumentParser(description="32-team game-day load script")
     p.add_argument("--target", default=DEFAULT_TARGET, help="Target origin (default local)")
@@ -570,6 +579,8 @@ def main():
         p.error("--state-file must live in /dev/shm")
 
     ssl_ctx = make_ssl_context(args.ca)
+    clean_exit = False
+    claimed_any = False
     try:
         state = onboard(
             args.target,
@@ -580,18 +591,29 @@ def main():
             args.devices_per_team,
             args.gzip,
         )
+        claimed_any = bool(state.get("owners"))
         require_coverage(state, args.teams, args.devices_per_team)
         runner = LoadRunner(args, state, ssl_ctx)
         runner.run(args.minutes)
         line = runner.summary_line()
         print(line, flush=True)
-        sys.exit(0 if line.startswith("PASS:") else 1)
+        clean_exit = line.startswith("PASS:")
+        sys.exit(0 if clean_exit else 1)
     except CoverageError as exc:
         print(f"FAIL: {exc}", flush=True)
         sys.exit(1)
     finally:
+        if not clean_exit and not claimed_any:
+            claimed_any = state_has_claimed_seats(args.state_file)
         if os.path.exists(args.state_file):
-            os.remove(args.state_file)
+            if clean_exit or not claimed_any:
+                os.remove(args.state_file)
+            else:
+                print(
+                    f"keeping state file {args.state_file}: "
+                    "seats were claimed and the run did not finish cleanly",
+                    flush=True,
+                )
 
 
 if __name__ == "__main__":
