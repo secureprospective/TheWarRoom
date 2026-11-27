@@ -1,0 +1,1 @@
+DraftRoom now ignores legacy leagueState fields in scoped hosted sessions and resets dropdown viewing state when league or viewFranchise changes; tests verify both fixes and stable useDraftReading polling deps.
