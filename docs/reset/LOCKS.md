@@ -44,3 +44,15 @@ Initial ledger for BUILD-PLAN Stage 6 ("Lock it in"). Lists automatic guards ver
 | Additional Stage 6 build guards | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #2: add one guard per class of bug found (modeled on the `sw.js` asset manifest check in `frontend/vite.config.ts`). |
 | Daily cleanup PR job (T665) | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #4 (Hydrogen from Hermes, after reset settles). |
 | Weekly habit check | **OPEN** | `docs/reset/BUILD-PLAN.md` Stage 6 #5 (stale cards, done lines, cold-start test). |
+
+## Planned guards by Nov 26 bug class
+
+| Bug class | Evidence | Planned check |
+|---|---|---|
+| Admission assertions run before Rules renders | The Nov 20 failure in `hostedRules.test.tsx` was fixed by waiting for the button in `877683d50`. Both roles passed in the Nov 26 run. | Add a test with a delayed Rules response that checks loading first and confirms the control becomes usable afterward. Run it in the existing Vitest CI suite. |
+| Phone Live waits on unrelated Home requests | PR #543 added a regression that rejects the old reader on `native.assets.read` during initial load, refresh or a results-read failure. | Keep the existing transport assertions in `LiveTab.test.tsx` and run them in Vitest CI whenever the Live reader changes. |
+| Phone Live retains the previous seat state | Argon found that switching or losing a seat within the same league can retain the previous score, lineup or error. Tracked as T1847. | Test same-league switches and seat loss while the old result is delayed. Verify the previous seat clears and its late response cannot restore its state. Run in `LiveTab.test.tsx` after the fix. |
+| Desktop stub plan refers to retired source files | PR #541 replaced 59 stale references after a Git tree audit. | Check the current owner paths in the v3 stub plan against tracked paths. Exercise valid and deliberately missing fixtures before wiring the check into `make lint`. |
+| Parallel PRs conflict on the generated line budget | PRs #542 and #543 conflicted on the shared baseline. The #543 refresh verified that only the generated file changed. | Preflight the merge tree for queued branches. When this file conflicts, regenerate on the new base and verify the remaining feature diff is identical. |
+| Local lint findings leak between worktrees | An isolated lint cache cleared stale diagnostics pointing at another checkout on #542 and #543. | Run the same lint gate from two worktrees with distinct `GOLANGCI_LINT_CACHE` directories. Verify each reports only paths from its own checkout. |
+| A later release invalidates an earlier watch result | After v104, the previous version watchers appeared overdue because they used the mutable latest-release pointer. Their archived health records were still valid. | Test two successive release fixtures. Verify the older check still passes using its archived status and expected commit and backup evidence. |
