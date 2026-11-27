@@ -107,8 +107,8 @@ export function moveStarters(lineup: HQLineup, from: TeamRow, to: TeamRow): stri
 export type TeamPick = { key: string; label: string; from: string };
 /** myPicks lists the draft slots this franchise owns and has not yet used, from draft.read. */
 export function myPicks(draft: Draft, mine: string): TeamPick[] {
-  const used = new Set(draft.picks.filter(p => p.player !== '' || p.forfeited ||
-    (p.skipped && p.how !== 'expired')).map(p => `${p.round}-${p.slot}`));
+  const used = new Set(draft.picks.filter(p => (p.extra ?? 0) === 0 && (p.player !== '' || p.forfeited ||
+    (p.skipped && p.how !== 'expired'))).map(p => `${p.round}-${p.slot}`));
   const name = (id: string) => draft.owners.find(o => o.id === id)?.name || id;
   return draft.order.flatMap(round => round.picks)
     .filter(p => p.owner === mine && !used.has(`${p.round}-${p.slot}`))

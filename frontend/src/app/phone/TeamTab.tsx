@@ -36,7 +36,13 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   league: string; mine: string; port?: HostedPort; onByes?: (count: number) => void;
 }) {
   const [revision, refresh] = useState(0);
-  const provider = useMemo(() => ({ onChange: hqEvents.onChange }), []);
+  const [picked, markPicked] = useState(0);
+  const onPick = useMemo(() => new Set<() => void>(), []);
+  const provider = useMemo(() => ({ onChange: (load: () => void) => {
+    const stop = hqEvents.onChange(load);
+    onPick.add(load);
+    return () => { stop(); onPick.delete(load); };
+  } }), [onPick]);
   const { reading, error, pending } = useContractRead<NativeHQ>(JSON.stringify([league, mine, revision]),
     publish => readNativeHQ(league, mine, port, publish, true, true, false), provider);
   const [games, setGames] = useState<Game[]>();
@@ -49,22 +55,33 @@ export function TeamTab({ league, mine, port = hostedWorkflow, onByes }: {
   }, [league, port, revision]);
   const [openBench, setOpenBench] = useState<number>();
   const [status, setStatus] = useState<PlayerStatus>();
+  useEffect(() => { setOpenBench(undefined); }, [league, mine, port]);
   useEffect(() => {
     let live = true;
-    setOpenBench(undefined);
     port({ command: 'native.assets.read', mode: 'read', arguments: { league } })
       .then(r => { if (live) setOpenBench(parseHostedRoster(r.data).openBenchSlots?.[mine]); })
       .catch(() => { if (live) setOpenBench(undefined); });
     readPlayerStatus(league, port).then(s => { if (live) setStatus(s); })
       .catch(() => { if (live) setStatus(undefined); });
     return () => { live = false; };
-  }, [league, mine, port, revision]);
+  }, [league, mine, port, revision, picked]);
   const editor = useNativeLineup(league, mine, reading?.lineup, port, true);
   const [moving, setMoving] = useState<string>();
   const [drag, setDrag] = useState<DragState>();
   const [sheet, setSheet] = useState<{ kind: 'card'; row: TeamRow } |
     { kind: 'picks' } | { kind: 'draft' }>();
-  const draftPort = useMemo(() => hostedDraftPort(port), [port]);
+  const draftPort = useMemo(() => {
+    const base = hostedDraftPort(port);
+    return {
+      ...base,
+      pick: async (choice: Parameters<typeof base.pick>[0]) => {
+        const result = await base.pick(choice);
+        [...onPick].forEach(load => load());
+        markPicked(n => n + 1);
+        return result;
+      },
+    };
+  }, [port, onPick]);
   const tabRef = useRef<HTMLDivElement>(null);
   const dragCtrl = useMemo(() => createRowDrag(), []);
   useEffect(() => () => dragCtrl.cancel(), [dragCtrl]);
