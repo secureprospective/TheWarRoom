@@ -1,1 +1,1 @@
-Append Stage 6 planned guards table for Nov 26 bug classes to docs/reset/LOCKS.md and record line-budget justification.
+Add a short Stage 6 guard plan for observed failures. Keep the shared baseline intact so this documentation can land independently of PR #544.
