@@ -37,6 +37,7 @@ type RawWorkflowScope struct {
 	Viewer    string `json:"viewer,omitempty"`
 	Week      int    `json:"week,omitempty"`
 	Season    int    `json:"season,omitempty"`
+	Startup   bool   `json:"startup,omitempty"`
 	At        string `json:"at,omitempty"`
 	LocalZone string `json:"localZone,omitempty"`
 	Players   string `json:"players,omitempty"`
@@ -116,7 +117,7 @@ func (r RawWorkflowScope) commandScope(command string) (RawWorkflowScope, bool) 
 		kept.Command = r.Command
 		return kept, r.Command != ""
 	case "draft.read":
-		kept.Franchise, kept.Season, kept.At = r.Franchise, r.Season, r.At
+		kept.Franchise, kept.Season, kept.At, kept.Startup = r.Franchise, r.Season, r.At, r.Startup
 		return kept, r.Franchise != ""
 	case "franchise.moves.history.read":
 		kept.Franchise, kept.Season = r.Franchise, r.Season
