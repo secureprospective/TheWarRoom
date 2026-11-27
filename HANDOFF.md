@@ -1,4 +1,4 @@
-Baton: Bee — 2026-11-28
-State: B2 tests-only slice complete; both server twins absent and are explicit GAP skips. Focused run passed with skips; lint blocked by branch line-budget gate (docs/go-test overruns require reason). tidy-check clean.
-Next: commit tests and REPORT.md once; no push.
-Blocked: requested behavior/mutation proof impossible without server twins; lint requires line-budget reason.
+Baton: Bee, 2026-11-26
+Status: implementing per-checkout golangci-lint cache in Stage 6 worktree.
+Next: add wrapper and test, run lint/checks, commit and push.
+Blocked: none.
