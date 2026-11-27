@@ -29,6 +29,13 @@ Keep both; the record binds the archive checksum, previous version and swapped-i
 Old backups without records cannot use this procedure.
 
 The swap now stops `twr` before taking its backup, so SQLite files are copied at rest.
+Each swap writes its stamp to `/opt/twr/current-swap` (`$APP_ROOT/current-swap`) after the version
+link flip succeeds; a rollback refuses unless the requested stamp matches `current-swap` before
+stopping anything, and a successful rollback clears `current-swap` so the same stamp cannot be
+rolled back twice. A host-wide exclusive lock (`flock` on `$APP_ROOT/.season-swap.lock`, or an
+atomic `mkdir` lock directory `$APP_ROOT/.season-swap.lockdir` if `flock` is unavailable) is held
+from before validation through the health check, so a second concurrent run refuses at once without
+changing anything.
 Rollback checks the record, archive and previous folder before stopping anything. It stages
 that archive, stops `twr`, moves current data to `/var/lib/twr.before-rollback-<swap-stamp>`,
 restores the backup and previous version link, then starts `twr` and checks HTTP health.

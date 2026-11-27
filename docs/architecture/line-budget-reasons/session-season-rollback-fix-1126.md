@@ -1,0 +1,1 @@
+Adds `current-swap` stamp tracking and host-wide exclusive locking (`flock` with `mkdir` fallback) to `deploy/season/season-data.sh`, offline regression tests in `deploy/season/test_season_restore.py`, and corresponding documentation in `deploy/season/README.md`.
