@@ -453,7 +453,8 @@ func otherWorkflowReads() map[string]WorkflowCommand {
 			return workflowJSON(s.TargetNativeContractQuoteContext(ctx, r))
 		}),
 		"draft.read": workflowRead(func(s *leagueservice.Service, r RawWorkflowScope) (json.RawMessage, error) {
-			return workflowJSON(s.TargetNativeDraft(commissioner.RawNativeDraftScope{League: r.League, Franchise: r.Franchise, Season: r.Season}))
+			return workflowJSON(s.TargetNativeDraft(commissioner.RawNativeDraftScope{
+				League: r.League, Franchise: r.Franchise, Season: r.Season, Startup: r.Startup}))
 		}),
 	}
 }

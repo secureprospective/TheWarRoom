@@ -97,12 +97,12 @@ export default function DraftRoom({ league, franchise: viewFranchise, sessionFra
   const canMakeOwed = Boolean(owed?.contract && viewingOwnTeam && !clock?.paused);
   const yourTurn = !owed && viewingOwnTeam && clock !== null && actingFranchise === clock.owner &&
     draft?.closed === null;
-  const kind = room.startup ? 'startup' : 'rookie';
+  const isStartup = draft?.startup ?? room.startup;
+  const kind = isStartup ? 'Startup' : 'Rookie';
   return (
-    <section className="draft-room" aria-label={room.startup ? 'Startup draft room' : 'Rookie draft room'}
-      aria-busy={room.pending}>
+    <section className="draft-room" aria-label={`${kind} draft room`} aria-busy={room.pending}>
       <div ref={background} aria-hidden={tray ? true : undefined}>
-        <h4>{draft ? `${draft.season} ${kind} draft` : room.startup ? 'Startup draft' : 'Rookie draft'}</h4>
+        <h4>{draft ? `${draft.season} ${kind.toLowerCase()} draft` : `${kind} draft`}</h4>
         {leagueError && <p role="alert">{leagueError}</p>}
         {room.error && <p role="alert">{room.error}</p>}
         {!draft && !room.error && !leagueError && <p role="status">Reading the draft…</p>}
