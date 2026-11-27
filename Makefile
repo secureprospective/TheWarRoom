@@ -50,6 +50,7 @@ placement:
 	scripts/check-root-ratchet.sh
 	scripts/check-line-budget.sh
 	scripts/check-source-branches.sh
+	scripts/check-stub-plan-paths.sh
 
 # measure-dictionary renders docs/data-layer/Measure_Dictionary.md from the registry CSVs in
 # internal/measures. A test fails while the checked-in copy is stale.
