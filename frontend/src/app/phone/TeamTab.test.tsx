@@ -102,6 +102,32 @@ it('lists unused owned picks with their original owner', () => {
   expect(myPicks(draft, 'mine')).toEqual([{ key: '1-2', label: '2027 round 1', from: 'from Rivals' }]);
 });
 
+it('keeps unused and owed scheduled picks visible when an extra pick shares their round and slot', () => {
+  const draft = {
+    season: 2026,
+    owners: [{ id: 'other', name: 'Rivals' }],
+    picks: [
+      { round: 1, slot: 1, extra: 0, player: '0997', skipped: false, forfeited: false, how: 'owner' },
+      { round: 1, slot: 2, extra: 0, player: '', skipped: false, forfeited: false, how: '' },
+      { round: 1, slot: 2, extra: 1, player: '0998', skipped: false, forfeited: false, how: 'inserted' },
+      { round: 1, slot: 3, extra: 0, player: '', skipped: true, forfeited: false, how: 'expired' },
+      { round: 1, slot: 3, extra: 1, player: '0999', skipped: false, forfeited: false, how: 'inserted' },
+    ],
+    order: [{
+      round: 1,
+      picks: [
+        { round: 1, slot: 1, owner: 'mine', original: 'mine' },
+        { round: 1, slot: 2, owner: 'mine', original: 'mine' },
+        { round: 1, slot: 3, owner: 'mine', original: 'other' },
+      ],
+    }],
+  } as unknown as Draft;
+  expect(myPicks(draft, 'mine')).toEqual([
+    { key: '1-2', label: '2026 round 1', from: 'own' },
+    { key: '1-3', label: '2026 round 1', from: 'from Rivals' },
+  ]);
+});
+
 it('keeps an owed pick in My picks and opens the shared hosted draft room from its sheet', async () => {
   read.value = hq();
   const draftRead = { league: 'L', season: 2026, revision: 2, rules: [], owners: [], order: [
@@ -138,6 +164,69 @@ it('keeps an owed pick in My picks and opens the shared hosted draft room from i
   await act(async () => (draftSheet.querySelector('[aria-label="Pick Rookie One"]') as HTMLElement).click());
   const pick = port.mock.calls.find(([request]) => request.command === 'draft.pick')?.[0];
   expect(pick?.arguments).toMatchObject({ franchise: 'mine', player: '1001' });
+});
+
+it('refreshes NativeHQ and open bench slots after a phone draft pick without closing the sheet', async () => {
+  const base = hq();
+  read.value = base;
+  let drafted = false;
+  const draftRead = { league: 'L', season: 2026, revision: 2, rules: [], owners: [], order: [
+    { round: 1, words: '', picks: [{ round: 1, original: 'mine', owner: 'mine', slot: 1 }] },
+  ], words: 'All turns have ended; missed picks may still be made until the draft closes.',
+  nextOwnedPick: null, closed: null, players: {},
+  available: [{ id: '1001', name: 'Rookie One', position: 'RB', team: 'KC' }], checkpoints: [],
+  draft: { start: '2026-05-01T00:00:00Z', started: true, exhausted: true, onClock: null,
+    picks: [{ round: 1, original: 'mine', owner: 'mine', slot: 1, extra: 0, player: '', skipped: true,
+      forfeited: false, how: 'expired', contract: { salaryCents: 1234500, years: 3, rfaAfter: false } }],
+  } };
+  const port = vi.fn(async (request: { command: string }) => {
+    if (request.command === 'native.assets.read') return { label: '', writable: true, football: '',
+      data: { open: drafted ? 4 : 5 } };
+    if (request.command === 'draft.read') return { label: '', writable: true, football: '',
+      data: drafted ? { ...draftRead, revision: 3, available: [], draft: { ...draftRead.draft,
+        picks: [{ ...draftRead.draft.picks[0], player: '1001', skipped: false, how: 'owner' }],
+      } } : draftRead };
+    if (request.command === 'draft.pick') {
+      drafted = true;
+      read.value = hq({
+        snapshot: {
+          ...base.snapshot,
+          players: { value: [
+            ...base.snapshot.players.value,
+            { id: '1001', name: 'Rookie One', position: 'RB', team: 'KC' },
+          ] },
+          rosters: { value: [{ franchiseId: 'mine', players: [
+            ...base.snapshot.rosters.value[0].players, { id: '1001', rosterStatus: 'ROSTER' }] }] },
+        } as never,
+        lineup: { ...base.lineup!, bench: [...base.lineup!.bench, { id: '1001', position: 'RB' }] },
+      });
+      return { label: '', writable: true, football: '', data: {
+        entry: 'entry-1', league: 'L', revision: 3, recordedAt: '2026-05-01T00:02:00Z',
+        message: 'Rookie One was picked.',
+      } };
+    }
+    throw new Error('offline');
+  });
+  const page = await render(port as never);
+  await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+  expect(page.textContent).toContain('Bench 1 of 6');
+  expect(page.textContent).not.toContain('Rookie One');
+  await act(async () => (page.querySelector('.team-head__picks') as HTMLElement).click());
+  await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+  const picksSheet = document.querySelector('dialog')!;
+  await act(async () => (picksSheet.querySelector('[aria-label="Open draft room"]') as HTMLElement).click());
+  await act(async () => { await new Promise(r => setTimeout(r, 0)); });
+  const draftSheet = document.querySelector('dialog')!;
+  await act(async () => {
+    const player = draftSheet.querySelectorAll('select')[1] as HTMLSelectElement;
+    player.value = '1001'; player.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await act(async () => (draftSheet.querySelector('[aria-label="Pick Rookie One"]') as HTMLElement).click());
+  await act(async () => { await new Promise(r => setTimeout(r, 10)); });
+  expect(document.querySelector('dialog')?.textContent).toContain('Picked by the franchise');
+  await act(async () => (document.querySelector('[aria-label="Close Draft room"]') as HTMLElement).click());
+  expect(page.textContent).toContain('Rookie One');
+  expect(page.textContent).toContain('Bench 2 of 6');
 });
 
 let root: Root | undefined; let host: HTMLDivElement | undefined;
