@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # shapes.sh (target: lab) — GATE part 2: the 10/12/16-team one-season leagues with computer owners.
 #   setup   recreate native.rehtest-10/-12/-16 from the one_season_N presets, schedule weeks 13-18 (schedule.py),
-#           10 s pick clock, open the startup drafts. The commissioner holds franchise.01; draft.onExpire
-#           controls its timed-out turns. The other open franchises are computer-drafted.
+#           10 s pick clock, draft.onExpire = autopick, open the startup drafts. The commissioner holds
+#           franchise.01; timed-out turns autopick so drafts finish and close. Other open seats auto-draft.
 #   release (after the drafts finish) revoke the setup helpers; franchise.01 stays held by the commissioner.
 # Never touches rehearsal or Sunday practice leagues. Needs TWR_LAB_KIT; setup also needs LAB_SSH_CONF.
 set -euo pipefail
@@ -34,12 +34,17 @@ done
     python3 - "$id" "$W" <<'PY'
 import json,sys
 league,w=sys.argv[1:]
-def cmd(name,args,reason):
- return {'league':league,'command':name,'args':args,'reason':reason,'request':name.replace('.','-')+'-'+league.split('.',1)[1],'effective':'now','visibility':'league'}
-for fn,doc in [('draft-clock.json',cmd('commish.rules.set',{'field':'draft.clock','value':10000000000},'Shape league draft clock')),('draft-open.json',cmd('draft.startup.open',{'draft':{'season':2026,'startup':True}},'Open shape league startup draft'))]:
+slug=league.split('.',1)[1]
+def cmd(req,name,args,reason):
+ return {'league':league,'command':name,'args':args,'reason':reason,'request':req+'-'+slug,'effective':'now','visibility':'league'}
+for fn,doc in [
+ ('draft-clock.json',cmd('draft-clock','commish.rules.set',{'field':'draft.clock','value':10000000000},'Shape league draft clock')),
+ ('draft-expire.json',cmd('draft-expire','commish.rules.set',{'field':'draft.onExpire','value':'autopick'},'Shape league expired clock policy')),
+ ('draft-open.json',cmd('draft-startup-open','draft.startup.open',{'draft':{'season':2026,'startup':True}},'Open shape league startup draft')),
+]:
  with open(w+'/'+fn,'w') as f: json.dump(doc,f,indent=1); f.write('\n')
 PY
-    XDG_CONFIG_HOME=$cfg ./apply.sh "$W/schedule-generate.json" "$W/schedule-publish.json" "$W/draft-clock.json" "$W/draft-open.json"
+    XDG_CONFIG_HOME=$cfg ./apply.sh "$W/schedule-generate.json" "$W/schedule-publish.json" "$W/draft-clock.json" "$W/draft-expire.json" "$W/draft-open.json"
   done
   lab_stop
   for n in 10 12 16; do lab_twrserver refresh-nfl-schedule -db "$DB" -league "native.rehtest-$n" -season 2026 </dev/null 2>&1 | tail -1 || echo "WARNING: refresh-nfl-schedule failed for $n" >&2; done

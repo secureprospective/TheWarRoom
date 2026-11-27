@@ -1,0 +1,1 @@
+Argon finding 3 fix: scripts/lab/shapes.sh now applies draft.onExpire = "autopick" with a distinct request key before opening shape startup drafts so commissioner-held franchise.01 does not skip all picks and leave drafts unclosed; scripts/lab/test_shapes_release.sh adds an offline setup regression check.
