@@ -1,4 +1,4 @@
-Baton: Bee — 2026-11-26
-State: Startup reads and refresh fixed; hosted HTTPS and browser-port regressions red before, green after.
-Next: Review the startup-read PR. After release approval, smoke-test one startup pick on phone and desktop.
-Blocked: none. Seat everyone before opening Sunday; a late claim can stall an expired computer turn.
+Baton: AGY — 2026-11-27
+State: T710 PR-F extended on PR #551: removed all internal/app/mflref/* (bids, contracts, contractstest, migration, planwatch, seed, trades), internal/mflref/whatif, internal/store/mflref/tradeplans, and internal/store/rulebook. Kept envelope, lineup, moves, mflmirror, live what-if, and rulebook SQLite tables. No schema/migration or frontend shell change.
+Next: review PR #551 and its CI. Do not merge without Christopher's sign-off.
+Blocked: none. Build, vet, lint, line budget, and tests verified on branch.

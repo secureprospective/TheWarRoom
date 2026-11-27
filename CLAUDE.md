@@ -13,7 +13,7 @@ strategic reference is `North_Star.md`; read it before deciding what earns build
   An AI agent working for a named person does everything through `cmd/twr` (CLI and MCP). Screens,
   minigames and reports are outputs laid over the same commands.
 - **PWA-centric.** `twr-server` serves the React PWA to browsers on phones and computers.
-  There is no standalone desktop app.
+  League state and the engine run on the server.
 - **The native ledger is the record.** MFL is import and reference only. The MFL→Native import is
   the front door and must be flawless for any league size or type.
 - **Solo-owner tools.** `mflref`, `transactions` and the what-if desk let one owner use TheWarRoom on
@@ -39,7 +39,7 @@ NFL, Christopher's 32-team dynasty IDP salary-cap league (MFL league 14432).
 - **Reading order:** `README.md` -> `North_Star.md` -> `docs/adr/product/README.md` -> newest
   resume in `docs/resume/` (currently `docs/resume/RESUME-build-plan.md`).
 - **Server design (history / reference, not governing):** `docs/plans/CLIENT-SERVER-PLAN-2026-11-05.md`
-  (one always-on server, the same React app as PWA and desktop, CLI/MCP) with its rulings in
+  (one always-on server, the React PWA, CLI/MCP) with its rulings in
   `docs/audit/`.
 - **Direction after that:** `docs/plans/FUTURE-PLATFORM-DIRECTION-2026-11-08.md` and the seam
   registry `docs/architecture/future-seams.md`.

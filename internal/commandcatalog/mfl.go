@@ -1,6 +1,6 @@
 package catalog
 
-// DesktopCommands preserves the solo-owner MFL contracts/trades catalog views while internal/app/mflref stays.
+// DesktopCommands preserves the solo-owner MFL contracts/trades catalog views until PR-G.
 func DesktopCommands(feature string, _ []Command) []Command {
 	switch feature {
 	case "contracts":

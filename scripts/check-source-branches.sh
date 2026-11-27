@@ -10,8 +10,8 @@ allow=docs/architecture/source-branch-allowlist.txt
 base=docs/architecture/source-branch-baseline.txt
 fail=0
 
-hits=$(grep -rnE 'LeagueSource\(|Source(MFLImport|Native)\b|importedSource\(' --include=*.go internal \
-  | grep -v '_test\.go:' | while IFS=: read -r file _; do
+hits=$((grep -rnE 'LeagueSource\(|Source(MFLImport|Native)\b|importedSource\(' --include=*.go internal \
+  | grep -v '_test\.go:' || true) | while IFS=: read -r file _; do
     printf '%s\n' "$file"; done | sort -u)
 while read -r file; do
   [[ -z $file ]] && continue
@@ -23,8 +23,8 @@ while read -r file; do
 done <<<"$hits"
 
 count() { grep -v '^#' "$base" | grep "^$1=" | cut -d= -f2; }
-ids=$(grep -rn 'ingestion\.LeagueID' --include=*.go internal cmd | grep -v '_test\.go:' | wc -l)
-forks=$(grep -rn 'native ?' frontend/src --include=*.ts --include=*.tsx | grep -v '\.test\.' | wc -l)
+ids=$((grep -rn 'ingestion\.LeagueID' --include=*.go internal cmd | grep -v '_test\.go:' || true) | wc -l)
+forks=$((grep -rn 'native ?' frontend/src --include=*.ts --include=*.tsx | grep -v '\.test\.' || true) | wc -l)
 for pair in "league_id:$ids" "native_forks:$forks"; do
   name=${pair%%:*}; now=${pair#*:}; was=$(count "$name")
   if (( now > was )); then
