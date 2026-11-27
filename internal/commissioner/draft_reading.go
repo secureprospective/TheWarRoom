@@ -13,8 +13,8 @@ import (
 	"github.com/secureprospective/TheWarRoom/internal/nativecheck"
 )
 
-// RawNativeDraftScope asks for one franchise's view of a draft. A season of zero asks for the draft that is
-// next: the first one nobody has closed.
+// RawNativeDraftScope asks for one franchise's view of a draft. A season of zero asks for the next
+// rookie draft, or the open startup draft if there is no rookie draft to run.
 type RawNativeDraftScope struct {
 	League    string    `json:"league"`
 	Season    int       `json:"season"`
@@ -158,24 +158,16 @@ func NativeDraftReading(scope RawNativeDraftScope, records []Record, local *time
 	if len(records) == 0 || !leagueFranchise(records, scope.Franchise) {
 		return NativeDraft{}, fmt.Errorf("choose a franchise in this app league")
 	}
-	if scope.Season == 0 {
-		if scope.Startup {
-			scope.Season = startupKey(records).Season
-		} else {
-			season, err := draftSeasonNext(scope.League, records, scope.At)
-			if err != nil {
-				return NativeDraft{}, err
-			}
-			scope.Season = season
-		}
+	key, err := draftReadingKey(scope, records)
+	if err != nil {
+		return NativeDraft{}, err
 	}
-	basis, err := readDraft(records, pickKey(records, DraftPickInput{Season: scope.Season, Startup: scope.Startup,
-		Franchise: scope.Franchise}), scope.At, standings)
+	basis, err := readDraft(records, key, scope.At, standings)
 	if err != nil {
 		return NativeDraft{}, err
 	}
 	through := RecordsThrough(records, scope.At)
-	out := NativeDraft{League: scope.League, Season: scope.Season, Startup: scope.Startup,
+	out := NativeDraft{League: scope.League, Season: key.Season, Startup: key.Startup,
 		Side: basis.key.Side, Revision: int64(len(through)),
 		Rules: namedRules(RuleLines(basis.rules, draftReadingFields()...), basis.owners), Owners: basis.owners, Order: basis.order,
 		Words: basis.words, Draft: basis.draft, Players: map[string]DraftPlayer{}, Available: []DraftPlayer{},

@@ -1,11 +1,17 @@
 repos:
   # golangci-lint: full lint suite on staged commit (Section 1 linter set).
-  # Pinned to the commit SHA for tag v2.12.2 — verify with:
-  #   git ls-remote https://github.com/golangci/golangci-lint v2.12.2
-  - repo: https://github.com/golangci/golangci-lint
-    rev: c0d3ddc9cf3faa61a4e378e879ece580256d76e5  # v2.12.2
+  # Local hook matching upstream golangci-lint-full (v2.12.2) via scripts/golangci-cache.sh
+  # so each worktree gets its own GOLANGCI_LINT_CACHE.
+  - repo: local
     hooks:
       - id: golangci-lint-full
+        name: golangci-lint-full
+        description: Fast linters runner for Go. Runs on all files in the module. Use this hook if you use pre-commit in CI.
+        entry: scripts/golangci-cache.sh run --fix
+        language: system
+        types: [go]
+        require_serial: true
+        pass_filenames: false
         stages: [pre-commit]
 
   # Gitleaks: scan staged files for secrets before they enter git history.

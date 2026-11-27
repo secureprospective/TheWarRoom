@@ -639,8 +639,8 @@ the commissioner stream without commissioner permission: `internal/composition/n
 checks the franchise's seated owner, replays the draft, judges roster and cap and appends in one immediate
 transaction. Go fixes the slot and contract in the record; `TargetCommissionerExecute` refuses `draft.pick`.
 `native_projector.go` gives a drafted rookie his contract in the native assets. `TargetNativeDraft` reads
-the order, picks, clock and the viewer's next pick in the viewer's time zone; a season of zero reads the
-first draft nobody has closed (`draftSeasonNext`).
+the order, picks, clock and the viewer's next pick in the viewer's time zone. A season of zero reads the
+next rookie draft or, if none is pending, the viewer's open startup draft (`draftReadingKey`).
 
 Round one follows the final standings of the season before the draft's season. `readDraft` takes a
 `DraftStandings` seam (`draft_standings.go`) because the standings need the result sources only the store

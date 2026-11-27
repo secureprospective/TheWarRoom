@@ -50,6 +50,7 @@ placement:
 	scripts/check-root-ratchet.sh
 	scripts/check-line-budget.sh
 	scripts/check-source-branches.sh
+	scripts/check-stub-plan-paths.sh docs/ui/v3/V3-STUB-PLAN.md
 
 # measure-dictionary renders docs/data-layer/Measure_Dictionary.md from the registry CSVs in
 # internal/measures. A test fails while the checked-in copy is stale.
@@ -58,7 +59,8 @@ measure-dictionary:
 
 # lint runs ifaceguard, filelen, bloat, placement AND golangci-lint — all must pass to clear.
 lint: ifaceguard filelen bloat placement frontend-transport boundary
-	golangci-lint run ./...
+	scripts/golangci-cache.test.sh
+	scripts/golangci-cache.sh run ./...
 
 .PHONY: boundary
 boundary:
